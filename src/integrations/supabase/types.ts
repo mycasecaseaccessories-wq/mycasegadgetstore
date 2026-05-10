@@ -250,6 +250,8 @@ export type Database = {
           created_at: string
           final_sell_mmk: number | null
           id: string
+          image_url: string | null
+          low_stock_threshold: number
           margin_percent: number | null
           name: string
           note: string | null
@@ -280,6 +282,8 @@ export type Database = {
           created_at?: string
           final_sell_mmk?: number | null
           id?: string
+          image_url?: string | null
+          low_stock_threshold?: number
           margin_percent?: number | null
           name: string
           note?: string | null
@@ -310,6 +314,8 @@ export type Database = {
           created_at?: string
           final_sell_mmk?: number | null
           id?: string
+          image_url?: string | null
+          low_stock_threshold?: number
           margin_percent?: number | null
           name?: string
           note?: string | null
@@ -396,6 +402,8 @@ export type Database = {
           currency: string | null
           default_waiting_time: string | null
           id: string
+          language: string
+          logo_url: string | null
           minimum_price_buffer: number | null
           service_fee: number | null
           tax_percent: number | null
@@ -406,6 +414,8 @@ export type Database = {
           currency?: string | null
           default_waiting_time?: string | null
           id?: string
+          language?: string
+          logo_url?: string | null
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -416,6 +426,8 @@ export type Database = {
           currency?: string | null
           default_waiting_time?: string | null
           id?: string
+          language?: string
+          logo_url?: string | null
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
