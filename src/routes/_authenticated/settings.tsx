@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/settings")({ component: Se
 function SettingsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { lang, setLang } = useI18n();
   const [s, setS] = useState<any>(null);
   const [profile, setProfile] = useState<any>({ full_name: "", business_name: "" });
   const [pw, setPw] = useState("");
