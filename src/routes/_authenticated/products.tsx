@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle } from "lucide-react";
 import { VariantsDialog } from "@/components/VariantsDialog";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +23,10 @@ export const Route = createFileRoute("/_authenticated/products")({ component: Pr
 type Product = {
   id: string; name: string; size: string | null; price: number;
   waiting_time: string | null; stock_status: string; category: string | null; note: string | null;
+  image_url: string | null; stock_in: number; sold_qty: number; low_stock_threshold: number;
 };
 
-const empty: Partial<Product> = { name: "", size: "", price: 0, waiting_time: "", stock_status: "in_stock", category: "", note: "" };
+const empty: Partial<Product> = { name: "", size: "", price: 0, waiting_time: "", stock_status: "in_stock", category: "", note: "", image_url: null, stock_in: 0, low_stock_threshold: 5 };
 
 function ProductsPage() {
   const qc = useQueryClient();
