@@ -34,6 +34,14 @@ function VoucherDetailPage() {
     },
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [items, setItems] = useState<Item[]>([]);
