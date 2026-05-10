@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Receipt,
+  TrendingUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,9 +27,11 @@ import { signOut, useAuth } from "@/lib/auth";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Rates & Calc", url: "/rates", icon: TrendingUp },
   { title: "Products", url: "/products", icon: Package },
   { title: "Calculator", url: "/calculator", icon: Calculator },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
+  { title: "Vouchers", url: "/vouchers", icon: Receipt },
   { title: "Customers", url: "/customers", icon: Users },
   { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Settings", url: "/settings", icon: Settings },

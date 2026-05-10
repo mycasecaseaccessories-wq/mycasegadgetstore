@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Layers } from "lucide-react";
+import { VariantsDialog } from "@/components/VariantsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ const empty: Partial<Product> = { name: "", size: "", price: 0, waiting_time: ""
 function ProductsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [variantsFor, setVariantsFor] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>(empty);
 
@@ -126,6 +128,7 @@ function ProductsPage() {
                 <td className="text-muted-foreground">{p.waiting_time ?? "—"}</td>
                 <td><Badge variant="outline" className={p.stock_status === "in_stock" ? "bg-green-500/10 text-green-600" : p.stock_status === "low_stock" ? "bg-amber-500/10 text-amber-600" : "bg-red-500/10 text-red-600"}>{p.stock_status.replace("_", " ")}</Badge></td>
                 <td className="px-4 text-right">
+                  <Button size="icon" variant="ghost" title="Variants" onClick={() => setVariantsFor(p)}><Layers className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => { setForm(p); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button>
                 </td>
@@ -134,6 +137,15 @@ function ProductsPage() {
           </tbody>
         </table>
       </CardContent></Card>
+
+      {variantsFor && (
+        <VariantsDialog
+          productId={variantsFor.id}
+          productName={variantsFor.name}
+          open={!!variantsFor}
+          onOpenChange={(v) => !v && setVariantsFor(null)}
+        />
+      )}
     </div>
   );
 }
