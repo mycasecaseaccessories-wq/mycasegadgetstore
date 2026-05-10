@@ -23,6 +23,7 @@ import {
   YAxis,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { DashboardWidgets } from "@/components/DashboardWidgets";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
@@ -140,6 +141,8 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <DashboardWidgets />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Recent Orders</CardTitle></CardHeader>
