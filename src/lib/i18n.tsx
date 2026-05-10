@@ -22,6 +22,7 @@ const dict = {
     "nav.po": "Purchase Orders",
     "nav.team": "Team & Roles",
     "nav.storefront": "Public Shop",
+    "nav.activity": "Activity Log",
     "nav.settings": "Settings",
     "common.save": "Save",
     "common.cancel": "Cancel",
