@@ -11,6 +11,9 @@ import {
   Sparkles,
   Receipt,
   TrendingUp,
+  PieChart,
+  FileDown,
+  StickyNote,
 } from "lucide-react";
 import {
   Sidebar,
