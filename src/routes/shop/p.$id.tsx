@@ -12,7 +12,7 @@ export const Route = createFileRoute("/shop/p/$id")({ component: ProductPage });
 
 function ProductPage() {
   const { id } = Route.useParams();
-  const nav = useNavigate();
+  
 
   const { data: product } = useQuery({
     queryKey: ["public-product", id],
