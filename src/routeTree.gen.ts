@@ -12,20 +12,27 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShopIndexRouteImport } from './routes/shop/index'
+import { Route as ShopCartRouteImport } from './routes/shop/cart'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
+import { Route as AuthenticatedPurchaseOrdersRouteImport } from './routes/_authenticated/purchase-orders'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedExportsRouteImport } from './routes/_authenticated/exports'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated/content'
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as ShopPIdRouteImport } from './routes/shop/p.$id'
 import { Route as AuthenticatedVouchersIdRouteImport } from './routes/_authenticated/vouchers.$id'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
 
@@ -43,6 +50,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopIndexRoute = ShopIndexRouteImport.update({
+  id: '/shop/',
+  path: '/shop/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopCartRoute = ShopCartRouteImport.update({
+  id: '/shop/cart',
+  path: '/shop/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
   id: '/vouchers',
   path: '/vouchers',
@@ -51,6 +68,16 @@ const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
 const AuthenticatedVariantsRoute = AuthenticatedVariantsRouteImport.update({
   id: '/variants',
   path: '/variants',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -68,6 +95,12 @@ const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   path: '/rates',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPurchaseOrdersRoute =
+  AuthenticatedPurchaseOrdersRouteImport.update({
+    id: '/purchase-orders',
+    path: '/purchase-orders',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -86,6 +119,11 @@ const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
 const AuthenticatedExportsRoute = AuthenticatedExportsRouteImport.update({
   id: '/exports',
   path: '/exports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -113,6 +151,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ShopPIdRoute = ShopPIdRouteImport.update({
+  id: '/shop/p/$id',
+  path: '/shop/p/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVouchersIdRoute = AuthenticatedVouchersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -133,17 +176,24 @@ export interface FileRoutesByFullPath {
   '/content': typeof AuthenticatedContentRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/exports': typeof AuthenticatedExportsRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/products': typeof AuthenticatedProductsRoute
+  '/purchase-orders': typeof AuthenticatedPurchaseOrdersRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/suppliers': typeof AuthenticatedSuppliersRoute
+  '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/cart': typeof ShopCartRoute
+  '/shop/': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/shop/p/$id': typeof ShopPIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -153,17 +203,24 @@ export interface FileRoutesByTo {
   '/content': typeof AuthenticatedContentRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/exports': typeof AuthenticatedExportsRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/products': typeof AuthenticatedProductsRoute
+  '/purchase-orders': typeof AuthenticatedPurchaseOrdersRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/suppliers': typeof AuthenticatedSuppliersRoute
+  '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/cart': typeof ShopCartRoute
+  '/shop': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/shop/p/$id': typeof ShopPIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -175,17 +232,24 @@ export interface FileRoutesById {
   '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/exports': typeof AuthenticatedExportsRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
+  '/_authenticated/purchase-orders': typeof AuthenticatedPurchaseOrdersRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
+  '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/variants': typeof AuthenticatedVariantsRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/cart': typeof ShopCartRoute
+  '/shop/': typeof ShopIndexRoute
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/shop/p/$id': typeof ShopPIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -197,17 +261,24 @@ export interface FileRouteTypes {
     | '/content'
     | '/customers'
     | '/dashboard'
+    | '/expenses'
     | '/exports'
     | '/inventory'
     | '/orders'
     | '/products'
+    | '/purchase-orders'
     | '/rates'
     | '/reports'
     | '/settings'
+    | '/suppliers'
+    | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop/cart'
+    | '/shop/'
     | '/customers/$id'
     | '/vouchers/$id'
+    | '/shop/p/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -217,17 +288,24 @@ export interface FileRouteTypes {
     | '/content'
     | '/customers'
     | '/dashboard'
+    | '/expenses'
     | '/exports'
     | '/inventory'
     | '/orders'
     | '/products'
+    | '/purchase-orders'
     | '/rates'
     | '/reports'
     | '/settings'
+    | '/suppliers'
+    | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop/cart'
+    | '/shop'
     | '/customers/$id'
     | '/vouchers/$id'
+    | '/shop/p/$id'
   id:
     | '__root__'
     | '/'
@@ -238,23 +316,33 @@ export interface FileRouteTypes {
     | '/_authenticated/content'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/expenses'
     | '/_authenticated/exports'
     | '/_authenticated/inventory'
     | '/_authenticated/orders'
     | '/_authenticated/products'
+    | '/_authenticated/purchase-orders'
     | '/_authenticated/rates'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/suppliers'
+    | '/_authenticated/team'
     | '/_authenticated/variants'
     | '/_authenticated/vouchers'
+    | '/shop/cart'
+    | '/shop/'
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
+    | '/shop/p/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ShopCartRoute: typeof ShopCartRoute
+  ShopIndexRoute: typeof ShopIndexRoute
+  ShopPIdRoute: typeof ShopPIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -280,6 +368,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop/': {
+      id: '/shop/'
+      path: '/shop'
+      fullPath: '/shop/'
+      preLoaderRoute: typeof ShopIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/cart': {
+      id: '/shop/cart'
+      path: '/shop/cart'
+      fullPath: '/shop/cart'
+      preLoaderRoute: typeof ShopCartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/vouchers': {
       id: '/_authenticated/vouchers'
       path: '/vouchers'
@@ -292,6 +394,20 @@ declare module '@tanstack/react-router' {
       path: '/variants'
       fullPath: '/variants'
       preLoaderRoute: typeof AuthenticatedVariantsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/suppliers': {
+      id: '/_authenticated/suppliers'
+      path: '/suppliers'
+      fullPath: '/suppliers'
+      preLoaderRoute: typeof AuthenticatedSuppliersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -313,6 +429,13 @@ declare module '@tanstack/react-router' {
       path: '/rates'
       fullPath: '/rates'
       preLoaderRoute: typeof AuthenticatedRatesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/purchase-orders': {
+      id: '/_authenticated/purchase-orders'
+      path: '/purchase-orders'
+      fullPath: '/purchase-orders'
+      preLoaderRoute: typeof AuthenticatedPurchaseOrdersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/products': {
@@ -341,6 +464,13 @@ declare module '@tanstack/react-router' {
       path: '/exports'
       fullPath: '/exports'
       preLoaderRoute: typeof AuthenticatedExportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -377,6 +507,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/shop/p/$id': {
+      id: '/shop/p/$id'
+      path: '/shop/p/$id'
+      fullPath: '/shop/p/$id'
+      preLoaderRoute: typeof ShopPIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/vouchers/$id': {
       id: '/_authenticated/vouchers/$id'
@@ -428,13 +565,17 @@ interface AuthenticatedRouteChildren {
   AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedExportsRoute: typeof AuthenticatedExportsRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
+  AuthenticatedPurchaseOrdersRoute: typeof AuthenticatedPurchaseOrdersRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
+  AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedVariantsRoute: typeof AuthenticatedVariantsRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRouteWithChildren
 }
@@ -445,13 +586,17 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedExportsRoute: AuthenticatedExportsRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
+  AuthenticatedPurchaseOrdersRoute: AuthenticatedPurchaseOrdersRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
+  AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedVariantsRoute: AuthenticatedVariantsRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRouteWithChildren,
 }
@@ -464,6 +609,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ShopCartRoute: ShopCartRoute,
+  ShopIndexRoute: ShopIndexRoute,
+  ShopPIdRoute: ShopPIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

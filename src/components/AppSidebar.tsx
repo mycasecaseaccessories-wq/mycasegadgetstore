@@ -16,6 +16,11 @@ import {
   StickyNote,
   Boxes,
   Layers,
+  Wallet,
+  Truck,
+  ClipboardList,
+  Shield,
+  Store,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +36,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { signOut, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { useRoles } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AppSidebar() {
@@ -38,6 +44,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
+  const { isAdmin } = useRoles();
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -48,21 +55,26 @@ export function AppSidebar() {
   });
 
   const items = [
-    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
-    { title: t("nav.rates"), url: "/rates", icon: TrendingUp },
-    { title: t("nav.products"), url: "/products", icon: Package },
-    { title: t("nav.bulkVariants"), url: "/variants", icon: Layers },
-    { title: t("nav.calculator"), url: "/calculator", icon: Calculator },
-    { title: t("nav.orders"), url: "/orders", icon: ShoppingCart },
-    { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt },
-    { title: t("nav.customers"), url: "/customers", icon: Users },
-    { title: t("nav.inventory"), url: "/inventory", icon: Boxes },
-    { title: t("nav.reports"), url: "/reports", icon: BarChart3 },
-    { title: t("nav.analytics"), url: "/analytics", icon: PieChart },
-    { title: t("nav.exports"), url: "/exports", icon: FileDown },
-    { title: t("nav.content"), url: "/content", icon: StickyNote },
-    { title: t("nav.settings"), url: "/settings", icon: Settings },
-  ] as const;
+    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard, admin: false },
+    { title: t("nav.rates"), url: "/rates", icon: TrendingUp, admin: false },
+    { title: t("nav.products"), url: "/products", icon: Package, admin: false },
+    { title: t("nav.bulkVariants"), url: "/variants", icon: Layers, admin: false },
+    { title: t("nav.calculator"), url: "/calculator", icon: Calculator, admin: false },
+    { title: t("nav.orders"), url: "/orders", icon: ShoppingCart, admin: false },
+    { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt, admin: false },
+    { title: t("nav.customers"), url: "/customers", icon: Users, admin: false },
+    { title: t("nav.inventory"), url: "/inventory", icon: Boxes, admin: false },
+    { title: t("nav.suppliers"), url: "/suppliers", icon: Truck, admin: false },
+    { title: t("nav.po"), url: "/purchase-orders", icon: ClipboardList, admin: false },
+    { title: t("nav.expenses"), url: "/expenses", icon: Wallet, admin: true },
+    { title: t("nav.reports"), url: "/reports", icon: BarChart3, admin: true },
+    { title: t("nav.analytics"), url: "/analytics", icon: PieChart, admin: true },
+    { title: t("nav.exports"), url: "/exports", icon: FileDown, admin: true },
+    { title: t("nav.content"), url: "/content", icon: StickyNote, admin: false },
+    { title: t("nav.storefront"), url: "/shop", icon: Store, admin: false },
+    { title: t("nav.team"), url: "/team", icon: Shield, admin: true },
+    { title: t("nav.settings"), url: "/settings", icon: Settings, admin: true },
+  ].filter(i => !i.admin || isAdmin);
 
   const handleLogout = async () => {
     await signOut();
