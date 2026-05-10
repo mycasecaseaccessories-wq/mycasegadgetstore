@@ -11,6 +11,9 @@ import {
   Sparkles,
   Receipt,
   TrendingUp,
+  PieChart,
+  FileDown,
+  StickyNote,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +37,9 @@ const items = [
   { title: "Vouchers", url: "/vouchers", icon: Receipt },
   { title: "Customers", url: "/customers", icon: Users },
   { title: "Reports", url: "/reports", icon: BarChart3 },
+  { title: "Analytics", url: "/analytics", icon: PieChart },
+  { title: "Exports", url: "/exports", icon: FileDown },
+  { title: "Content", url: "/content", icon: StickyNote },
   { title: "Settings", url: "/settings", icon: Settings },
 ] as const;
 
