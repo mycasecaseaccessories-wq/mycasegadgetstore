@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
+import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
   id: '/vouchers',
   path: '/vouchers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedVariantsRoute = AuthenticatedVariantsRouteImport.update({
+  id: '/variants',
+  path: '/variants',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/variants': typeof AuthenticatedVariantsRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/rates'
     | '/reports'
     | '/settings'
+    | '/variants'
     | '/vouchers'
     | '/customers/$id'
     | '/vouchers/$id'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/rates'
     | '/reports'
     | '/settings'
+    | '/variants'
     | '/vouchers'
     | '/customers/$id'
     | '/vouchers/$id'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rates'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/variants'
     | '/_authenticated/vouchers'
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
@@ -273,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/vouchers'
       fullPath: '/vouchers'
       preLoaderRoute: typeof AuthenticatedVouchersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/variants': {
+      id: '/_authenticated/variants'
+      path: '/variants'
+      fullPath: '/variants'
+      preLoaderRoute: typeof AuthenticatedVariantsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -416,6 +435,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedVariantsRoute: typeof AuthenticatedVariantsRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRouteWithChildren
 }
 
@@ -432,6 +452,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedVariantsRoute: AuthenticatedVariantsRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRouteWithChildren,
 }
 
