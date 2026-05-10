@@ -56,6 +56,7 @@ const dict = {
     "nav.po": "ဝယ်ယူမှုအော်ဒါ",
     "nav.team": "အဖွဲ့နှင့် ခွင့်ပြုချက်",
     "nav.storefront": "အများသုံးဆိုင်",
+    "nav.activity": "လှုပ်ရှားမှုမှတ်တမ်း",
     "nav.settings": "ဆက်တင်",
     "common.save": "သိမ်းမည်",
     "common.cancel": "ပယ်ဖျက်",
