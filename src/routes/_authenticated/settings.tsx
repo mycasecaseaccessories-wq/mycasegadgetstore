@@ -74,12 +74,25 @@ function SettingsPage() {
         <CardContent className="space-y-3">
           {s && (
             <>
+              <div className="space-y-1.5">
+                <Label>Logo</Label>
+                <ImageUpload value={s.logo_url} onChange={(url) => setS({ ...s, logo_url: url })} bucket="branding" folder="logos" size="md" />
+              </div>
               <div className="space-y-1.5"><Label>Business Name</Label><Input value={s.business_name ?? ""} onChange={e => setS({ ...s, business_name: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Currency</Label><Input value={s.currency ?? "KS"} onChange={e => setS({ ...s, currency: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Default Waiting Time</Label><Input value={s.default_waiting_time ?? ""} onChange={e => setS({ ...s, default_waiting_time: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5"><Label>Tax %</Label><Input type="number" value={s.tax_percent ?? 0} onChange={e => setS({ ...s, tax_percent: Number(e.target.value) })} /></div>
                 <div className="space-y-1.5"><Label>Service Fee (KS)</Label><Input type="number" value={s.service_fee ?? 0} onChange={e => setS({ ...s, service_fee: Number(e.target.value) })} /></div>
+              </div>
+              <div className="space-y-1.5"><Label>Display Language</Label>
+                <Select value={lang} onValueChange={(v) => { setLang(v as "en" | "mm"); setS({ ...s, language: v }); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="mm">မြန်မာ</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button onClick={saveSettings}><Save className="mr-2 h-4 w-4" />Save</Button>
             </>
