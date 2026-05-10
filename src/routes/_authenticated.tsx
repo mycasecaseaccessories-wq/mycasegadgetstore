@@ -7,11 +7,18 @@ export const Route = createFileRoute("/_authenticated")({ component: AuthLayout 
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/rates": "Rates & Calculator",
   "/products": "Products",
+  "/variants": "Bulk Variants",
   "/calculator": "Product Calculator",
   "/orders": "Orders",
+  "/vouchers": "Vouchers",
   "/customers": "Customers",
+  "/inventory": "Inventory",
   "/reports": "Sales Reports",
+  "/analytics": "Analytics",
+  "/exports": "Exports",
+  "/content": "Content",
   "/settings": "Settings",
 };
 

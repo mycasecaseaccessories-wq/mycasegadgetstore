@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,6 +109,7 @@ function CustomersPage() {
                   <td>{stat?.count ?? 0}</td>
                   <td className="font-medium">{formatKS(stat?.total ?? 0)}</td>
                   <td className="px-4 text-right">
+                    <Button size="icon" variant="ghost" asChild><Link to="/customers/$id" params={{ id: c.id }}><Eye className="h-4 w-4" /></Link></Button>
                     <Button size="icon" variant="ghost" onClick={() => { setForm(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button>
                   </td>

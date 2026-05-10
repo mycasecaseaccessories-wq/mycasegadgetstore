@@ -34,6 +34,14 @@ function VoucherDetailPage() {
     },
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [items, setItems] = useState<Item[]>([]);
@@ -85,8 +93,14 @@ function VoucherDetailPage() {
 
       <Card className="print:shadow-none print:border-0">
         <CardHeader className="border-b">
-          <div className="flex items-center justify-between">
-            <CardTitle>Voucher #{voucher.voucher_no}</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {settings?.logo_url && <img src={settings.logo_url} alt="" className="h-12 w-12 rounded object-contain" />}
+              <div>
+                <CardTitle>{settings?.business_name || "Voucher"}</CardTitle>
+                <p className="text-xs text-muted-foreground">Voucher #{voucher.voucher_no}</p>
+              </div>
+            </div>
             <span className="text-sm text-muted-foreground">{new Date(voucher.issued_at).toLocaleString()}</span>
           </div>
         </CardHeader>

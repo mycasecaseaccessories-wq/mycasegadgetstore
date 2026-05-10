@@ -14,6 +14,8 @@ import {
   PieChart,
   FileDown,
   StickyNote,
+  Boxes,
+  Layers,
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,27 +28,41 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useQuery } from "@tanstack/react-query";
 import { signOut, useAuth } from "@/lib/auth";
-
-const items = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Rates & Calc", url: "/rates", icon: TrendingUp },
-  { title: "Products", url: "/products", icon: Package },
-  { title: "Calculator", url: "/calculator", icon: Calculator },
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Vouchers", url: "/vouchers", icon: Receipt },
-  { title: "Customers", url: "/customers", icon: Users },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Analytics", url: "/analytics", icon: PieChart },
-  { title: "Exports", url: "/exports", icon: FileDown },
-  { title: "Content", url: "/content", icon: StickyNote },
-  { title: "Settings", url: "/settings", icon: Settings },
-] as const;
+import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AppSidebar() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
+  const items = [
+    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { title: t("nav.rates"), url: "/rates", icon: TrendingUp },
+    { title: t("nav.products"), url: "/products", icon: Package },
+    { title: t("nav.bulkVariants"), url: "/variants", icon: Layers },
+    { title: t("nav.calculator"), url: "/calculator", icon: Calculator },
+    { title: t("nav.orders"), url: "/orders", icon: ShoppingCart },
+    { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt },
+    { title: t("nav.customers"), url: "/customers", icon: Users },
+    { title: t("nav.inventory"), url: "/inventory", icon: Boxes },
+    { title: t("nav.reports"), url: "/reports", icon: BarChart3 },
+    { title: t("nav.analytics"), url: "/analytics", icon: PieChart },
+    { title: t("nav.exports"), url: "/exports", icon: FileDown },
+    { title: t("nav.content"), url: "/content", icon: StickyNote },
+    { title: t("nav.settings"), url: "/settings", icon: Settings },
+  ] as const;
 
   const handleLogout = async () => {
     await signOut();
@@ -57,11 +73,15 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
-            <Sparkles className="h-4 w-4" />
-          </div>
+          {settings?.logo_url ? (
+            <img src={settings.logo_url} alt="" className="h-9 w-9 rounded-lg object-cover shadow-sm" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
+              <Sparkles className="h-4 w-4" />
+            </div>
+          )}
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold">My Case</span>
+            <span className="text-sm font-semibold">{settings?.business_name || "My Case"}</span>
             <span className="text-xs text-muted-foreground">Admin Console</span>
           </div>
         </div>
@@ -99,9 +119,9 @@ export function AppSidebar() {
         </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Sign out">
+            <SidebarMenuButton onClick={handleLogout} tooltip={t("common.signOut")}>
               <LogOut className="h-4 w-4" />
-              <span>Sign out</span>
+              <span>{t("common.signOut")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
