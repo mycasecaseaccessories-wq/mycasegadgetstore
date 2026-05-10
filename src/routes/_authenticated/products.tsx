@@ -29,6 +29,7 @@ const empty: Partial<Product> = { name: "", size: "", price: 0, waiting_time: ""
 function ProductsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [variantsFor, setVariantsFor] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>(empty);
 
