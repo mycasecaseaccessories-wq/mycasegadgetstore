@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Receipt,
+  TrendingUp,
 } from "lucide-react";
 import {
   Sidebar,
