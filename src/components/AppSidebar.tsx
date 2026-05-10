@@ -74,6 +74,7 @@ export function AppSidebar() {
     { title: t("nav.content"), url: "/content", icon: StickyNote, admin: false },
     { title: t("nav.storefront"), url: "/shop", icon: Store, admin: false },
     { title: t("nav.team"), url: "/team", icon: Shield, admin: true },
+    { title: t("nav.activity"), url: "/activity", icon: Activity, admin: true },
     { title: t("nav.settings"), url: "/settings", icon: Settings, admin: true },
   ].filter(i => !i.admin || isAdmin);
 
