@@ -142,6 +142,8 @@ function Dashboard() {
         </Card>
       </div>
 
+      <DashboardWidgets />
+
       <Card>
         <CardHeader><CardTitle className="text-base">Recent Orders</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
