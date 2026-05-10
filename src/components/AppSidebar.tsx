@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Shield,
   Store,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
