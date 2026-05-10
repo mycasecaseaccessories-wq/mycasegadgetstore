@@ -10,7 +10,9 @@ import {
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect } from "react";
 
 function NotFoundComponent() {
   return (
