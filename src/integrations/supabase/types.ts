@@ -14,7 +14,239 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total: number
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_note: string | null
+          discount: number
+          extra_fee: number
+          id: string
+          order_date: string
+          order_no: number
+          payment_status: string
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_note?: string | null
+          discount?: number
+          extra_fee?: number
+          id?: string
+          order_date?: string
+          order_no?: number
+          payment_status?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_note?: string | null
+          discount?: number
+          extra_fee?: number
+          id?: string
+          order_date?: string
+          order_no?: number
+          payment_status?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          price: number
+          size: string | null
+          stock_status: string
+          updated_at: string
+          waiting_time: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          price?: number
+          size?: string | null
+          stock_status?: string
+          updated_at?: string
+          waiting_time?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          price?: number
+          size?: string | null
+          stock_status?: string
+          updated_at?: string
+          waiting_time?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          business_name: string | null
+          currency: string | null
+          default_waiting_time: string | null
+          id: string
+          service_fee: number | null
+          tax_percent: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_name?: string | null
+          currency?: string | null
+          default_waiting_time?: string | null
+          id?: string
+          service_fee?: number | null
+          tax_percent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string | null
+          currency?: string | null
+          default_waiting_time?: string | null
+          id?: string
+          service_fee?: number | null
+          tax_percent?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
