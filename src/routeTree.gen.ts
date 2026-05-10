@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShopIndexRouteImport } from './routes/shop/index'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -45,6 +46,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopIndexRoute = ShopIndexRouteImport.update({
+  id: '/shop/',
+  path: '/shop/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
 }
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
 }
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/variants': typeof AuthenticatedVariantsRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/': typeof ShopIndexRoute
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
 }
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop/'
     | '/customers/$id'
     | '/vouchers/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop'
     | '/customers/$id'
     | '/vouchers/$id'
   id:
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/_authenticated/variants'
     | '/_authenticated/vouchers'
+    | '/shop/'
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
   fileRoutesById: FileRoutesById
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ShopIndexRoute: typeof ShopIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/': {
+      id: '/shop/'
+      path: '/shop'
+      fullPath: '/shop/'
+      preLoaderRoute: typeof ShopIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/vouchers': {
@@ -549,6 +569,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ShopIndexRoute: ShopIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
