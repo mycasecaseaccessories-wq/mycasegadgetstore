@@ -67,6 +67,13 @@ function CustomerProfile() {
               {customer.address && <p className="mt-1 text-sm text-muted-foreground">📍 {customer.address}</p>}
               {customer.note && <p className="mt-2 text-sm italic">{customer.note}</p>}
               <p className="mt-2 text-xs text-muted-foreground">Joined {formatDateTime(customer.created_at)}</p>
+              {customer.phone && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" asChild><a href={`tel:${customer.phone}`}><Phone className="mr-1 h-3.5 w-3.5" />Call</a></Button>
+                  <Button size="sm" variant="outline" asChild><a href={`sms:${customer.phone}?body=${encodeURIComponent(`Hello ${customer.name}, `)}`}><MessageCircle className="mr-1 h-3.5 w-3.5" />SMS</a></Button>
+                  <Button size="sm" variant="outline" asChild><a href={`viber://chat?number=${encodeURIComponent(customer.phone.replace(/\s/g, ""))}`} target="_blank" rel="noreferrer">Viber</a></Button>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
