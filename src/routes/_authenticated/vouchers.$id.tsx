@@ -30,7 +30,7 @@ function VoucherDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("vouchers").select("*").eq("id", id).single();
       if (error) throw error;
-      return data as Voucher;
+      return data as unknown as Voucher;
     },
   });
 
