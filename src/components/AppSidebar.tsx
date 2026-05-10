@@ -16,6 +16,11 @@ import {
   StickyNote,
   Boxes,
   Layers,
+  Wallet,
+  Truck,
+  ClipboardList,
+  Shield,
+  Store,
 } from "lucide-react";
 import {
   Sidebar,
