@@ -82,6 +82,10 @@ function ProductsPage() {
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>{form.id ? "Edit" : "New"} Product</DialogTitle></DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label className="mb-1.5 block">Image</Label>
+                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} bucket="product-images" size="md" />
+              </div>
               <div className="sm:col-span-2 space-y-1.5"><Label>Product Name</Label>
                 <Input value={form.name ?? ""} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Diameter / Size</Label>
@@ -92,6 +96,10 @@ function ProductsPage() {
                 <Input value={form.waiting_time ?? ""} onChange={e => setForm({ ...form, waiting_time: e.target.value })} placeholder="e.g. 3-5 days" /></div>
               <div className="space-y-1.5"><Label>Category</Label>
                 <Input value={form.category ?? ""} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Stock In</Label>
+                <Input type="number" value={form.stock_in ?? 0} onChange={e => setForm({ ...form, stock_in: Number(e.target.value) })} /></div>
+              <div className="space-y-1.5"><Label>Low-stock threshold</Label>
+                <Input type="number" value={form.low_stock_threshold ?? 5} onChange={e => setForm({ ...form, low_stock_threshold: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 space-y-1.5"><Label>Stock Status</Label>
                 <Select value={form.stock_status ?? "in_stock"} onValueChange={(v) => setForm({ ...form, stock_status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
