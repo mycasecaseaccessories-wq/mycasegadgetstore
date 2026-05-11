@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PWAStatus } from "@/components/PWAStatus";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
@@ -55,9 +56,10 @@ function AuthLayout() {
             <h1 className="flex-1 text-sm font-semibold">{title}</h1>
             <NotificationBell />
           </header>
-          <main className="flex-1 p-4 md:p-6">
+          <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
             <Outlet />
           </main>
+          <MobileBottomNav />
           <PWAStatus />
         </div>
       </div>
