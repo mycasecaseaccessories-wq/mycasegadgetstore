@@ -20,6 +20,8 @@ const titles: Record<string, string> = {
   "/purchase-orders": "Purchase Orders",
   "/expenses": "Expenses & Profit",
   "/team": "Team & Roles",
+  "/activity": "Activity Log",
+  "/backup": "Backup & Restore",
   "/reports": "Sales Reports",
   "/analytics": "Analytics",
   "/exports": "Exports",
