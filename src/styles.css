@@ -142,3 +142,44 @@
     color: var(--color-foreground);
   }
 }
+
+/* Phase 13 — Print styles: clean voucher / receipt output, hide app chrome. */
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  /* Hide app shell: sidebar, header, bottom nav, popovers, toasts */
+  [data-sidebar], header.sticky, nav.sticky, [data-sonner-toaster], .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  /* Ensure cards are flat for print */
+  .print\:shadow-none { box-shadow: none !important; }
+  .print\:border-0 { border: 0 !important; }
+  /* Avoid breaking rows across pages */
+  tr, .receipt-row { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* Phase 13 — Thermal 80mm receipt mode (apply .receipt-80 to a wrapper) */
+@media print {
+  .receipt-80 {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace !important;
+    font-size: 11px !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .receipt-80 * { color: #000 !important; background: transparent !important; border-color: #000 !important; }
+  .receipt-80 table { width: 100% !important; }
+  .receipt-80 input, .receipt-80 textarea, .receipt-80 select, .receipt-80 button { display: none !important; }
+  .receipt-80 .receipt-value { display: inline !important; }
+  @page { size: 80mm auto; margin: 0; }
+}
+.receipt-value { display: none; }
+
