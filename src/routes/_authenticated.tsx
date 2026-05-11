@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, Navigate, useRouterState } from "@tanstack/rea
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PWAStatus } from "@/components/PWAStatus";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
@@ -51,7 +52,8 @@ function AuthLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
             <SidebarTrigger />
-            <h1 className="text-sm font-semibold">{title}</h1>
+            <h1 className="flex-1 text-sm font-semibold">{title}</h1>
+            <NotificationBell />
           </header>
           <main className="flex-1 p-4 md:p-6">
             <Outlet />
