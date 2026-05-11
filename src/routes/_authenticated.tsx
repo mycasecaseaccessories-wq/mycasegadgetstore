@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { PWAStatus } from "@/components/PWAStatus";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { CommandPalette, CommandPaletteTrigger } from "@/components/CommandPalette";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
@@ -54,6 +55,7 @@ function AuthLayout() {
           <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
             <SidebarTrigger />
             <h1 className="flex-1 text-sm font-semibold">{title}</h1>
+            <CommandPaletteTrigger />
             <NotificationBell />
           </header>
           <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
@@ -61,6 +63,7 @@ function AuthLayout() {
           </main>
           <MobileBottomNav />
           <PWAStatus />
+          <CommandPalette />
         </div>
       </div>
     </SidebarProvider>
