@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, Navigate, useRouterState } from "@tanstack/react-router";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { PWAStatus } from "@/components/PWAStatus";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
@@ -53,6 +54,7 @@ function AuthLayout() {
           <main className="flex-1 p-4 md:p-6">
             <Outlet />
           </main>
+          <PWAStatus />
         </div>
       </div>
     </SidebarProvider>
