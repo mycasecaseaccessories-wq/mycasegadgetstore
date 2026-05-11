@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Save, Printer, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, Printer, ArrowLeft, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { printThermalReceipt } from "@/lib/print-receipt";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
@@ -85,8 +86,18 @@ function VoucherDetailPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={() => navigate({ to: "/vouchers" })}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => printThermalReceipt({
+            voucher_no: voucher.voucher_no,
+            business_name: settings?.business_name,
+            logo_url: settings?.logo_url,
+            customer_name: name, customer_phone: phone,
+            items, subtotal, discount, extra_fee: extra, total, paid,
+            payment_method: method, note, issued_at: voucher.issued_at,
+          })}>
+            <ReceiptText className="mr-2 h-4 w-4" />80mm Receipt
+          </Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print A4</Button>
           <Button onClick={save}><Save className="mr-2 h-4 w-4" />Save</Button>
         </div>
       </div>
