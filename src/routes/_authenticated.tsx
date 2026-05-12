@@ -40,6 +40,16 @@ function AuthLayout() {
   const { session, loading } = useAuth();
   const path = useRouterState({ select: (r) => r.location.pathname });
 
+  const { data: currencySetting } = useQuery({
+    queryKey: ["settings", "currency"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("currency").limit(1).maybeSingle();
+      return data?.currency ?? "KS";
+    },
+  });
+  useEffect(() => { if (currencySetting) setCurrency(currencySetting); }, [currencySetting]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
