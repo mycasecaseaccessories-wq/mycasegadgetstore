@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { printThermalReceipt } from "@/lib/print-receipt";
+import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
