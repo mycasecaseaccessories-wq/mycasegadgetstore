@@ -6,6 +6,10 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/CommandPalette";
 import { useAuth } from "@/lib/auth";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { setCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
 
