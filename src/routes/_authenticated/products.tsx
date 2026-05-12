@@ -34,6 +34,7 @@ function ProductsPage() {
   const [search, setSearch] = useState("");
   const [variantsFor, setVariantsFor] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>(empty);
 
   const { data: products = [], isLoading } = useQuery({
