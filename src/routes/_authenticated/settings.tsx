@@ -11,7 +11,10 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { setCurrency } from "@/lib/format";
 import { toast } from "sonner";
+
+const CURRENCIES = ["KS", "MMK", "THB", "USD", "EUR", "SGD", "CNY", "JPY", "MYR", "VND"];
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -79,7 +82,28 @@ function SettingsPage() {
                 <ImageUpload value={s.logo_url} onChange={(url) => setS({ ...s, logo_url: url })} bucket="branding" folder="logos" size="md" />
               </div>
               <div className="space-y-1.5"><Label>Business Name</Label><Input value={s.business_name ?? ""} onChange={e => setS({ ...s, business_name: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Currency</Label><Input value={s.currency ?? "KS"} onChange={e => setS({ ...s, currency: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Currency</Label>
+                <Select
+                  value={CURRENCIES.includes(s.currency) ? s.currency : "__custom"}
+                  onValueChange={(v) => {
+                    if (v === "__custom") return;
+                    setS({ ...s, currency: v });
+                    setCurrency(v);
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    <SelectItem value="__custom">Custom…</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  className="mt-2"
+                  placeholder="Custom code (e.g. AUD)"
+                  value={s.currency ?? ""}
+                  onChange={(e) => { setS({ ...s, currency: e.target.value }); setCurrency(e.target.value); }}
+                />
+              </div>
               <div className="space-y-1.5"><Label>Default Waiting Time</Label><Input value={s.default_waiting_time ?? ""} onChange={e => setS({ ...s, default_waiting_time: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5"><Label>Tax %</Label><Input type="number" value={s.tax_percent ?? 0} onChange={e => setS({ ...s, tax_percent: Number(e.target.value) })} /></div>
