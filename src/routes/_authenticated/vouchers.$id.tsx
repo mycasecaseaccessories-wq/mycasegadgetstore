@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { printThermalReceipt } from "@/lib/print-receipt";
+import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
@@ -97,6 +98,12 @@ function VoucherDetailPage() {
           })}>
             <ReceiptText className="mr-2 h-4 w-4" />80mm Receipt
           </Button>
+          <ShareVoucherMenu data={{
+            voucher_no: voucher.voucher_no,
+            business_name: settings?.business_name,
+            customer_name: name, customer_phone: phone,
+            total, paid, issued_at: voucher.issued_at,
+          }} />
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print A4</Button>
           <Button onClick={save}><Save className="mr-2 h-4 w-4" />Save</Button>
         </div>
