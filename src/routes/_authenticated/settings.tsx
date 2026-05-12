@@ -11,7 +11,10 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { setCurrency } from "@/lib/format";
 import { toast } from "sonner";
+
+const CURRENCIES = ["KS", "MMK", "THB", "USD", "EUR", "SGD", "CNY", "JPY", "MYR", "VND"];
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
