@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
+import { RecurringExpenses } from "@/components/RecurringExpenses";
 
 export const Route = createFileRoute("/_authenticated/expenses")({ component: ExpensesPage });
 
@@ -108,6 +109,8 @@ function ExpensesPage() {
           {Object.keys(byCat).length === 0 && <p className="col-span-full text-sm text-muted-foreground">No expenses yet</p>}
         </CardContent>
       </Card>
+
+      <RecurringExpenses />
 
       <Card><CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
