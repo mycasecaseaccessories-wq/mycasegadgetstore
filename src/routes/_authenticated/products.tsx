@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle, ScanLine } from "lucide-react";
 import { VariantsDialog } from "@/components/VariantsDialog";
 import { ImageUpload } from "@/components/ImageUpload";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ function ProductsPage() {
   const [search, setSearch] = useState("");
   const [variantsFor, setVariantsFor] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>(empty);
 
   const { data: products = [], isLoading } = useQuery({
@@ -73,8 +75,19 @@ function ProductsPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name, size, category…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by name, size, category…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 pr-10" />
+          <Button
+            type="button" size="icon" variant="ghost"
+            className="absolute right-1 top-1 h-7 w-7"
+            onClick={() => setScanOpen(true)}
+            title="Scan barcode"
+          ><ScanLine className="h-4 w-4" /></Button>
         </div>
+        <BarcodeScanner
+          open={scanOpen}
+          onOpenChange={setScanOpen}
+          onDetected={(code) => { setSearch(code); toast.success(`Scanned: ${code}`); }}
+        />
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm(empty); }}>
           <DialogTrigger asChild>
             <Button onClick={() => setForm(empty)}><Plus className="mr-2 h-4 w-4" />Add Product</Button>
