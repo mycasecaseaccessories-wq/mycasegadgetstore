@@ -98,6 +98,12 @@ function VoucherDetailPage() {
           })}>
             <ReceiptText className="mr-2 h-4 w-4" />80mm Receipt
           </Button>
+          <ShareVoucherMenu data={{
+            voucher_no: voucher.voucher_no,
+            business_name: settings?.business_name,
+            customer_name: name, customer_phone: phone,
+            total, paid, issued_at: voucher.issued_at,
+          }} />
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print A4</Button>
           <Button onClick={save}><Save className="mr-2 h-4 w-4" />Save</Button>
         </div>
