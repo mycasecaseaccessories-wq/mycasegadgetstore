@@ -110,6 +110,8 @@ function ExpensesPage() {
         </CardContent>
       </Card>
 
+      <RecurringExpenses />
+
       <Card><CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
