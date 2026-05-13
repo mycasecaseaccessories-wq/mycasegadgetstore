@@ -23,6 +23,7 @@ import {
   Store,
   Activity,
   DatabaseBackup,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -70,6 +71,7 @@ export function AppSidebar() {
     { title: t("nav.suppliers"), url: "/suppliers", icon: Truck, admin: false },
     { title: t("nav.po"), url: "/purchase-orders", icon: ClipboardList, admin: false },
     { title: "Ledger", url: "/ledger", icon: ClipboardList, admin: false },
+    { title: "Payment Methods", url: "/payment-methods", icon: CreditCard, admin: true },
     { title: t("nav.expenses"), url: "/expenses", icon: Wallet, admin: true },
     { title: t("nav.reports"), url: "/reports", icon: BarChart3, admin: true },
     { title: t("nav.analytics"), url: "/analytics", icon: PieChart, admin: true },

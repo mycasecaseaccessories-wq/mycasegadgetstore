@@ -322,6 +322,48 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          note: string | null
+          provider: string
+          qr_url: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          provider: string
+          qr_url?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          provider?: string
+          qr_url?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_variants: {
         Row: {
           color: string | null
@@ -676,6 +718,10 @@ export type Database = {
           id: string
           language: string
           logo_url: string | null
+          loyalty_earn_per_amount: number
+          loyalty_enabled: boolean
+          loyalty_min_redeem: number
+          loyalty_redeem_value: number
           minimum_price_buffer: number | null
           service_fee: number | null
           tax_percent: number | null
@@ -688,6 +734,10 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
+          loyalty_earn_per_amount?: number
+          loyalty_enabled?: boolean
+          loyalty_min_redeem?: number
+          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -700,6 +750,10 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
+          loyalty_earn_per_amount?: number
+          loyalty_enabled?: boolean
+          loyalty_min_redeem?: number
+          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null

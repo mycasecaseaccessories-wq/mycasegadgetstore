@@ -69,6 +69,11 @@ function CartPage() {
 
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
+    if (!user) {
+      toast.error("Please sign in to place an order");
+      nav({ to: "/shop/login" });
+      return;
+    }
     if (!name || !phone) return toast.error("Name & phone required");
     setSubmitting(true);
     try {
@@ -77,23 +82,12 @@ function CartPage() {
         customer_phone: phone,
         delivery_note: address,
         subtotal,
-        // Send pre-discount total; server's redeemMyPoints will apply discount + recompute total.
         total: subtotal,
         discount: 0,
         status: "pending",
         payment_status: "unpaid",
+        user_id: user.id,
       };
-      if (user) {
-        orderPayload.user_id = user.id;
-      } else {
-        // Anon checkout: create customer row first (RLS requires customer_id on anon orders)
-        const { data: cust } = await supabase
-          .from("customers")
-          .insert({ name, phone, address })
-          .select("id")
-          .single();
-        if (cust?.id) orderPayload.customer_id = cust.id;
-      }
 
       const { data: order, error } = await supabase.from("orders").insert(orderPayload).select().single();
       if (error || !order) throw error ?? new Error("Failed");
@@ -110,40 +104,23 @@ function CartPage() {
       );
       if (itemsErr) throw itemsErr;
 
-      // Loyalty: redeem (if requested) + award
-      if (user && phone) {
+      // Loyalty: redeem (if requested) + award. Server reads config from settings.
+      if (phone) {
         if (redeemPts > 0) {
           try {
-            await redeemFn({
-              data: {
-                orderId: order.id,
-                phone,
-                points: redeemPts,
-                redeemValue: loyaltyCfg.redeemValue,
-                minRedeem: loyaltyCfg.minRedeem,
-              },
-            });
+            await redeemFn({ data: { orderId: order.id, phone, points: redeemPts } });
           } catch (e: any) {
             toast.error(`Redeem skipped: ${e?.message ?? "failed"}`);
           }
         }
-        if (loyaltyCfg.enabled && loyaltyCfg.earnPerAmount > 0) {
-          try {
-            await awardFn({
-              data: {
-                orderId: order.id,
-                phone,
-                amount: total,
-                earnPerAmount: loyaltyCfg.earnPerAmount,
-              },
-            });
-          } catch { /* non-fatal */ }
-        }
+        try {
+          await awardFn({ data: { orderId: order.id, phone, amount: total } });
+        } catch { /* non-fatal */ }
       }
 
       clearCart();
       toast.success(`Order #${order.order_no} placed!`);
-      nav({ to: user ? "/shop/account" : "/shop" });
+      nav({ to: "/shop/account" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {

@@ -20,13 +20,13 @@ function ProductPage() {
   const { data: product } = useQuery({
     queryKey: ["public-product", id],
     queryFn: async () =>
-      (await supabase.from("products").select("*").eq("id", id).eq("status", "ACTIVE").maybeSingle()).data,
+      (await supabase.from("products").select("id, name, size, price, waiting_time, stock_status, category, note, product_code, brand, status, stock_in, sold_qty, thb_price, final_sell_mmk, image_url").eq("id", id).eq("status", "ACTIVE").maybeSingle()).data,
   });
 
   const { data: variants = [] } = useQuery({
     queryKey: ["public-variants", id],
     queryFn: async () =>
-      (await supabase.from("product_variants").select("*").eq("product_id", id).eq("status", "ACTIVE")).data ?? [],
+      (await supabase.from("product_variants").select("id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, note").eq("product_id", id).eq("status", "ACTIVE")).data ?? [],
   });
 
   const { data: related = [] } = useQuery({
