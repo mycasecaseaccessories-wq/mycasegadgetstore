@@ -375,7 +375,7 @@ function POPage() {
       {/* Monthly summary */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Card><CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">PO Count ({monthFilter})</div>
+          <div className="text-xs text-muted-foreground">PO Count ({viewMode === "month" ? monthFilter : yearFilter})</div>
           <div className="mt-1 text-xl font-semibold">{monthly.count}</div>
           <div className="text-xs text-muted-foreground">{monthly.lines} lines · {monthly.arrived} arrived · {monthly.pending} pending</div>
         </CardContent></Card>
