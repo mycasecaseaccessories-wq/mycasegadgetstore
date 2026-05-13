@@ -248,26 +248,42 @@ function ProductGrid({ products }: { products: any[] }) {
 function ProductCard({ p, className = "" }: { p: any; className?: string }) {
   const stock = (p.stock_in ?? 0) - (p.sold_qty ?? 0);
   const price = priceOf(p);
+  const [wished, setWished] = useState(false);
+  useEffect(() => {
+    setWished(isWished(p.id));
+    const h = () => setWished(isWished(p.id));
+    window.addEventListener("wishlist-updated", h);
+    return () => window.removeEventListener("wishlist-updated", h);
+  }, [p.id]);
   return (
     <Card className={`group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg ${className}`}>
-      <Link to="/shop/p/$id" params={{ id: p.id }}>
-        <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          <StorageImage
-            src={p.image_url}
-            alt={p.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            fallback={<div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>}
-          />
-          {stock <= 0 && (
-            <Badge className="absolute left-2 top-2 bg-red-500/90 text-white">Out</Badge>
-          )}
-        </div>
-        <CardContent className="space-y-1 p-3">
-          {p.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>}
-          <p className="line-clamp-2 text-sm font-medium leading-tight">{p.name}</p>
-          <p className="pt-1 font-semibold text-primary">{formatKS(price)}</p>
-        </CardContent>
-      </Link>
+      <div className="relative">
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p.id); }}
+          aria-label="Toggle wishlist"
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur transition-colors hover:bg-background"
+        >
+          <Heart className={`h-4 w-4 ${wished ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+        </button>
+        <Link to="/shop/p/$id" params={{ id: p.id }}>
+          <div className="relative aspect-square w-full overflow-hidden bg-muted">
+            <StorageImage
+              src={p.image_url}
+              alt={p.name}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fallback={<div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>}
+            />
+            {stock <= 0 && (
+              <Badge className="absolute left-2 top-2 bg-red-500/90 text-white">Out</Badge>
+            )}
+          </div>
+          <CardContent className="space-y-1 p-3">
+            {p.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>}
+            <p className="line-clamp-2 text-sm font-medium leading-tight">{p.name}</p>
+            <p className="pt-1 font-semibold text-primary">{formatKS(price)}</p>
+          </CardContent>
+        </Link>
+      </div>
     </Card>
   );
 }
