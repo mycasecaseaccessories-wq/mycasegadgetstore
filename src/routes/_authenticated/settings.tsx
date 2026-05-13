@@ -138,6 +138,10 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="lg:col-span-2">
+        <LoyaltyPanel />
+      </div>
     </div>
   );
 }
