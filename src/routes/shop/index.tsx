@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { StorageImage } from "@/components/StorageImage";
 
 export const Route = createFileRoute("/shop/")({ component: Storefront });
 
