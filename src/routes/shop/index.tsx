@@ -93,6 +93,12 @@ function Storefront() {
             <span className="font-semibold">{settings?.business_name ?? "Shop"}</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link to="/shop/track" className="hidden sm:inline-flex h-9 items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent">
+              <MapPin className="h-4 w-4" />Track
+            </Link>
+            <Link to="/shop/wishlist" className="inline-flex h-9 items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent">
+              <Heart className="h-4 w-4" /><span className="hidden sm:inline">Wishlist</span>
+            </Link>
             <ShopAccountButton />
             <CartBadge />
           </div>
