@@ -61,7 +61,7 @@ function CartPage() {
   }, [user, phone, fetchLoyalty]);
 
   const subtotal = cartTotal(items);
-  const discount = redeemPts * loyaltyCfg.redeemValue;
+  const discount = redeemPts >= loyaltyCfg.minRedeem ? redeemPts * loyaltyCfg.redeemValue : 0;
   const total = Math.max(0, subtotal - discount);
   const canRedeem =
     !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
