@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { getCart, updateQty, removeFromCart, clearCart, cartTotal, type CartItem } from "@/lib/cart";
 import { toast } from "sonner";
+import { StorageImage } from "@/components/StorageImage";
 
 export const Route = createFileRoute("/shop/cart")({ component: CartPage });
 
