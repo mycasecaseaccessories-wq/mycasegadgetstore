@@ -509,6 +509,7 @@ export type Database = {
       }
       purchase_order_items: {
         Row: {
+          cargo_status: string
           created_at: string
           id: string
           line_total: number
@@ -516,9 +517,13 @@ export type Database = {
           product_id: string | null
           product_name: string
           quantity: number
+          thb_price: number | null
+          tracking_code: string | null
           unit_cost: number
+          variant: string | null
         }
         Insert: {
+          cargo_status?: string
           created_at?: string
           id?: string
           line_total?: number
@@ -526,9 +531,13 @@ export type Database = {
           product_id?: string | null
           product_name: string
           quantity?: number
+          thb_price?: number | null
+          tracking_code?: string | null
           unit_cost?: number
+          variant?: string | null
         }
         Update: {
+          cargo_status?: string
           created_at?: string
           id?: string
           line_total?: number
@@ -536,7 +545,10 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           quantity?: number
+          thb_price?: number | null
+          tracking_code?: string | null
           unit_cost?: number
+          variant?: string | null
         }
         Relationships: [
           {
@@ -558,6 +570,8 @@ export type Database = {
       purchase_orders: {
         Row: {
           created_at: string
+          currency: string
+          exchange_rate: number | null
           id: string
           note: string | null
           ordered_at: string
@@ -566,11 +580,14 @@ export type Database = {
           status: string
           supplier_id: string | null
           supplier_name: string | null
+          thb_total: number
           total: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          currency?: string
+          exchange_rate?: number | null
           id?: string
           note?: string | null
           ordered_at?: string
@@ -579,11 +596,14 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
+          thb_total?: number
           total?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          currency?: string
+          exchange_rate?: number | null
           id?: string
           note?: string | null
           ordered_at?: string
@@ -592,6 +612,7 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
+          thb_total?: number
           total?: number
           updated_at?: string
         }
