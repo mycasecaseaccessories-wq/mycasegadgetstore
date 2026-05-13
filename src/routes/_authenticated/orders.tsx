@@ -66,12 +66,32 @@ function OrdersPage() {
 
   const save = async () => {
     if (!editing) return;
+    const original = orders.find(o => o.id === editing.id);
     const { id, order_no, created_at, updated_at, ...payload } = editing;
+
+    // Award points when transitioning to paid/completed (and not already awarded)
+    const becomesPaid =
+      (editing.payment_status === "paid" || editing.status === "completed") &&
+      !(original?.payment_status === "paid" || original?.status === "completed") &&
+      Number(editing.points_earned ?? 0) === 0;
+
+    let earned = 0;
+    if (becomesPaid) {
+      const key = customerKey({ phone: editing.customer_phone, id: editing.customer_id });
+      if (key) {
+        earned = await awardForPurchase(key, Number(editing.total ?? 0), editing.id, {
+          id: editing.customer_id, name: editing.customer_name, phone: editing.customer_phone,
+        });
+        (payload as any).points_earned = earned;
+      }
+    }
+
     const { error } = await supabase.from("orders").update(payload).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Updated");
+    toast.success(earned > 0 ? `Updated · +${earned} pts awarded` : "Updated");
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["orders"] });
+    qc.invalidateQueries({ queryKey: ["loyalty_balances"] });
   };
 
   const remove = async (id: string) => {
