@@ -13,6 +13,7 @@ import { formatKS } from "@/lib/format";
 import { printThermalReceipt } from "@/lib/print-receipt";
 import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
+import { StorageImage } from "@/components/StorageImage";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
 
