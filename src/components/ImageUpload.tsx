@@ -42,7 +42,7 @@ export function ImageUpload({ value, onChange, bucket, folder = "", className = 
       <div className={`relative flex ${dim} items-center justify-center overflow-hidden rounded-lg border bg-muted`}>
         {value ? (
           <>
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <StorageImage src={value} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
               onClick={() => onChange(null)}
