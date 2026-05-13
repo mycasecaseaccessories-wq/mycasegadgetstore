@@ -5,11 +5,13 @@ import { PWAStatus } from "@/components/PWAStatus";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/CommandPalette";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { setCurrency } from "@/lib/format";
+import { applyTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthLayout });
 
@@ -49,6 +51,7 @@ function AuthLayout() {
     },
   });
   useEffect(() => { if (currencySetting) setCurrency(currencySetting); }, [currencySetting]);
+  useEffect(() => { applyTheme(); }, []);
 
   if (loading) {
     return (
@@ -70,6 +73,7 @@ function AuthLayout() {
             <SidebarTrigger />
             <h1 className="flex-1 text-sm font-semibold">{title}</h1>
             <CommandPaletteTrigger />
+            <ThemeToggle />
             <NotificationBell />
           </header>
           <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
