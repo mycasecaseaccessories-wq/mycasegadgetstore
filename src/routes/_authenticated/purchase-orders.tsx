@@ -452,7 +452,28 @@ function POPage() {
             </tr>
           </thead>
           <tbody>
-            {(pos as any[]).length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No purchase orders this month</td></tr>}
+            {(pos as any[]).length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No purchase orders</td></tr>}
+            {(() => {
+              const groups = new Map<string, any[]>();
+              for (const p of pos as any[]) {
+                const key = viewMode === "year" ? String(p.ordered_at ?? "").slice(0, 7) : "_all";
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(p);
+              }
+              return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0])).flatMap(([gk, list]) => {
+                const sumKs = list.reduce((s, p) => s + Number(p.total ?? 0), 0);
+                const sumThb = list.reduce((s, p) => s + Number(p.thb_total ?? 0), 0);
+                const sumOwed = list.reduce((s, p) => s + Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0)), 0);
+                const header = viewMode === "year" ? (
+                  <tr key={`gh-${gk}`} className="border-t bg-muted/40">
+                    <td colSpan={9} className="px-4 py-2 text-xs font-semibold">
+                      {gk} · {list.length} POs · KS {formatMoney(sumKs)}{sumThb > 0 ? ` · ${fmtTHB(sumThb)}` : ""}{sumOwed > 0 ? ` · owe ${formatMoney(sumOwed)}` : ""}
+                    </td>
+                  </tr>
+                ) : null;
+                return [header, ...list.map((p) => null)].filter(Boolean) as any;
+              });
+            })()}
             {(pos as any[]).map((p) => {
               const isOpen = !!expanded[p.id];
               const owed = Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0));
