@@ -331,8 +331,8 @@ function POPage() {
             {(pos as any[]).map((p) => {
               const isOpen = !!expanded[p.id];
               return (
-                <>
-                  <tr key={p.id} className="border-t">
+                <Fragment key={p.id}>
+                  <tr className="border-t">
                     <td className="px-2">
                       <Button size="icon" variant="ghost" onClick={() => setExpanded({ ...expanded, [p.id]: !isOpen })}>
                         {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
