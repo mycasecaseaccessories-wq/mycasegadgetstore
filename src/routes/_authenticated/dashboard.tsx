@@ -88,6 +88,28 @@ function Dashboard() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 6);
 
+  // Monthly P&L
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const monthOrders = orders.filter(o => o.status !== "cancelled" && new Date(o.created_at) >= monthStart);
+  const monthRevenue = monthOrders.reduce((s, o) => s + Number(o.total), 0);
+  const monthCOGS = (data?.poItems ?? []).reduce((s, p) => s + Number(p.unit_cost) * Number(p.quantity), 0);
+  const monthExpenses = (data?.expenses ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const monthProfit = monthRevenue - monthCOGS - monthExpenses;
+
+  // Low stock alerts
+  const lowStock = (data?.products ?? []).filter((p: any) => {
+    const remaining = (p.stock_in ?? 0) - (p.sold_qty ?? 0);
+    return remaining <= (p.low_stock_threshold ?? 5);
+  }).map((p: any) => ({ ...p, remaining: (p.stock_in ?? 0) - (p.sold_qty ?? 0) }))
+    .sort((a: any, b: any) => a.remaining - b.remaining);
+
+  // Best sellers by quantity
+  const qtyMap = new Map<string, number>();
+  for (const it of data?.items ?? []) {
+    qtyMap.set(it.product_name, (qtyMap.get(it.product_name) ?? 0) + Number(it.quantity));
+  }
+  const bestByQty = Array.from(qtyMap.entries()).map(([name, qty]) => ({ name, qty })).sort((a, b) => b.qty - a.qty).slice(0, 10);
+
   const stats = [
     { label: "Total Revenue", value: formatKS(totalRevenue), icon: TrendingUp, accent: "from-primary to-accent" },
     { label: "Today's Revenue", value: formatKS(todayRevenue), icon: Wallet, accent: "from-emerald-500 to-teal-500" },
