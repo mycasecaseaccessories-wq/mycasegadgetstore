@@ -143,7 +143,33 @@ function ReportsPage() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
                   <XAxis type="number" className="text-xs" tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
                   <YAxis type="category" dataKey="name" width={140} className="text-xs" tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => formatKS(v)} contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <Tooltip
+                    cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload as { name: string; qty: number; total: number };
+                      const avg = p.qty > 0 ? p.total / p.qty : 0;
+                      return (
+                        <div className="rounded-lg border bg-popover p-3 shadow-md text-xs min-w-[180px]">
+                          <p className="font-semibold text-sm mb-2 truncate">{p.name}</p>
+                          <div className="space-y-1">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Qty Sold</span>
+                              <span className="font-medium">{p.qty.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Revenue</span>
+                              <span className="font-medium text-primary">{formatKS(p.total)}</span>
+                            </div>
+                            <div className="flex justify-between gap-4 border-t pt-1 mt-1">
+                              <span className="text-muted-foreground">Avg / unit</span>
+                              <span className="font-medium">{formatKS(avg)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
                   <Bar dataKey="total" fill="var(--primary)" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
