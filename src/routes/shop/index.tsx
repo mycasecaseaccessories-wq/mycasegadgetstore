@@ -67,11 +67,12 @@ function Storefront() {
               <Card key={p.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
                 <Link to="/shop/p/$id" params={{ id: p.id }}>
                   <div className="aspect-square w-full overflow-hidden bg-muted">
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>
-                    )}
+                    <StorageImage
+                      src={p.image_url}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      fallback={<div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>}
+                    />
                   </div>
                   <CardContent className="space-y-1 p-3">
                     {p.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>}
