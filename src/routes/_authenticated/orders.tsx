@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS, formatDateTime } from "@/lib/format";
+import { awardForPurchase, customerKey } from "@/lib/loyalty";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/orders")({ component: OrdersPage });
@@ -65,12 +66,32 @@ function OrdersPage() {
 
   const save = async () => {
     if (!editing) return;
+    const original = orders.find(o => o.id === editing.id);
     const { id, order_no, created_at, updated_at, ...payload } = editing;
+
+    // Award points when transitioning to paid/completed (and not already awarded)
+    const becomesPaid =
+      (editing.payment_status === "paid" || editing.status === "completed") &&
+      !(original?.payment_status === "paid" || original?.status === "completed") &&
+      Number(editing.points_earned ?? 0) === 0;
+
+    let earned = 0;
+    if (becomesPaid) {
+      const key = customerKey({ phone: editing.customer_phone, id: editing.customer_id });
+      if (key) {
+        earned = await awardForPurchase(key, Number(editing.total ?? 0), editing.id, {
+          id: editing.customer_id, name: editing.customer_name, phone: editing.customer_phone,
+        });
+        (payload as any).points_earned = earned;
+      }
+    }
+
     const { error } = await supabase.from("orders").update(payload).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Updated");
+    toast.success(earned > 0 ? `Updated · +${earned} pts awarded` : "Updated");
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["orders"] });
+    qc.invalidateQueries({ queryKey: ["loyalty_balances"] });
   };
 
   const remove = async (id: string) => {
@@ -100,10 +121,10 @@ function OrdersPage() {
       <Card><CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr><th className="px-4 py-3">#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Payment</th><th>Date</th><th className="px-4 text-right">Actions</th></tr>
+            <tr><th className="px-4 py-3">#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Payment</th><th>Points</th><th>Date</th><th className="px-4 text-right">Actions</th></tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
             {filtered.map(o => (
               <tr key={o.id} className="border-t">
                 <td className="px-4 py-3 font-medium">#{o.order_no}</td>
@@ -112,6 +133,12 @@ function OrdersPage() {
                 <td className="font-medium">{formatKS(o.total)}</td>
                 <td><Badge variant="outline" className={statusColors[o.status]}>{o.status}</Badge></td>
                 <td className="text-muted-foreground">{o.payment_status}</td>
+                <td className="text-xs">
+                  {Number(o.points_earned ?? 0) > 0 && <span className="text-emerald-600">+{o.points_earned}</span>}
+                  {Number(o.points_earned ?? 0) > 0 && Number(o.points_redeemed ?? 0) > 0 && " / "}
+                  {Number(o.points_redeemed ?? 0) > 0 && <span className="text-amber-600">-{o.points_redeemed}</span>}
+                  {!Number(o.points_earned ?? 0) && !Number(o.points_redeemed ?? 0) && <span className="text-muted-foreground">—</span>}
+                </td>
                 <td className="text-muted-foreground">{formatDateTime(o.created_at)}</td>
                 <td className="px-4 text-right">
                   <Button size="icon" variant="ghost" onClick={() => setViewing(o)}><Eye className="h-4 w-4" /></Button>
@@ -183,7 +210,13 @@ function OrdersPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatKS(viewing.subtotal)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span>-{formatKS(viewing.discount)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Extra fee</span><span>+{formatKS(viewing.extra_fee)}</span></div>
+                {Number(viewing.points_redeemed ?? 0) > 0 && (
+                  <div className="flex justify-between text-amber-600"><span>Points redeemed ({viewing.points_redeemed} pts)</span><span>-{formatKS(viewing.points_value)}</span></div>
+                )}
                 <div className="flex justify-between font-semibold"><span>Total</span><span>{formatKS(viewing.total)}</span></div>
+                {Number(viewing.points_earned ?? 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600 text-xs pt-1"><span>Points earned</span><span>+{viewing.points_earned} pts</span></div>
+                )}
               </div>
               {viewing.delivery_note && <div className="rounded bg-muted p-2 text-xs">{viewing.delivery_note}</div>}
             </div>

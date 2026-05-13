@@ -110,6 +110,69 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_balances: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          customer_key: string
+          customer_name: string | null
+          customer_phone: string | null
+          points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          customer_key: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          customer_key?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          customer_key: string
+          delta: number
+          id: string
+          kind: string
+          note: string | null
+          order_id: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          customer_key: string
+          delta: number
+          id?: string
+          kind: string
+          note?: string | null
+          order_id?: string | null
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          customer_key?: string
+          delta?: number
+          id?: string
+          kind?: string
+          note?: string | null
+          order_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           body: string | null
@@ -198,6 +261,9 @@ export type Database = {
           order_date: string
           order_no: number
           payment_status: string
+          points_earned: number
+          points_redeemed: number
+          points_value: number
           status: string
           subtotal: number
           total: number
@@ -215,6 +281,9 @@ export type Database = {
           order_date?: string
           order_no?: number
           payment_status?: string
+          points_earned?: number
+          points_redeemed?: number
+          points_value?: number
           status?: string
           subtotal?: number
           total?: number
@@ -232,6 +301,9 @@ export type Database = {
           order_date?: string
           order_no?: number
           payment_status?: string
+          points_earned?: number
+          points_redeemed?: number
+          points_value?: number
           status?: string
           subtotal?: number
           total?: number
