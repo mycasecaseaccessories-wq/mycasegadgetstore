@@ -61,7 +61,7 @@ function CartPage() {
   }, [user, phone, fetchLoyalty]);
 
   const subtotal = cartTotal(items);
-  const discount = redeemPts * loyaltyCfg.redeemValue;
+  const discount = redeemPts >= loyaltyCfg.minRedeem ? redeemPts * loyaltyCfg.redeemValue : 0;
   const total = Math.max(0, subtotal - discount);
   const canRedeem =
     !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
@@ -77,7 +77,9 @@ function CartPage() {
         customer_phone: phone,
         delivery_note: address,
         subtotal,
-        total,
+        // Send pre-discount total; server's redeemMyPoints will apply discount + recompute total.
+        total: subtotal,
+        discount: 0,
         status: "pending",
         payment_status: "unpaid",
       };
