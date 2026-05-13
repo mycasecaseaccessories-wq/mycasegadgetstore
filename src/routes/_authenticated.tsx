@@ -27,6 +27,7 @@ const titles: Record<string, string> = {
   "/inventory": "Inventory",
   "/suppliers": "Suppliers",
   "/purchase-orders": "Purchase Orders",
+  "/ledger": "Ledger (အဝယ်/အရောင်း)",
   "/expenses": "Expenses & Profit",
   "/team": "Team & Roles",
   "/activity": "Activity Log",
