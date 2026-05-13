@@ -454,106 +454,113 @@ function POPage() {
           <tbody>
             {(pos as any[]).length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No purchase orders</td></tr>}
             {(() => {
+              const renderRow = (p: any) => {
+                const isOpen = !!expanded[p.id];
+                const owed = Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0));
+                return (
+                  <Fragment key={p.id}>
+                    <tr className="border-t">
+                      <td className="px-2">
+                        <Button size="icon" variant="ghost" onClick={() => setExpanded({ ...expanded, [p.id]: !isOpen })}>
+                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </td>
+                      <td className="px-4 py-3 font-medium">#{p.po_no}</td>
+                      <td>{p.supplier_name ?? "—"}</td>
+                      <td className="text-muted-foreground">{formatDate(p.ordered_at)}</td>
+                      <td><Badge variant="outline">{p.currency}{p.exchange_rate ? ` @ ${p.exchange_rate}` : ""}</Badge></td>
+                      <td className="text-right">{p.currency === "THB" ? fmtTHB(Number(p.thb_total ?? 0)) : "—"}</td>
+                      <td className="text-right font-medium">{formatMoney(Number(p.total))}</td>
+                      <td>
+                        <div className="flex flex-col gap-0.5">
+                          <PayBadge s={p.payment_status ?? "unpaid"} />
+                          {owed > 0 && <span className="text-[10px] text-red-600">owe {formatMoney(owed)}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          {(p.payment_status ?? "unpaid") !== "paid" && (
+                            <Button size="sm" variant="ghost" onClick={() => { setPayDialog({ id: p.id, total: Number(p.total), paid: Number(p.paid_amount ?? 0) }); setPayAmount(owed); }}>
+                              <Wallet className="mr-1 h-4 w-4" />Pay
+                            </Button>
+                          )}
+                          {p.status !== "received" && <Button size="sm" variant="ghost" onClick={() => receive(p.id)}><PackageCheck className="mr-1 h-4 w-4" />Receive</Button>}
+                        </div>
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-t bg-muted/20">
+                        <td colSpan={9} className="px-4 py-3">
+                          <div className="space-y-1">
+                            {(p.items ?? []).map((it: any) => {
+                              const sell = it.product_id ? Number(productMap.get(it.product_id) ?? 0) : 0;
+                              const cost = Number(it.unit_cost ?? 0);
+                              const margin = sell > 0 && cost > 0 ? ((sell - cost) / cost) * 100 : null;
+                              return (
+                                <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-xs">
+                                  <div className="col-span-3 font-medium">{it.product_name}{it.variant ? ` · ${it.variant}` : ""}</div>
+                                  <div className="col-span-1">×{it.quantity}</div>
+                                  <div className="col-span-2 text-muted-foreground">
+                                    {it.thb_price ? `${fmtTHB(Number(it.thb_price))} / unit` : `${formatMoney(Number(it.unit_cost))} / unit`}
+                                  </div>
+                                  <div className="col-span-2 font-medium">{formatMoney(Number(it.line_total))}</div>
+                                  <div className="col-span-1 text-right">
+                                    {margin !== null && (
+                                      <span className={`inline-flex items-center gap-0.5 text-[10px] ${margin > 0 ? "text-green-600" : "text-red-600"}`}>
+                                        <TrendingUp className="h-3 w-3" />{margin.toFixed(0)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="col-span-1 truncate font-mono text-[10px] text-muted-foreground" title={it.tracking_code ?? ""}>{it.tracking_code ?? "—"}</div>
+                                  <div className="col-span-2 flex justify-end">
+                                    <Select value={it.cargo_status} onValueChange={(v) => updateLineStatus(it.id, v as CargoStatus)}>
+                                      <SelectTrigger className="h-7 w-[120px]"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="ordered">Ordered</SelectItem>
+                                        <SelectItem value="in_transit">In transit</SelectItem>
+                                        <SelectItem value="arrived">Arrived</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {Number(p.cargo_fee ?? 0) > 0 && <div className="pt-1 text-xs text-muted-foreground">+ Cargo fee: <b>{formatMoney(Number(p.cargo_fee))}</b></div>}
+                            {p.note && <div className="pt-2 text-xs text-muted-foreground">Note: {p.note}</div>}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              };
               const groups = new Map<string, any[]>();
               for (const p of pos as any[]) {
                 const key = viewMode === "year" ? String(p.ordered_at ?? "").slice(0, 7) : "_all";
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key)!.push(p);
               }
-              return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0])).flatMap(([gk, list]) => {
+              const ordered = Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+              return ordered.map(([gk, list]) => {
                 const sumKs = list.reduce((s, p) => s + Number(p.total ?? 0), 0);
                 const sumThb = list.reduce((s, p) => s + Number(p.thb_total ?? 0), 0);
                 const sumOwed = list.reduce((s, p) => s + Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0)), 0);
-                const header = viewMode === "year" ? (
-                  <tr key={`gh-${gk}`} className="border-t bg-muted/40">
-                    <td colSpan={9} className="px-4 py-2 text-xs font-semibold">
-                      {gk} · {list.length} POs · KS {formatMoney(sumKs)}{sumThb > 0 ? ` · ${fmtTHB(sumThb)}` : ""}{sumOwed > 0 ? ` · owe ${formatMoney(sumOwed)}` : ""}
-                    </td>
-                  </tr>
-                ) : null;
-                return [header, ...list.map((p) => null)].filter(Boolean) as any;
+                const sumPaid = list.reduce((s, p) => s + Number(p.paid_amount ?? 0), 0);
+                const lines = list.reduce((s, p) => s + (p.items?.length ?? 0), 0);
+                return (
+                  <Fragment key={gk}>
+                    {viewMode === "year" && (
+                      <tr className="border-t bg-muted/40">
+                        <td colSpan={9} className="px-4 py-2 text-xs font-semibold">
+                          {gk} · {list.length} POs · {lines} items · KS {formatMoney(sumKs)}{sumThb > 0 ? ` · ${fmtTHB(sumThb)}` : ""} · paid {formatMoney(sumPaid)}{sumOwed > 0 ? ` · owe ${formatMoney(sumOwed)}` : ""}
+                        </td>
+                      </tr>
+                    )}
+                    {list.map(renderRow)}
+                  </Fragment>
+                );
               });
             })()}
-            {(pos as any[]).map((p) => {
-              const isOpen = !!expanded[p.id];
-              const owed = Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0));
-              return (
-                <Fragment key={p.id}>
-                  <tr className="border-t">
-                    <td className="px-2">
-                      <Button size="icon" variant="ghost" onClick={() => setExpanded({ ...expanded, [p.id]: !isOpen })}>
-                        {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </Button>
-                    </td>
-                    <td className="px-4 py-3 font-medium">#{p.po_no}</td>
-                    <td>{p.supplier_name ?? "—"}</td>
-                    <td className="text-muted-foreground">{formatDate(p.ordered_at)}</td>
-                    <td><Badge variant="outline">{p.currency}{p.exchange_rate ? ` @ ${p.exchange_rate}` : ""}</Badge></td>
-                    <td className="text-right">{p.currency === "THB" ? fmtTHB(Number(p.thb_total ?? 0)) : "—"}</td>
-                    <td className="text-right font-medium">{formatMoney(Number(p.total))}</td>
-                    <td>
-                      <div className="flex flex-col gap-0.5">
-                        <PayBadge s={p.payment_status ?? "unpaid"} />
-                        {owed > 0 && <span className="text-[10px] text-red-600">owe {formatMoney(owed)}</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        {(p.payment_status ?? "unpaid") !== "paid" && (
-                          <Button size="sm" variant="ghost" onClick={() => { setPayDialog({ id: p.id, total: Number(p.total), paid: Number(p.paid_amount ?? 0) }); setPayAmount(owed); }}>
-                            <Wallet className="mr-1 h-4 w-4" />Pay
-                          </Button>
-                        )}
-                        {p.status !== "received" && <Button size="sm" variant="ghost" onClick={() => receive(p.id)}><PackageCheck className="mr-1 h-4 w-4" />Receive</Button>}
-                      </div>
-                    </td>
-                  </tr>
-                  {isOpen && (
-                    <tr className="border-t bg-muted/20">
-                      <td colSpan={9} className="px-4 py-3">
-                        <div className="space-y-1">
-                          {(p.items ?? []).map((it: any) => {
-                            const sell = it.product_id ? Number(productMap.get(it.product_id) ?? 0) : 0;
-                            const cost = Number(it.unit_cost ?? 0);
-                            const margin = sell > 0 && cost > 0 ? ((sell - cost) / cost) * 100 : null;
-                            return (
-                              <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-xs">
-                                <div className="col-span-3 font-medium">{it.product_name}{it.variant ? ` · ${it.variant}` : ""}</div>
-                                <div className="col-span-1">×{it.quantity}</div>
-                                <div className="col-span-2 text-muted-foreground">
-                                  {it.thb_price ? `${fmtTHB(Number(it.thb_price))} / unit` : `${formatMoney(Number(it.unit_cost))} / unit`}
-                                </div>
-                                <div className="col-span-2 font-medium">{formatMoney(Number(it.line_total))}</div>
-                                <div className="col-span-1 text-right">
-                                  {margin !== null && (
-                                    <span className={`inline-flex items-center gap-0.5 text-[10px] ${margin > 0 ? "text-green-600" : "text-red-600"}`}>
-                                      <TrendingUp className="h-3 w-3" />{margin.toFixed(0)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="col-span-1 truncate font-mono text-[10px] text-muted-foreground" title={it.tracking_code ?? ""}>{it.tracking_code ?? "—"}</div>
-                                <div className="col-span-2 flex justify-end">
-                                  <Select value={it.cargo_status} onValueChange={(v) => updateLineStatus(it.id, v as CargoStatus)}>
-                                    <SelectTrigger className="h-7 w-[120px]"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="ordered">Ordered</SelectItem>
-                                      <SelectItem value="in_transit">In transit</SelectItem>
-                                      <SelectItem value="arrived">Arrived</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {Number(p.cargo_fee ?? 0) > 0 && <div className="pt-1 text-xs text-muted-foreground">+ Cargo fee: <b>{formatMoney(Number(p.cargo_fee))}</b></div>}
-                          {p.note && <div className="pt-2 text-xs text-muted-foreground">Note: {p.note}</div>}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
           </tbody>
         </table>
       </CardContent></Card>
