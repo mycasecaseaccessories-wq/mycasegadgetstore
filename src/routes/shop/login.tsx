@@ -23,7 +23,14 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/shop/reset-password`,
+        });
+        if (error) throw error;
+        toast.success("Password reset email sent. Check your inbox.");
+        setMode("signin");
+      } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
