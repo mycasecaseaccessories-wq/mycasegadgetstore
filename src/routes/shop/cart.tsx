@@ -81,7 +81,17 @@ function CartPage() {
         status: "pending",
         payment_status: "unpaid",
       };
-      if (user) orderPayload.user_id = user.id;
+      if (user) {
+        orderPayload.user_id = user.id;
+      } else {
+        // Anon checkout: create customer row first (RLS requires customer_id on anon orders)
+        const { data: cust } = await supabase
+          .from("customers")
+          .insert({ name, phone, address })
+          .select("id")
+          .single();
+        if (cust?.id) orderPayload.customer_id = cust.id;
+      }
 
       const { data: order, error } = await supabase.from("orders").insert(orderPayload).select().single();
       if (error || !order) throw error ?? new Error("Failed");
