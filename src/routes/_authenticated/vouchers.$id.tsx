@@ -13,6 +13,8 @@ import { formatKS } from "@/lib/format";
 import { printThermalReceipt } from "@/lib/print-receipt";
 import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
+import { StorageImage } from "@/components/StorageImage";
+import { getSignedUrl } from "@/lib/storage-url";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
 
@@ -88,10 +90,10 @@ function VoucherDetailPage() {
       <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={() => navigate({ to: "/vouchers" })}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => printThermalReceipt({
+          <Button variant="outline" onClick={async () => printThermalReceipt({
             voucher_no: voucher.voucher_no,
             business_name: settings?.business_name,
-            logo_url: settings?.logo_url,
+            logo_url: await getSignedUrl(settings?.logo_url),
             customer_name: name, customer_phone: phone,
             items, subtotal, discount, extra_fee: extra, total, paid,
             payment_method: method, note, issued_at: voucher.issued_at,
@@ -113,7 +115,7 @@ function VoucherDetailPage() {
         <CardHeader className="border-b">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              {settings?.logo_url && <img src={settings.logo_url} alt="" className="h-12 w-12 rounded object-contain" />}
+              {settings?.logo_url && <StorageImage src={settings.logo_url} alt="" className="h-12 w-12 rounded object-contain" />}
               <div>
                 <CardTitle>{settings?.business_name || "Voucher"}</CardTitle>
                 <p className="text-xs text-muted-foreground">Voucher #{voucher.voucher_no}</p>

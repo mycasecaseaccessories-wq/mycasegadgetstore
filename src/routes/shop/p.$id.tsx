@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { addToCart } from "@/lib/cart";
 import { toast } from "sonner";
+import { StorageImage } from "@/components/StorageImage";
 
 export const Route = createFileRoute("/shop/p/$id")({ component: ProductPage });
 
@@ -51,7 +52,12 @@ function ProductPage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="aspect-square overflow-hidden rounded-xl bg-muted">
-            {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-6xl text-muted-foreground/30">📦</div>}
+            <StorageImage
+              src={product.image_url}
+              alt={product.name}
+              className="h-full w-full object-cover"
+              fallback={<div className="flex h-full w-full items-center justify-center text-6xl text-muted-foreground/30">📦</div>}
+            />
           </div>
           <div className="space-y-3">
             {product.brand && <p className="text-xs uppercase tracking-wide text-muted-foreground">{product.brand}</p>}

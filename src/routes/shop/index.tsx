@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { StorageImage } from "@/components/StorageImage";
 
 export const Route = createFileRoute("/shop/")({ component: Storefront });
 
@@ -40,9 +41,12 @@ function Storefront() {
       <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/shop" className="flex items-center gap-2">
-            {settings?.logo_url ? <img src={settings.logo_url} alt="" className="h-9 w-9 rounded-lg object-cover" /> : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground"><Sparkles className="h-4 w-4" /></div>
-            )}
+            <StorageImage
+              src={settings?.logo_url}
+              alt=""
+              className="h-9 w-9 rounded-lg object-cover"
+              fallback={<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground"><Sparkles className="h-4 w-4" /></div>}
+            />
             <span className="font-semibold">{settings?.business_name ?? "Shop"}</span>
           </Link>
           <Button variant="outline" size="sm" asChild><Link to="/shop/cart"><ShoppingCart className="mr-2 h-4 w-4" />Cart</Link></Button>
@@ -63,11 +67,12 @@ function Storefront() {
               <Card key={p.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
                 <Link to="/shop/p/$id" params={{ id: p.id }}>
                   <div className="aspect-square w-full overflow-hidden bg-muted">
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>
-                    )}
+                    <StorageImage
+                      src={p.image_url}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      fallback={<div className="flex h-full w-full items-center justify-center text-4xl text-muted-foreground/40">📦</div>}
+                    />
                   </div>
                   <CardContent className="space-y-1 p-3">
                     {p.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>}
