@@ -204,7 +204,13 @@ function OrdersPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatKS(viewing.subtotal)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span>-{formatKS(viewing.discount)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Extra fee</span><span>+{formatKS(viewing.extra_fee)}</span></div>
+                {Number(viewing.points_redeemed ?? 0) > 0 && (
+                  <div className="flex justify-between text-amber-600"><span>Points redeemed ({viewing.points_redeemed} pts)</span><span>-{formatKS(viewing.points_value)}</span></div>
+                )}
                 <div className="flex justify-between font-semibold"><span>Total</span><span>{formatKS(viewing.total)}</span></div>
+                {Number(viewing.points_earned ?? 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600 text-xs pt-1"><span>Points earned</span><span>+{viewing.points_earned} pts</span></div>
+                )}
               </div>
               {viewing.delivery_note && <div className="rounded bg-muted p-2 text-xs">{viewing.delivery_note}</div>}
             </div>
