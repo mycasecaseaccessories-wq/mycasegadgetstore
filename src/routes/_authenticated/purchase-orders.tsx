@@ -65,6 +65,8 @@ function POPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [viewMode, setViewMode] = useState<"month" | "year">("month");
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()));
   const [payDialog, setPayDialog] = useState<{ id: string; total: number; paid: number } | null>(null);
   const [payAmount, setPayAmount] = useState<number>(0);
 
