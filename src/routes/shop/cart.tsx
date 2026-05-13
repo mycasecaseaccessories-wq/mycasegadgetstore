@@ -77,7 +77,9 @@ function CartPage() {
         customer_phone: phone,
         delivery_note: address,
         subtotal,
-        total,
+        // Send pre-discount total; server's redeemMyPoints will apply discount + recompute total.
+        total: subtotal,
+        discount: 0,
         status: "pending",
         payment_status: "unpaid",
       };
