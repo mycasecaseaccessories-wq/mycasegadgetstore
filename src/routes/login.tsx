@@ -15,7 +15,6 @@ function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   if (!loading && session) return <Navigate to="/dashboard" replace />;
@@ -28,19 +27,6 @@ function LoginPage() {
     if (error) return toast.error(error.message);
     toast.success("Welcome back");
     navigate({ to: "/dashboard" });
-  };
-
-  const onSignup = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Account created — you can sign in now");
   };
 
   return (
