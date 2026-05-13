@@ -41,9 +41,12 @@ function Storefront() {
       <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/shop" className="flex items-center gap-2">
-            {settings?.logo_url ? <img src={settings.logo_url} alt="" className="h-9 w-9 rounded-lg object-cover" /> : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground"><Sparkles className="h-4 w-4" /></div>
-            )}
+            <StorageImage
+              src={settings?.logo_url}
+              alt=""
+              className="h-9 w-9 rounded-lg object-cover"
+              fallback={<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground"><Sparkles className="h-4 w-4" /></div>}
+            />
             <span className="font-semibold">{settings?.business_name ?? "Shop"}</span>
           </Link>
           <Button variant="outline" size="sm" asChild><Link to="/shop/cart"><ShoppingCart className="mr-2 h-4 w-4" />Cart</Link></Button>
