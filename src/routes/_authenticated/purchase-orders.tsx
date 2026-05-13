@@ -255,7 +255,18 @@ function POPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">Manage incoming stock from suppliers</p>
         <div className="flex flex-wrap gap-2">
-          <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-[160px]" />
+          <Select value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+            <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="month">Month</SelectItem>
+              <SelectItem value="year">Year</SelectItem>
+            </SelectContent>
+          </Select>
+          {viewMode === "month" ? (
+            <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-[160px]" />
+          ) : (
+            <Input type="number" value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="w-[110px]" placeholder="Year" />
+          )}
           <Button variant="outline" asChild><Link to="/suppliers">Suppliers</Link></Button>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
             <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />New PO</Button></DialogTrigger>
