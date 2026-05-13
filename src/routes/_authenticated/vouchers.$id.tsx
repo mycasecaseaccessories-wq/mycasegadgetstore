@@ -14,6 +14,7 @@ import { printThermalReceipt } from "@/lib/print-receipt";
 import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
+import { getSignedUrl } from "@/lib/storage-url";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({ component: VoucherDetailPage });
 
