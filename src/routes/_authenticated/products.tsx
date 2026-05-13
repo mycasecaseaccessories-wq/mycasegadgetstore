@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle, ScanLine } from "l
 import { VariantsDialog } from "@/components/VariantsDialog";
 import { ImageUpload } from "@/components/ImageUpload";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { StorageImage } from "@/components/StorageImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
