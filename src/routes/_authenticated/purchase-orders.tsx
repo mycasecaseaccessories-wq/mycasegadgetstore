@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, PackageCheck, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, PackageCheck, ChevronDown, ChevronRight, Wallet, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/purchase-orders")({ component: POPage });
 
 type CargoStatus = "ordered" | "in_transit" | "arrived";
+type PaymentStatus = "unpaid" | "partial" | "paid";
 type Item = {
   product_id?: string | null;
   product_name: string;
@@ -43,6 +44,15 @@ function CargoBadge({ s }: { s: string }) {
   return <Badge variant="outline" className={map[s] ?? ""}>{s.replace("_", " ")}</Badge>;
 }
 
+function PayBadge({ s }: { s: string }) {
+  const map: Record<string, string> = {
+    unpaid: "bg-red-500/15 text-red-600",
+    partial: "bg-amber-500/15 text-amber-600",
+    paid: "bg-green-500/15 text-green-600",
+  };
+  return <Badge variant="outline" className={map[s] ?? ""}>{s}</Badge>;
+}
+
 function POPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -51,9 +61,12 @@ function POPage() {
   const [note, setNote] = useState("");
   const [currency, setCurrency] = useState<"THB" | "KS">("THB");
   const [rate, setRate] = useState<number>(0);
+  const [cargoFee, setCargoFee] = useState<number>(0);
   const [items, setItems] = useState<Item[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [payDialog, setPayDialog] = useState<{ id: string; total: number; paid: number } | null>(null);
+  const [payAmount, setPayAmount] = useState<number>(0);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
@@ -61,7 +74,7 @@ function POPage() {
   });
   const { data: products = [] } = useQuery({
     queryKey: ["products-min"],
-    queryFn: async () => (await supabase.from("products").select("id, name").order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("products").select("id, name, final_sell_mmk").order("name")).data ?? [],
   });
   const { data: latestRate } = useQuery({
     queryKey: ["latest-rate"],
@@ -86,6 +99,39 @@ function POPage() {
     },
   });
 
+  // Cargo arrival timeline (next 14 days of in_transit/ordered with tracking)
+  const { data: timeline = [] } = useQuery({
+    queryKey: ["cargo-timeline"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("purchase_order_items")
+        .select("id, product_name, quantity, tracking_code, cargo_status, variant, po:purchase_orders(po_no, supplier_name, ordered_at)")
+        .in("cargo_status", ["ordered", "in_transit"])
+        .not("tracking_code", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data ?? [];
+    },
+  });
+
+  // Supplier debt totals
+  const { data: debts = [] } = useQuery({
+    queryKey: ["supplier-debts"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("purchase_orders")
+        .select("supplier_name, total, paid_amount, payment_status")
+        .neq("payment_status", "paid");
+      const map = new Map<string, number>();
+      for (const r of (data ?? []) as any[]) {
+        const owed = Math.max(0, Number(r.total ?? 0) - Number(r.paid_amount ?? 0));
+        const k = r.supplier_name ?? "—";
+        map.set(k, (map.get(k) ?? 0) + owed);
+      }
+      return Array.from(map.entries()).map(([name, owed]) => ({ name, owed })).sort((a, b) => b.owed - a.owed);
+    },
+  });
+
   useEffect(() => {
     if (open && rate === 0 && latestRate) {
       const r = Number((latestRate as any).buy_rate ?? 0) + Number((latestRate as any).sell_gap ?? 0);
@@ -99,29 +145,32 @@ function POPage() {
       ks += it.quantity * unitCostKS(it, rate, currency);
       thb += it.quantity * Number(it.thb_price ?? 0);
     }
-    return { ks, thb };
-  }, [items, rate, currency]);
+    return { ks: ks + Number(cargoFee || 0), thb, baseKs: ks };
+  }, [items, rate, currency, cargoFee]);
 
   const monthly = useMemo(() => {
-    let ksDirect = 0, thbBought = 0, thbInKs = 0, lines = 0, arrived = 0, pending = 0;
+    let ksDirect = 0, thbBought = 0, thbInKs = 0, lines = 0, arrived = 0, pending = 0, owed = 0;
     for (const p of pos as any[]) {
-      if (p.currency === "THB") {
-        thbBought += Number(p.thb_total ?? 0);
-        thbInKs += Number(p.total ?? 0);
-      } else {
-        ksDirect += Number(p.total ?? 0);
-      }
+      if (p.currency === "THB") { thbBought += Number(p.thb_total ?? 0); thbInKs += Number(p.total ?? 0); }
+      else { ksDirect += Number(p.total ?? 0); }
+      owed += Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0));
       for (const it of (p.items ?? [])) {
         lines += 1;
         if (it.cargo_status === "arrived") arrived += 1; else pending += 1;
       }
     }
-    return { ksDirect, thbBought, thbInKs, grandKs: ksDirect + thbInKs, count: (pos as any[]).length, lines, arrived, pending };
+    return { ksDirect, thbBought, thbInKs, grandKs: ksDirect + thbInKs, count: (pos as any[]).length, lines, arrived, pending, owed };
   }, [pos]);
+
+  const productMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of products as any[]) m.set(p.id, Number(p.final_sell_mmk ?? 0));
+    return m;
+  }, [products]);
 
   const reset = () => {
     setSupplierId(""); setOrderedAt(new Date().toISOString().slice(0, 10));
-    setNote(""); setItems([]); setCurrency("THB"); setRate(0);
+    setNote(""); setItems([]); setCurrency("THB"); setRate(0); setCargoFee(0);
   };
 
   const save = async () => {
@@ -138,6 +187,7 @@ function POPage() {
       thb_total: totals.thb,
       currency,
       exchange_rate: currency === "THB" ? rate : null,
+      cargo_fee: cargoFee || 0,
       status: "pending",
     } as any).select().single();
     if (error || !po) return toast.error(error?.message ?? "Failed");
@@ -162,26 +212,34 @@ function POPage() {
     toast.success("PO created");
     setOpen(false); reset();
     qc.invalidateQueries({ queryKey: ["purchase_orders"] });
+    qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
   };
 
   const receive = async (id: string) => {
-    if (!confirm("Mark all items as arrived & add stock to products?")) return;
-    const { data: po } = await supabase.from("purchase_orders").select("*, items:purchase_order_items(*)").eq("id", id).single();
-    if (!po) return;
-    for (const it of (po as any).items ?? []) {
-      if (!it.product_id) continue;
-      const { data: p } = await supabase.from("products").select("stock_in").eq("id", it.product_id).single();
-      if (p) await supabase.from("products").update({ stock_in: (p.stock_in ?? 0) + it.quantity }).eq("id", it.product_id);
-    }
+    if (!confirm("Mark all items as arrived? Stock will be added automatically.")) return;
+    // Trigger handles stock-in per row
     await supabase.from("purchase_order_items").update({ cargo_status: "arrived" } as any).eq("po_id", id);
     await supabase.from("purchase_orders").update({ status: "received", received_at: new Date().toISOString().slice(0, 10) }).eq("id", id);
     toast.success("Stock updated");
     qc.invalidateQueries({ queryKey: ["purchase_orders"] });
+    qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
   };
 
   const updateLineStatus = async (lineId: string, status: CargoStatus) => {
     await supabase.from("purchase_order_items").update({ cargo_status: status } as any).eq("id", lineId);
     qc.invalidateQueries({ queryKey: ["purchase_orders"] });
+    qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
+  };
+
+  const recordPayment = async () => {
+    if (!payDialog) return;
+    const newPaid = Math.max(0, payDialog.paid + payAmount);
+    const status: PaymentStatus = newPaid >= payDialog.total ? "paid" : newPaid > 0 ? "partial" : "unpaid";
+    await supabase.from("purchase_orders").update({ paid_amount: newPaid, payment_status: status } as any).eq("id", payDialog.id);
+    toast.success("Payment recorded");
+    setPayDialog(null); setPayAmount(0);
+    qc.invalidateQueries({ queryKey: ["purchase_orders"] });
+    qc.invalidateQueries({ queryKey: ["supplier-debts"] });
   };
 
   return (
@@ -219,13 +277,17 @@ function POPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {currency === "THB" && (
                     <div className="space-y-1.5">
                       <Label>Rate (1 ฿ = ? KS)</Label>
                       <Input type="number" value={rate || ""} onChange={e => setRate(Number(e.target.value))} placeholder="e.g. 145" />
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label>Cargo Fee (KS)</Label>
+                    <Input type="number" value={cargoFee || ""} onChange={e => setCargoFee(Number(e.target.value))} placeholder="0" />
+                  </div>
                   <div className={`space-y-1.5 ${currency === "KS" ? "col-span-2" : ""}`}>
                     <Label>Note</Label>
                     <Input value={note} onChange={e => setNote(e.target.value)} />
@@ -281,6 +343,7 @@ function POPage() {
 
                 <div className="flex flex-wrap items-center justify-end gap-4 border-t pt-2 text-sm">
                   {currency === "THB" && <span className="text-muted-foreground">THB total: <b>{fmtTHB(totals.thb)}</b></span>}
+                  {cargoFee > 0 && <span className="text-muted-foreground">Items: {formatMoney(totals.baseKs)} + Cargo: {formatMoney(cargoFee)}</span>}
                   <span className="font-medium">KS total: {formatMoney(totals.ks)}</span>
                 </div>
               </div>
@@ -291,11 +354,11 @@ function POPage() {
       </div>
 
       {/* Monthly summary */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">PO Count ({monthFilter})</div>
           <div className="mt-1 text-xl font-semibold">{monthly.count}</div>
-          <div className="text-xs text-muted-foreground">{monthly.lines} lines · {monthly.arrived} arrived</div>
+          <div className="text-xs text-muted-foreground">{monthly.lines} lines · {monthly.arrived} arrived · {monthly.pending} pending</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Bought in THB</div>
@@ -310,6 +373,48 @@ function POPage() {
           <div className="text-xs text-muted-foreground">Grand Total (KS)</div>
           <div className="mt-1 text-xl font-semibold">{formatMoney(monthly.grandKs)}</div>
         </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Wallet className="h-3 w-3" />Owed to Suppliers</div>
+          <div className="mt-1 text-xl font-semibold text-red-600">{formatMoney(monthly.owed)}</div>
+        </CardContent></Card>
+      </div>
+
+      {/* Supplier debt + cargo timeline */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <Card><CardContent className="p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Wallet className="h-4 w-4" />Supplier Debt</div>
+          {debts.length === 0 ? (
+            <p className="text-xs text-muted-foreground">All clear — no outstanding debts</p>
+          ) : (
+            <div className="space-y-1">
+              {(debts as any[]).slice(0, 6).map(d => (
+                <div key={d.name} className="flex justify-between text-sm">
+                  <span>{d.name}</span>
+                  <span className="font-medium text-red-600">{formatMoney(d.owed)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent></Card>
+
+        <Card><CardContent className="p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><PackageCheck className="h-4 w-4" />Cargo Arrival Timeline</div>
+          {timeline.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No items in transit</p>
+          ) : (
+            <div className="max-h-[200px] space-y-1.5 overflow-y-auto">
+              {(timeline as any[]).map(t => (
+                <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{t.product_name}{t.variant ? ` · ${t.variant}` : ""} ×{t.quantity}</div>
+                    <div className="truncate font-mono text-[10px] text-muted-foreground">{t.tracking_code} · #{t.po?.po_no} · {t.po?.supplier_name ?? ""}</div>
+                  </div>
+                  <CargoBadge s={t.cargo_status} />
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent></Card>
       </div>
 
       <Card><CardContent className="overflow-x-auto p-0">
@@ -323,13 +428,15 @@ function POPage() {
               <th>Currency</th>
               <th className="text-right">THB</th>
               <th className="text-right">KS</th>
+              <th>Payment</th>
               <th className="px-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {(pos as any[]).length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No purchase orders this month</td></tr>}
+            {(pos as any[]).length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No purchase orders this month</td></tr>}
             {(pos as any[]).map((p) => {
               const isOpen = !!expanded[p.id];
+              const owed = Math.max(0, Number(p.total ?? 0) - Number(p.paid_amount ?? 0));
               return (
                 <Fragment key={p.id}>
                   <tr className="border-t">
@@ -344,35 +451,61 @@ function POPage() {
                     <td><Badge variant="outline">{p.currency}{p.exchange_rate ? ` @ ${p.exchange_rate}` : ""}</Badge></td>
                     <td className="text-right">{p.currency === "THB" ? fmtTHB(Number(p.thb_total ?? 0)) : "—"}</td>
                     <td className="text-right font-medium">{formatMoney(Number(p.total))}</td>
+                    <td>
+                      <div className="flex flex-col gap-0.5">
+                        <PayBadge s={p.payment_status ?? "unpaid"} />
+                        {owed > 0 && <span className="text-[10px] text-red-600">owe {formatMoney(owed)}</span>}
+                      </div>
+                    </td>
                     <td className="px-4 text-right">
-                      {p.status !== "received" && <Button size="sm" variant="ghost" onClick={() => receive(p.id)}><PackageCheck className="mr-1 h-4 w-4" />Receive all</Button>}
+                      <div className="flex justify-end gap-1">
+                        {(p.payment_status ?? "unpaid") !== "paid" && (
+                          <Button size="sm" variant="ghost" onClick={() => { setPayDialog({ id: p.id, total: Number(p.total), paid: Number(p.paid_amount ?? 0) }); setPayAmount(owed); }}>
+                            <Wallet className="mr-1 h-4 w-4" />Pay
+                          </Button>
+                        )}
+                        {p.status !== "received" && <Button size="sm" variant="ghost" onClick={() => receive(p.id)}><PackageCheck className="mr-1 h-4 w-4" />Receive</Button>}
+                      </div>
                     </td>
                   </tr>
                   {isOpen && (
                     <tr className="border-t bg-muted/20">
-                      <td colSpan={8} className="px-4 py-3">
+                      <td colSpan={9} className="px-4 py-3">
                         <div className="space-y-1">
-                          {(p.items ?? []).map((it: any) => (
-                            <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-xs">
-                              <div className="col-span-3 font-medium">{it.product_name}{it.variant ? ` · ${it.variant}` : ""}</div>
-                              <div className="col-span-1">×{it.quantity}</div>
-                              <div className="col-span-2 text-muted-foreground">
-                                {it.thb_price ? `${fmtTHB(Number(it.thb_price))} / unit` : `${formatMoney(Number(it.unit_cost))} / unit`}
+                          {(p.items ?? []).map((it: any) => {
+                            const sell = it.product_id ? Number(productMap.get(it.product_id) ?? 0) : 0;
+                            const cost = Number(it.unit_cost ?? 0);
+                            const margin = sell > 0 && cost > 0 ? ((sell - cost) / cost) * 100 : null;
+                            return (
+                              <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-xs">
+                                <div className="col-span-3 font-medium">{it.product_name}{it.variant ? ` · ${it.variant}` : ""}</div>
+                                <div className="col-span-1">×{it.quantity}</div>
+                                <div className="col-span-2 text-muted-foreground">
+                                  {it.thb_price ? `${fmtTHB(Number(it.thb_price))} / unit` : `${formatMoney(Number(it.unit_cost))} / unit`}
+                                </div>
+                                <div className="col-span-2 font-medium">{formatMoney(Number(it.line_total))}</div>
+                                <div className="col-span-1 text-right">
+                                  {margin !== null && (
+                                    <span className={`inline-flex items-center gap-0.5 text-[10px] ${margin > 0 ? "text-green-600" : "text-red-600"}`}>
+                                      <TrendingUp className="h-3 w-3" />{margin.toFixed(0)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="col-span-1 truncate font-mono text-[10px] text-muted-foreground" title={it.tracking_code ?? ""}>{it.tracking_code ?? "—"}</div>
+                                <div className="col-span-2 flex justify-end">
+                                  <Select value={it.cargo_status} onValueChange={(v) => updateLineStatus(it.id, v as CargoStatus)}>
+                                    <SelectTrigger className="h-7 w-[120px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="ordered">Ordered</SelectItem>
+                                      <SelectItem value="in_transit">In transit</SelectItem>
+                                      <SelectItem value="arrived">Arrived</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
-                              <div className="col-span-2 font-medium">{formatMoney(Number(it.line_total))}</div>
-                              <div className="col-span-2 truncate font-mono text-[10px] text-muted-foreground" title={it.tracking_code ?? ""}>{it.tracking_code ?? "—"}</div>
-                              <div className="col-span-2 flex justify-end">
-                                <Select value={it.cargo_status} onValueChange={(v) => updateLineStatus(it.id, v as CargoStatus)}>
-                                  <SelectTrigger className="h-7 w-[120px]"><SelectValue /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="ordered">Ordered</SelectItem>
-                                    <SelectItem value="in_transit">In transit</SelectItem>
-                                    <SelectItem value="arrived">Arrived</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
+                          {Number(p.cargo_fee ?? 0) > 0 && <div className="pt-1 text-xs text-muted-foreground">+ Cargo fee: <b>{formatMoney(Number(p.cargo_fee))}</b></div>}
                           {p.note && <div className="pt-2 text-xs text-muted-foreground">Note: {p.note}</div>}
                         </div>
                       </td>
@@ -384,6 +517,28 @@ function POPage() {
           </tbody>
         </table>
       </CardContent></Card>
+
+      {/* Payment dialog */}
+      <Dialog open={!!payDialog} onOpenChange={(v) => { if (!v) { setPayDialog(null); setPayAmount(0); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
+          {payDialog && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">Total: <b>{formatMoney(payDialog.total)}</b></div>
+              <div className="text-sm text-muted-foreground">Already paid: <b>{formatMoney(payDialog.paid)}</b></div>
+              <div className="text-sm text-red-600">Outstanding: <b>{formatMoney(Math.max(0, payDialog.total - payDialog.paid))}</b></div>
+              <div className="space-y-1.5">
+                <Label>Payment amount (KS)</Label>
+                <Input type="number" value={payAmount || ""} onChange={e => setPayAmount(Number(e.target.value))} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPayDialog(null); setPayAmount(0); }}>Cancel</Button>
+            <Button onClick={recordPayment}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
