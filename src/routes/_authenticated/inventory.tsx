@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { StorageImage } from "@/components/StorageImage";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/inventory")({ component: InventoryPage });
