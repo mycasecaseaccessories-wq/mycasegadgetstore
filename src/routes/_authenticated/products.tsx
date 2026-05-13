@@ -149,7 +149,7 @@ function ProductsPage() {
               return (
                 <tr key={p.id} className="border-t">
                   <td className="px-4 py-2">
-                    {p.image_url ? <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded object-cover" /> : <div className="h-12 w-12 rounded bg-muted" />}
+                    <StorageImage src={p.image_url} alt={p.name} className="h-12 w-12 rounded object-cover" fallback={<div className="h-12 w-12 rounded bg-muted" />} />
                   </td>
                   <td className="font-medium">{p.name}{p.note && <p className="text-xs text-muted-foreground">{p.note}</p>}</td>
                   <td>{p.size ?? "—"}</td>
