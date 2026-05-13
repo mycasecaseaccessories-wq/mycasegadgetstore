@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
+import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
 
 export const Route = createFileRoute("/shop/")({ component: Storefront });
 
@@ -90,7 +91,10 @@ function Storefront() {
             />
             <span className="font-semibold">{settings?.business_name ?? "Shop"}</span>
           </Link>
-          <CartBadge />
+          <div className="flex items-center gap-2">
+            <ShopAccountButton />
+            <CartBadge />
+          </div>
         </div>
       </header>
 

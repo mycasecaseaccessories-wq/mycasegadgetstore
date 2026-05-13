@@ -10,6 +10,7 @@ import { addToCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
+import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
 
 export const Route = createFileRoute("/shop/p/$id")({ component: ProductPage });
 
@@ -67,7 +68,10 @@ function ProductPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/shop"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link>
           </Button>
-          <CartBadge />
+          <div className="flex items-center gap-2">
+            <ShopAccountButton />
+            <CartBadge />
+          </div>
         </div>
       </header>
 
