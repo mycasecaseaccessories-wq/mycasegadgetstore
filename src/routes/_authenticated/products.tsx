@@ -18,7 +18,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { calculatePricing, type ProfitMode, type RoundingRule } from "@/lib/pricing";
 import { toast } from "sonner";
+import { useEffect, useMemo } from "react";
 
 export const Route = createFileRoute("/_authenticated/products")({ component: ProductsPage });
 
