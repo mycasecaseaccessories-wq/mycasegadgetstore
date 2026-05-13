@@ -39,16 +39,23 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [orders, customers, items] = await Promise.all([
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const [orders, customers, items, products, expenses, poItems] = await Promise.all([
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
         supabase.from("customers").select("id"),
-        supabase.from("order_items").select("product_name, quantity, line_total"),
+        supabase.from("order_items").select("product_name, quantity, line_total, created_at"),
+        supabase.from("products").select("id, name, stock_in, sold_qty, low_stock_threshold, status").eq("status", "ACTIVE"),
+        supabase.from("expenses").select("amount, spent_at").gte("spent_at", monthStart.toISOString().slice(0, 10)),
+        supabase.from("purchase_order_items").select("unit_cost, quantity, product_id, created_at").gte("created_at", monthStart.toISOString()),
       ]);
       if (orders.error) throw orders.error;
       return {
         orders: orders.data ?? [],
         customers: customers.data ?? [],
         items: items.data ?? [],
+        products: products.data ?? [],
+        expenses: expenses.data ?? [],
+        poItems: poItems.data ?? [],
       };
     },
   });
