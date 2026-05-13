@@ -8,7 +8,8 @@ export function ThemeToggle() {
   const [t, setT] = useState<Theme>("system");
   useEffect(() => {
     setT(getTheme());
-    return onThemeChange(() => setT(getTheme()));
+    const off = onThemeChange(() => setT(getTheme()));
+    return () => { off(); };
   }, []);
   const resolved = resolveTheme(t);
   const Icon = resolved === "dark" ? Moon : Sun;
