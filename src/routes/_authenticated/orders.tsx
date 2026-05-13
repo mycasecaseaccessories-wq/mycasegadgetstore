@@ -121,10 +121,10 @@ function OrdersPage() {
       <Card><CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr><th className="px-4 py-3">#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Payment</th><th>Date</th><th className="px-4 text-right">Actions</th></tr>
+            <tr><th className="px-4 py-3">#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Payment</th><th>Points</th><th>Date</th><th className="px-4 text-right">Actions</th></tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
             {filtered.map(o => (
               <tr key={o.id} className="border-t">
                 <td className="px-4 py-3 font-medium">#{o.order_no}</td>
@@ -133,6 +133,12 @@ function OrdersPage() {
                 <td className="font-medium">{formatKS(o.total)}</td>
                 <td><Badge variant="outline" className={statusColors[o.status]}>{o.status}</Badge></td>
                 <td className="text-muted-foreground">{o.payment_status}</td>
+                <td className="text-xs">
+                  {Number(o.points_earned ?? 0) > 0 && <span className="text-emerald-600">+{o.points_earned}</span>}
+                  {Number(o.points_earned ?? 0) > 0 && Number(o.points_redeemed ?? 0) > 0 && " / "}
+                  {Number(o.points_redeemed ?? 0) > 0 && <span className="text-amber-600">-{o.points_redeemed}</span>}
+                  {!Number(o.points_earned ?? 0) && !Number(o.points_redeemed ?? 0) && <span className="text-muted-foreground">—</span>}
+                </td>
                 <td className="text-muted-foreground">{formatDateTime(o.created_at)}</td>
                 <td className="px-4 text-right">
                   <Button size="icon" variant="ghost" onClick={() => setViewing(o)}><Eye className="h-4 w-4" /></Button>
