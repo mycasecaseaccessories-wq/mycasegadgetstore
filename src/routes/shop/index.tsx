@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Search, Sparkles, ChevronRight, Flame, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Sparkles, ChevronRight, Flame, Clock, Heart, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { formatKS } from "@/lib/format";
 import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
 import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
+import { isWished, toggleWish } from "@/lib/wishlist";
 
 export const Route = createFileRoute("/shop/")({ component: Storefront });
 
