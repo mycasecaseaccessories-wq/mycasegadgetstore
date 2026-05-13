@@ -86,17 +86,23 @@ function POPage() {
     },
   });
   const { data: pos = [] } = useQuery({
-    queryKey: ["purchase_orders", monthFilter],
+    queryKey: ["purchase_orders", viewMode, monthFilter, yearFilter],
     queryFn: async () => {
-      const start = `${monthFilter}-01`;
-      const [y, m] = monthFilter.split("-").map(Number);
-      const next = new Date(y, m, 1).toISOString().slice(0, 10);
+      let start: string, next: string;
+      if (viewMode === "month") {
+        start = `${monthFilter}-01`;
+        const [y, m] = monthFilter.split("-").map(Number);
+        next = new Date(y, m, 1).toISOString().slice(0, 10);
+      } else {
+        start = `${yearFilter}-01-01`;
+        next = `${Number(yearFilter) + 1}-01-01`;
+      }
       const { data } = await supabase
         .from("purchase_orders")
         .select("*, items:purchase_order_items(*)")
         .gte("ordered_at", start)
         .lt("ordered_at", next)
-        .order("created_at", { ascending: false });
+        .order("ordered_at", { ascending: false });
       return data ?? [];
     },
   });
