@@ -23,6 +23,7 @@ import {
   Store,
   Activity,
   DatabaseBackup,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
