@@ -171,6 +171,33 @@ function Dashboard() {
         </Card>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Monthly P&L</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">{formatKS(monthRevenue)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">- COGS (purchases)</span><span>{formatKS(monthCOGS)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">- Expenses</span><span>{formatKS(monthExpenses)}</span></div>
+            <div className="flex justify-between border-t pt-2"><span className="font-semibold">Net Profit</span><span className={`font-bold ${monthProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatKS(monthProfit)}</span></div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">⚠️ Low Stock Alerts ({lowStock.length})</CardTitle></CardHeader>
+          <CardContent>
+            {lowStock.length === 0 ? <p className="text-sm text-muted-foreground">All products well stocked</p> : (
+              <div className="max-h-[200px] space-y-1 overflow-y-auto text-sm">
+                {lowStock.slice(0, 10).map((p: any) => (
+                  <div key={p.id} className="flex justify-between">
+                    <span className="truncate">{p.name}</span>
+                    <Badge variant="outline" className={p.remaining <= 0 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>{p.remaining} left</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <DashboardWidgets />
 
       <Card>
