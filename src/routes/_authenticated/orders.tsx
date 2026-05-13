@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS, formatDateTime } from "@/lib/format";
+import { awardForPurchase, customerKey } from "@/lib/loyalty";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/orders")({ component: OrdersPage });
