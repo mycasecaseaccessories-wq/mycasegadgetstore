@@ -71,7 +71,7 @@ function CartPage() {
         {items.map(i => (
           <Card key={i.id}><CardContent className="flex items-center gap-3 p-3">
             <div className="h-14 w-14 shrink-0 overflow-hidden rounded bg-muted">
-              {i.image_url ? <img src={i.image_url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-xl text-muted-foreground/40">📦</div>}
+              <StorageImage src={i.image_url} alt="" className="h-full w-full object-cover" fallback={<div className="flex h-full w-full items-center justify-center text-xl text-muted-foreground/40">📦</div>} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{i.name}</p>
