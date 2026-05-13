@@ -132,23 +132,40 @@ function ReportsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Best Selling Products</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-              <tr><th className="px-4 py-3">Product</th><th>Qty Sold</th><th className="text-right pr-4">Revenue</th></tr>
-            </thead>
-            <tbody>
-              {topProducts.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No sales in this range</td></tr>}
-              {topProducts.map(p => (
-                <tr key={p.name} className="border-t">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td>{p.qty}</td>
-                  <td className="text-right pr-4 font-medium">{formatKS(p.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <CardHeader><CardTitle className="text-base">Best Selling Products (Top 10)</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {topProducts.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No sales in this range</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={Math.max(220, topProducts.length * 32)}>
+                <BarChart data={topProducts} layout="vertical" margin={{ left: 8, right: 16 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                  <XAxis type="number" className="text-xs" tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
+                  <YAxis type="category" dataKey="name" width={140} className="text-xs" tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => formatKS(v)} contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <Bar dataKey="total" fill="var(--primary)" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                    <tr><th className="px-4 py-3 w-10">#</th><th>Product</th><th>Qty Sold</th><th className="text-right pr-4">Revenue</th></tr>
+                  </thead>
+                  <tbody>
+                    {topProducts.map((p, i) => (
+                      <tr key={p.name} className="border-t">
+                        <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
+                        <td className="font-medium">{p.name}</td>
+                        <td>{p.qty}</td>
+                        <td className="text-right pr-4 font-medium">{formatKS(p.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
