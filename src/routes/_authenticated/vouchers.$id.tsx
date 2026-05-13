@@ -90,10 +90,10 @@ function VoucherDetailPage() {
       <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={() => navigate({ to: "/vouchers" })}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => printThermalReceipt({
+          <Button variant="outline" onClick={async () => printThermalReceipt({
             voucher_no: voucher.voucher_no,
             business_name: settings?.business_name,
-            logo_url: settings?.logo_url,
+            logo_url: await getSignedUrl(settings?.logo_url),
             customer_name: name, customer_phone: phone,
             items, subtotal, discount, extra_fee: extra, total, paid,
             payment_method: method, note, issued_at: voucher.issued_at,
