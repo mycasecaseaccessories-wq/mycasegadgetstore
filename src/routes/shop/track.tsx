@@ -37,15 +37,13 @@ function TrackPage() {
     });
   }, []);
 
+  const trackFn = useServerFn(trackOrders);
   const { data, isLoading, error } = useQuery({
     queryKey: ["track-order", submitted],
     enabled: !!submitted,
     queryFn: async () => {
-      let q = supabase.from("orders").select("*, items:order_items(*)").eq("customer_phone", submitted!.phone.trim());
-      if (submitted!.orderNo) q = q.eq("order_no", Number(submitted!.orderNo));
-      const { data, error } = await q.order("created_at", { ascending: false }).limit(20);
-      if (error) throw error;
-      return data ?? [];
+      const res = await trackFn({ data: { phone: submitted!.phone.trim(), orderNo: submitted!.orderNo || null } });
+      return res.orders;
     },
   });
 
