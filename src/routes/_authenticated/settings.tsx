@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
+import { LoyaltyPanel } from "@/components/LoyaltyPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -137,6 +138,10 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="lg:col-span-2">
+        <LoyaltyPanel />
+      </div>
     </div>
   );
 }
