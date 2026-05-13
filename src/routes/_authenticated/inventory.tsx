@@ -104,7 +104,7 @@ function InventoryPage() {
                 <tr key={p.id} className="border-t">
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-3">
-                      {p.image_url ? <img src={p.image_url} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted" />}
+                      <StorageImage src={p.image_url} alt="" className="h-10 w-10 rounded object-cover" fallback={<div className="h-10 w-10 rounded bg-muted" />} />
                       <Link to="/products" className="font-medium hover:underline">{p.name}<ExternalLink className="ml-1 inline h-3 w-3" /></Link>
                     </div>
                   </td>
