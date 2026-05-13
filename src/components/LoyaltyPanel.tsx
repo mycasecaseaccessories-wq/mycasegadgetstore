@@ -1,6 +1,6 @@
-// Phase 19 — Loyalty admin panel: configure rules, view/adjust customer points.
+// Phase 19 — Loyalty admin panel: configure rules, view/adjust customer points (Supabase-backed).
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, Minus, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,22 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getConfig,
   setConfig,
-  getBalances,
+  getAllBalances,
   adjust,
   setBalance,
+  customerKey,
   onLoyaltyChange,
   type LoyaltyConfig,
 } from "@/lib/loyalty";
 import { toast } from "sonner";
 
 export function LoyaltyPanel() {
+  const qc = useQueryClient();
   const [cfg, setCfg] = useState<LoyaltyConfig>(getConfig());
-  const [balances, setBalances] = useState<Record<string, number>>(getBalances());
-
-  useEffect(() => {
-    const off = onLoyaltyChange(() => setBalances(getBalances()));
-    return () => { off(); };
-  }, []);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers", "loyalty"],
@@ -37,12 +33,23 @@ export function LoyaltyPanel() {
     },
   });
 
+  const { data: balanceRows = [] } = useQuery({
+    queryKey: ["loyalty_balances"],
+    queryFn: getAllBalances,
+  });
+
+  const balances: Record<string, number> = {};
+  for (const r of balanceRows) balances[r.customer_key] = Number(r.points ?? 0);
+
+  useEffect(() => {
+    const off = onLoyaltyChange(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }));
+    return () => { off(); };
+  }, [qc]);
+
   const save = () => {
     setConfig(cfg);
     toast.success("Loyalty rules saved");
   };
-
-  const keyFor = (c: { id: string; phone: string | null }) => c.phone || c.id;
 
   return (
     <Card>
@@ -55,7 +62,7 @@ export function LoyaltyPanel() {
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <p className="text-sm font-medium">Enable loyalty program</p>
-            <p className="text-xs text-muted-foreground">Award points on each order.</p>
+            <p className="text-xs text-muted-foreground">Award points on each paid order.</p>
           </div>
           <Switch checked={cfg.enabled} onCheckedChange={(v) => setCfg({ ...cfg, enabled: v })} />
         </div>
@@ -86,7 +93,7 @@ export function LoyaltyPanel() {
               <p className="p-4 text-center text-xs text-muted-foreground">No customers yet</p>
             )}
             {customers.map((c) => {
-              const k = keyFor(c);
+              const k = customerKey(c);
               const bal = balances[k] ?? 0;
               return (
                 <div key={c.id} className="flex items-center gap-2 px-3 py-2">
@@ -95,10 +102,10 @@ export function LoyaltyPanel() {
                     <p className="truncate text-xs text-muted-foreground">{c.phone ?? "—"}</p>
                   </div>
                   <Badge className="font-mono">{bal} pts</Badge>
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, 10)} title="+10">
+                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, 10).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }))} title="+10">
                     <Plus className="h-3 w-3" />
                   </Button>
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, -10)} title="-10">
+                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, -10).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }))} title="-10">
                     <Minus className="h-3 w-3" />
                   </Button>
                   <Input
@@ -108,7 +115,7 @@ export function LoyaltyPanel() {
                     onBlur={(e) => {
                       const v = Number(e.target.value);
                       if (!Number.isNaN(v) && e.target.value !== "") {
-                        setBalance(k, v);
+                        setBalance(k, v).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }));
                         e.target.value = "";
                       }
                     }}
