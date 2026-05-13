@@ -362,7 +362,7 @@ function LedgerTable<T extends { id: string }>({
             {groups.map(([month, list]) => {
               const t = totals(list);
               return (
-                <>
+                <Fragment key={month}>
                   <tr key={`h-${month}`} className="border-t bg-muted/30">
                     <td colSpan={columns.length + 1} className="px-3 py-1.5 text-xs font-semibold">
                       {month} · {list.length} lines · Qty {t.qty.toLocaleString()} · {formatKS(t.amount)}
