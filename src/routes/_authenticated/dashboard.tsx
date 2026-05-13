@@ -39,16 +39,23 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [orders, customers, items] = await Promise.all([
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const [orders, customers, items, products, expenses, poItems] = await Promise.all([
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
         supabase.from("customers").select("id"),
-        supabase.from("order_items").select("product_name, quantity, line_total"),
+        supabase.from("order_items").select("product_name, quantity, line_total, created_at"),
+        supabase.from("products").select("id, name, stock_in, sold_qty, low_stock_threshold, status").eq("status", "ACTIVE"),
+        supabase.from("expenses").select("amount, spent_at").gte("spent_at", monthStart.toISOString().slice(0, 10)),
+        supabase.from("purchase_order_items").select("unit_cost, quantity, product_id, created_at").gte("created_at", monthStart.toISOString()),
       ]);
       if (orders.error) throw orders.error;
       return {
         orders: orders.data ?? [],
         customers: customers.data ?? [],
         items: items.data ?? [],
+        products: products.data ?? [],
+        expenses: expenses.data ?? [],
+        poItems: poItems.data ?? [],
       };
     },
   });
@@ -80,6 +87,28 @@ function Dashboard() {
     .map(([name, total]) => ({ name, total }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 6);
+
+  // Monthly P&L
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const monthOrders = orders.filter(o => o.status !== "cancelled" && new Date(o.created_at) >= monthStart);
+  const monthRevenue = monthOrders.reduce((s, o) => s + Number(o.total), 0);
+  const monthCOGS = (data?.poItems ?? []).reduce((s, p) => s + Number(p.unit_cost) * Number(p.quantity), 0);
+  const monthExpenses = (data?.expenses ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const monthProfit = monthRevenue - monthCOGS - monthExpenses;
+
+  // Low stock alerts
+  const lowStock = (data?.products ?? []).filter((p: any) => {
+    const remaining = (p.stock_in ?? 0) - (p.sold_qty ?? 0);
+    return remaining <= (p.low_stock_threshold ?? 5);
+  }).map((p: any) => ({ ...p, remaining: (p.stock_in ?? 0) - (p.sold_qty ?? 0) }))
+    .sort((a: any, b: any) => a.remaining - b.remaining);
+
+  // Best sellers by quantity
+  const qtyMap = new Map<string, number>();
+  for (const it of data?.items ?? []) {
+    qtyMap.set(it.product_name, (qtyMap.get(it.product_name) ?? 0) + Number(it.quantity));
+  }
+  const bestByQty = Array.from(qtyMap.entries()).map(([name, qty]) => ({ name, qty })).sort((a, b) => b.qty - a.qty).slice(0, 10);
 
   const stats = [
     { label: "Total Revenue", value: formatKS(totalRevenue), icon: TrendingUp, accent: "from-primary to-accent" },
@@ -138,6 +167,33 @@ function Dashboard() {
                 <Bar dataKey="total" fill="var(--accent)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Monthly P&L</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Revenue</span><span className="font-medium">{formatKS(monthRevenue)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">- COGS (purchases)</span><span>{formatKS(monthCOGS)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">- Expenses</span><span>{formatKS(monthExpenses)}</span></div>
+            <div className="flex justify-between border-t pt-2"><span className="font-semibold">Net Profit</span><span className={`font-bold ${monthProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatKS(monthProfit)}</span></div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">⚠️ Low Stock Alerts ({lowStock.length})</CardTitle></CardHeader>
+          <CardContent>
+            {lowStock.length === 0 ? <p className="text-sm text-muted-foreground">All products well stocked</p> : (
+              <div className="max-h-[200px] space-y-1 overflow-y-auto text-sm">
+                {lowStock.slice(0, 10).map((p: any) => (
+                  <div key={p.id} className="flex justify-between">
+                    <span className="truncate">{p.name}</span>
+                    <Badge variant="outline" className={p.remaining <= 0 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>{p.remaining} left</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
