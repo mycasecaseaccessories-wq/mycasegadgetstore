@@ -385,7 +385,7 @@ function LedgerTable<T extends { id: string }>({
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
