@@ -16,8 +16,8 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
 
     const { data: bal } = await supabaseAdmin
       .from("loyalty_balances")
-      .select("points, customer_phone, customer_key")
-      .or(`customer_phone.eq.${phone},customer_key.eq.${key}`)
+      .select("points")
+      .eq("customer_key", key)
       .maybeSingle();
 
     const { data: history } = await supabaseAdmin
