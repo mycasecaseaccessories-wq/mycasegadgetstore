@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSignedUrl } from "@/lib/storage-url";
 
-type Props = React.ImgHTMLAttributes<HTMLImageElement> & {
+type Props = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src?: string | null;
   fallback?: React.ReactNode;
 };
