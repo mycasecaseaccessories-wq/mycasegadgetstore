@@ -13,7 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop/index'
+import { Route as ShopLoginRouteImport } from './routes/shop/login'
 import { Route as ShopCartRouteImport } from './routes/shop/cart'
+import { Route as ShopAccountRouteImport } from './routes/shop/account'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -57,9 +59,19 @@ const ShopIndexRoute = ShopIndexRouteImport.update({
   path: '/shop/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopLoginRoute = ShopLoginRouteImport.update({
+  id: '/shop/login',
+  path: '/shop/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopCartRoute = ShopCartRouteImport.update({
   id: '/shop/cart',
   path: '/shop/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopAccountRoute = ShopAccountRouteImport.update({
+  id: '/shop/account',
+  path: '/shop/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
@@ -203,7 +215,9 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
+  '/shop/login': typeof ShopLoginRoute
   '/shop/': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -232,7 +246,9 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
+  '/shop/login': typeof ShopLoginRoute
   '/shop': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -263,7 +279,9 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/variants': typeof AuthenticatedVariantsRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
+  '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
+  '/shop/login': typeof ShopLoginRoute
   '/shop/': typeof ShopIndexRoute
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
@@ -294,7 +312,9 @@ export interface FileRouteTypes {
     | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop/account'
     | '/shop/cart'
+    | '/shop/login'
     | '/shop/'
     | '/customers/$id'
     | '/vouchers/$id'
@@ -323,7 +343,9 @@ export interface FileRouteTypes {
     | '/team'
     | '/variants'
     | '/vouchers'
+    | '/shop/account'
     | '/shop/cart'
+    | '/shop/login'
     | '/shop'
     | '/customers/$id'
     | '/vouchers/$id'
@@ -353,7 +375,9 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/_authenticated/variants'
     | '/_authenticated/vouchers'
+    | '/shop/account'
     | '/shop/cart'
+    | '/shop/login'
     | '/shop/'
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
@@ -364,7 +388,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ShopAccountRoute: typeof ShopAccountRoute
   ShopCartRoute: typeof ShopCartRoute
+  ShopLoginRoute: typeof ShopLoginRoute
   ShopIndexRoute: typeof ShopIndexRoute
   ShopPIdRoute: typeof ShopPIdRoute
 }
@@ -399,11 +425,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop/login': {
+      id: '/shop/login'
+      path: '/shop/login'
+      fullPath: '/shop/login'
+      preLoaderRoute: typeof ShopLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop/cart': {
       id: '/shop/cart'
       path: '/shop/cart'
       fullPath: '/shop/cart'
       preLoaderRoute: typeof ShopCartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/account': {
+      id: '/shop/account'
+      path: '/shop/account'
+      fullPath: '/shop/account'
+      preLoaderRoute: typeof ShopAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/vouchers': {
@@ -651,20 +691,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ShopAccountRoute: ShopAccountRoute,
   ShopCartRoute: ShopCartRoute,
+  ShopLoginRoute: ShopLoginRoute,
   ShopIndexRoute: ShopIndexRoute,
   ShopPIdRoute: ShopPIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
