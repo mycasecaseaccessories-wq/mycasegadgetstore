@@ -38,6 +38,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { signOut, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { StorageImage } from "@/components/StorageImage";
 import { useRoles } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
 
