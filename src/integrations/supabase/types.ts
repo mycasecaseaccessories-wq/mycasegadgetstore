@@ -796,6 +796,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      loyalty_key_matches_customer: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff"
