@@ -87,6 +87,23 @@ function ReportsPage() {
     <div className="space-y-4">
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 p-4">
+          <div className="flex flex-wrap gap-2">
+            {([
+              { k: "today", label: "Today", days: 0 },
+              { k: "week", label: "Last 7 days", days: 6 },
+              { k: "month", label: "Last 30 days", days: 29 },
+              { k: "ytd", label: "This month", days: -1 },
+            ] as const).map(p => (
+              <Button key={p.k} size="sm" variant="secondary" onClick={() => {
+                const end = new Date(); end.setHours(0,0,0,0);
+                let start = new Date(end);
+                if (p.days === -1) start = new Date(end.getFullYear(), end.getMonth(), 1);
+                else start.setDate(end.getDate() - p.days);
+                setFrom(start.toISOString().slice(0,10));
+                setTo(end.toISOString().slice(0,10));
+              }}>{p.label}</Button>
+            ))}
+          </div>
           <div className="space-y-1.5"><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div className="space-y-1.5"><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
           <Button onClick={exportCsv} variant="outline"><Download className="mr-2 h-4 w-4" />Export CSV</Button>
