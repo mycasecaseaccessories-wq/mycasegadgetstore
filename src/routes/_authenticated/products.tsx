@@ -190,3 +190,98 @@ function ProductsPage() {
     </div>
   );
 }
+
+function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void }) {
+  const [open, setOpen] = useState(false);
+
+  const { data: latestRate } = useQuery({
+    queryKey: ["rates", "latest"],
+    queryFn: async () => {
+      const { data } = await supabase.from("rates").select("buy_rate,sell_gap").order("date", { ascending: false }).limit(1).maybeSingle();
+      return data as { buy_rate: number; sell_gap: number } | null;
+    },
+  });
+  useEffect(() => {
+    if (!latestRate) return;
+    if (form.pricing_buy_rate == null) setForm({ ...form, pricing_buy_rate: latestRate.buy_rate, pricing_sell_gap: latestRate.sell_gap });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestRate]);
+
+  const result = useMemo(() => calculatePricing({
+    thbPrice: Number(form.thb_price ?? 0),
+    buyRate: Number(form.pricing_buy_rate ?? 0),
+    sellGap: Number(form.pricing_sell_gap ?? 0),
+    cargoMMK: Number(form.pricing_cargo_mmk ?? 0),
+    deliMMK: Number(form.pricing_deli_mmk ?? 0),
+    otherMMK: Number(form.pricing_other_mmk ?? 0),
+    profitMode: (form.pricing_profit_mode ?? "PERCENT") as ProfitMode,
+    fixedProfit: Number(form.pricing_fixed_profit ?? 0),
+    percentProfit: Number(form.pricing_percent_profit ?? 0),
+    roundingRule: (form.pricing_rounding_rule ?? "NEAREST_500") as RoundingRule,
+  }), [form]);
+
+  const apply = () => {
+    setForm({ ...form, price: result.finalSellMMK, final_sell_mmk: result.finalSellMMK, margin_percent: result.marginPercent });
+    toast.success(`Price set to ${formatKS(result.finalSellMMK)}`);
+  };
+
+  return (
+    <div className="rounded-lg border bg-muted/30">
+      <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium" onClick={() => setOpen(!open)}>
+        <span>💰 Price Calculator (THB → KS)</span>
+        <span className="text-xs text-muted-foreground">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="space-y-3 border-t p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1"><Label className="text-xs">THB Price</Label>
+              <Input type="number" value={form.thb_price ?? ""} onChange={e => setForm({ ...form, thb_price: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Buy Rate (MMK/THB)</Label>
+              <Input type="number" value={form.pricing_buy_rate ?? ""} onChange={e => setForm({ ...form, pricing_buy_rate: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Sell Gap</Label>
+              <Input type="number" value={form.pricing_sell_gap ?? ""} onChange={e => setForm({ ...form, pricing_sell_gap: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Cargo (KS)</Label>
+              <Input type="number" value={form.pricing_cargo_mmk ?? ""} onChange={e => setForm({ ...form, pricing_cargo_mmk: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Delivery (KS)</Label>
+              <Input type="number" value={form.pricing_deli_mmk ?? ""} onChange={e => setForm({ ...form, pricing_deli_mmk: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Other (KS)</Label>
+              <Input type="number" value={form.pricing_other_mmk ?? ""} onChange={e => setForm({ ...form, pricing_other_mmk: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Profit Mode</Label>
+              <Select value={form.pricing_profit_mode ?? "PERCENT"} onValueChange={v => setForm({ ...form, pricing_profit_mode: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PERCENT">Percent</SelectItem>
+                  <SelectItem value="FIXED">Fixed</SelectItem>
+                  <SelectItem value="BOTH">Both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Rounding</Label>
+              <Select value={form.pricing_rounding_rule ?? "NEAREST_500"} onValueChange={v => setForm({ ...form, pricing_rounding_rule: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NO_ROUND">No round</SelectItem>
+                  <SelectItem value="NEAREST_100">Nearest 100</SelectItem>
+                  <SelectItem value="NEAREST_500">Nearest 500</SelectItem>
+                  <SelectItem value="NEAREST_1000">Nearest 1000</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Fixed Profit (KS)</Label>
+              <Input type="number" value={form.pricing_fixed_profit ?? ""} onChange={e => setForm({ ...form, pricing_fixed_profit: Number(e.target.value) })} /></div>
+            <div className="space-y-1"><Label className="text-xs">Percent Profit (%)</Label>
+              <Input type="number" value={form.pricing_percent_profit ?? ""} onChange={e => setForm({ ...form, pricing_percent_profit: Number(e.target.value) })} /></div>
+          </div>
+          <div className="rounded-md bg-background p-3 text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Cost (MMK)</span><span>{formatKS(result.mmkBuyPrice + result.totalExtraCost)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Profit</span><span>{formatKS(result.trueNetProfit)} ({result.marginPercent}%)</span></div>
+            <div className="flex justify-between text-base font-semibold"><span>Final Price</span><span>{formatKS(result.finalSellMMK)}</span></div>
+          </div>
+          <Button type="button" size="sm" className="w-full" onClick={apply} disabled={!result.finalSellMMK}>
+            Apply to Price
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
