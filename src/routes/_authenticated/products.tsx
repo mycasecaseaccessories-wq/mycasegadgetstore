@@ -95,9 +95,10 @@ function ProductsPage() {
           <DialogTrigger asChild>
             <Button onClick={() => setForm(empty)}><Plus className="mr-2 h-4 w-4" />Add Product</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{form.id ? "Edit" : "New"} Product</DialogTitle></DialogHeader>
-            <div className="grid gap-3 sm:grid-cols-2">
+          <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 p-0">
+            <DialogHeader className="border-b p-4 sm:p-6"><DialogTitle>{form.id ? "Edit" : "New"} Product</DialogTitle></DialogHeader>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Label className="mb-1.5 block">Image</Label>
                 <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} bucket="product-images" size="md" />
@@ -128,8 +129,13 @@ function ProductsPage() {
               </div>
               <div className="sm:col-span-2 space-y-1.5"><Label>Note</Label>
                 <Textarea value={form.note ?? ""} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
+
+              <div className="sm:col-span-2 mt-2">
+                <PricingHelper form={form} setForm={setForm} />
+              </div>
+              </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="border-t p-4 sm:p-6">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={save}>Save</Button>
             </DialogFooter>
