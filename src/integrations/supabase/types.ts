@@ -517,6 +517,7 @@ export type Database = {
           product_id: string | null
           product_name: string
           quantity: number
+          stocked_in: boolean
           thb_price: number | null
           tracking_code: string | null
           unit_cost: number
@@ -531,6 +532,7 @@ export type Database = {
           product_id?: string | null
           product_name: string
           quantity?: number
+          stocked_in?: boolean
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
@@ -545,6 +547,7 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           quantity?: number
+          stocked_in?: boolean
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
@@ -569,12 +572,15 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          cargo_fee: number
           created_at: string
           currency: string
           exchange_rate: number | null
           id: string
           note: string | null
           ordered_at: string
+          paid_amount: number
+          payment_status: string
           po_no: number
           received_at: string | null
           status: string
@@ -585,12 +591,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cargo_fee?: number
           created_at?: string
           currency?: string
           exchange_rate?: number | null
           id?: string
           note?: string | null
           ordered_at?: string
+          paid_amount?: number
+          payment_status?: string
           po_no?: number
           received_at?: string | null
           status?: string
@@ -601,12 +610,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cargo_fee?: number
           created_at?: string
           currency?: string
           exchange_rate?: number | null
           id?: string
           note?: string | null
           ordered_at?: string
+          paid_amount?: number
+          payment_status?: string
           po_no?: number
           received_at?: string | null
           status?: string
