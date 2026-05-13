@@ -155,7 +155,7 @@ function ReportsPage() {
                           <div className="space-y-1">
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground">Qty Sold</span>
-                              <span className="font-medium">{p.qty.toLocaleString()}</span>
+                              <span className="font-medium">{p.qty.toLocaleString("en-US", { maximumFractionDigits: 0 })} pcs</span>
                             </div>
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground">Revenue</span>
@@ -163,7 +163,7 @@ function ReportsPage() {
                             </div>
                             <div className="flex justify-between gap-4 border-t pt-1 mt-1">
                               <span className="text-muted-foreground">Avg / unit</span>
-                              <span className="font-medium">{formatKS(avg)}</span>
+                              <span className="font-medium">{formatKS(Math.round(avg))}</span>
                             </div>
                           </div>
                         </div>
