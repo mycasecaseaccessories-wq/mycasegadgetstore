@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { LoyaltyPanel } from "@/components/LoyaltyPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activity";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { setCurrency } from "@/lib/format";
@@ -54,6 +55,7 @@ function SettingsPage() {
     const { id, updated_at, ...payload } = s;
     const { error } = await supabase.from("settings").update(payload).eq("id", id);
     if (error) return toast.error(error.message);
+    await logActivity({ action: "settings.update", entityType: "settings", entityId: id, summary: "Settings updated" });
     toast.success("Settings saved");
     qc.invalidateQueries({ queryKey: ["settings"] });
   };
@@ -62,6 +64,7 @@ function SettingsPage() {
     if (!user) return;
     const { error } = await supabase.from("profiles").upsert({ id: user.id, ...profile });
     if (error) return toast.error(error.message);
+    await logActivity({ action: "profile.update", entityType: "profile", entityId: user.id, summary: `Profile updated: ${profile.full_name || user.email}` });
     toast.success("Profile updated");
   };
 
@@ -69,6 +72,7 @@ function SettingsPage() {
     if (pw.length < 8) return toast.error("Password must be at least 8 characters");
     const { error } = await supabase.auth.updateUser({ password: pw });
     if (error) return toast.error(error.message);
+    await logActivity({ action: "auth.password_change", summary: "Password changed" });
     toast.success("Password changed"); setPw("");
   };
 
