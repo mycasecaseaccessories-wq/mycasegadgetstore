@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useState } from "react";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/exports")({ component: ExportsPage });
+export const Route = createFileRoute("/_authenticated/exports")({ component: () => <RequireAdmin><ExportsPage /></RequireAdmin> });
 
 function toCsv(rows: (string | number | null | undefined)[][]) {
   return rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import {
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 
-export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
+export const Route = createFileRoute("/_authenticated/analytics")({ component: () => <RequireAdmin><AnalyticsPage /></RequireAdmin> });
 
 const COLORS = ["var(--primary)", "var(--accent)", "var(--chart-3, hsl(280 80% 60%))", "var(--chart-4, hsl(40 90% 55%))", "var(--chart-5, hsl(160 70% 45%))"];
 

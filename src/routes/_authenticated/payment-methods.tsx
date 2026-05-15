@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Pencil, Trash2, GripVertical, Check, X } from "lucide-react";
@@ -13,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/payment-methods")({ component: PaymentMethodsPage });
+export const Route = createFileRoute("/_authenticated/payment-methods")({ component: () => <RequireAdmin><PaymentMethodsPage /></RequireAdmin> });
 
 type PM = {
   id: string;
