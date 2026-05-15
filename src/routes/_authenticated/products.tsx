@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activity";
 import { formatKS } from "@/lib/format";
 import { calculatePricing, type ProfitMode, type RoundingRule } from "@/lib/pricing";
 import { toast } from "sonner";

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { LoyaltyPanel } from "@/components/LoyaltyPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activity";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { setCurrency } from "@/lib/format";
