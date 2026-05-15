@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Download } from "lucide-react";
@@ -10,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-export const Route = createFileRoute("/_authenticated/reports")({ component: ReportsPage });
+export const Route = createFileRoute("/_authenticated/reports")({ component: () => <RequireAdmin><ReportsPage /></RequireAdmin> });
 
 function ReportsPage() {
   const today = new Date(); today.setHours(0, 0, 0, 0);

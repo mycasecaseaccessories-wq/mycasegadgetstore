@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Save } from "lucide-react";
@@ -17,7 +18,7 @@ import { toast } from "sonner";
 
 const CURRENCIES = ["KS", "MMK", "THB", "USD", "EUR", "SGD", "CNY", "JPY", "MYR", "VND"];
 
-export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
+export const Route = createFileRoute("/_authenticated/settings")({ component: () => <RequireAdmin><SettingsPage /></RequireAdmin> });
 
 function SettingsPage() {
   const qc = useQueryClient();

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -14,7 +15,7 @@ import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
 import { RecurringExpenses } from "@/components/RecurringExpenses";
 
-export const Route = createFileRoute("/_authenticated/expenses")({ component: ExpensesPage });
+export const Route = createFileRoute("/_authenticated/expenses")({ component: () => <RequireAdmin><ExpensesPage /></RequireAdmin> });
 
 const CATEGORIES = ["rent", "salary", "ads", "shipping", "supplies", "utilities", "other"];
 
