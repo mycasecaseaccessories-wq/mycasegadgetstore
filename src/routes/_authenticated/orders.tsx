@@ -88,6 +88,13 @@ function OrdersPage() {
 
     const { error } = await supabase.from("orders").update(payload).eq("id", id);
     if (error) return toast.error(error.message);
+    await logActivity({
+      action: "order.update",
+      entityType: "order",
+      entityId: id,
+      summary: `Updated order #${editing.order_no ?? id}`,
+      metadata: { status: editing.status, payment_status: editing.payment_status, total: editing.total },
+    });
     toast.success(earned > 0 ? `Updated · +${earned} pts awarded` : "Updated");
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["orders"] });
@@ -96,8 +103,10 @@ function OrdersPage() {
 
   const remove = async (id: string) => {
     if (!confirm("Delete this order?")) return;
+    const target = orders.find(o => o.id === id);
     const { error } = await supabase.from("orders").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logActivity({ action: "order.delete", entityType: "order", entityId: id, summary: `Deleted order #${target?.order_no ?? id}` });
     toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["orders"] });
   };

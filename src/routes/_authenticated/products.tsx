@@ -56,19 +56,28 @@ function ProductsPage() {
   const save = async () => {
     if (!form.name) return toast.error("Name is required");
     const payload = { ...form, price: Number(form.price ?? 0) };
-    const { error } = form.id
-      ? await supabase.from("products").update(payload).eq("id", form.id)
-      : await supabase.from("products").insert(payload as any);
+    const isUpdate = !!form.id;
+    const { data, error } = isUpdate
+      ? await supabase.from("products").update(payload).eq("id", form.id).select().maybeSingle()
+      : await supabase.from("products").insert(payload as any).select().maybeSingle();
     if (error) return toast.error(error.message);
-    toast.success(form.id ? "Updated" : "Created");
+    await logActivity({
+      action: isUpdate ? "product.update" : "product.create",
+      entityType: "product",
+      entityId: data?.id ?? form.id,
+      summary: `${isUpdate ? "Updated" : "Created"} product: ${form.name}`,
+    });
+    toast.success(isUpdate ? "Updated" : "Created");
     setOpen(false); setForm(empty);
     qc.invalidateQueries({ queryKey: ["products"] });
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this product?")) return;
+    const target = products.find(p => p.id === id);
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logActivity({ action: "product.delete", entityType: "product", entityId: id, summary: `Deleted product: ${target?.name ?? id}` });
     toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["products"] });
   };
