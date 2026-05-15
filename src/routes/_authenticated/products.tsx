@@ -58,7 +58,7 @@ function ProductsPage() {
     const payload = { ...form, price: Number(form.price ?? 0) };
     const isUpdate = !!form.id;
     const { data, error } = isUpdate
-      ? await supabase.from("products").update(payload).eq("id", form.id).select().maybeSingle()
+      ? await supabase.from("products").update(payload).eq("id", form.id!).select().maybeSingle()
       : await supabase.from("products").insert(payload as any).select().maybeSingle();
     if (error) return toast.error(error.message);
     await logActivity({
