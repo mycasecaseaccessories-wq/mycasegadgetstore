@@ -19,6 +19,7 @@ import { Route as ShopResetPasswordRouteImport } from './routes/shop/reset-passw
 import { Route as ShopLoginRouteImport } from './routes/shop/login'
 import { Route as ShopCartRouteImport } from './routes/shop/cart'
 import { Route as ShopAccountRouteImport } from './routes/shop/account'
+import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -94,6 +95,11 @@ const ShopAccountRoute = ShopAccountRouteImport.update({
   id: '/shop/account',
   path: '/shop/account',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
+  id: '/vouchers',
+  path: '/vouchers',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedVariantsRoute = AuthenticatedVariantsRouteImport.update({
   id: '/variants',
@@ -209,9 +215,9 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
 } as any)
 const AuthenticatedVouchersIndexRoute =
   AuthenticatedVouchersIndexRouteImport.update({
-    id: '/vouchers/',
-    path: '/vouchers/',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedVouchersRoute,
   } as any)
 const ShopPIdRoute = ShopPIdRouteImport.update({
   id: '/shop/p/$id',
@@ -219,9 +225,9 @@ const ShopPIdRoute = ShopPIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVouchersIdRoute = AuthenticatedVouchersIdRouteImport.update({
-  id: '/vouchers/$id',
-  path: '/vouchers/$id',
-  getParentRoute: () => AuthenticatedRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedVouchersRoute,
 } as any)
 const AuthenticatedCustomersIdRoute =
   AuthenticatedCustomersIdRouteImport.update({
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
+  '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -331,6 +338,7 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/variants': typeof AuthenticatedVariantsRoute
+  '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -370,6 +378,7 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/team'
     | '/variants'
+    | '/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -445,6 +454,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/team'
     | '/_authenticated/variants'
+    | '/_authenticated/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -543,6 +553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/shop/account'
       preLoaderRoute: typeof ShopAccountRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/vouchers': {
+      id: '/_authenticated/vouchers'
+      path: '/vouchers'
+      fullPath: '/vouchers'
+      preLoaderRoute: typeof AuthenticatedVouchersRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/variants': {
       id: '/_authenticated/variants'
@@ -700,10 +717,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/vouchers/': {
       id: '/_authenticated/vouchers/'
-      path: '/vouchers'
+      path: '/'
       fullPath: '/vouchers/'
       preLoaderRoute: typeof AuthenticatedVouchersIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVouchersRoute
     }
     '/shop/p/$id': {
       id: '/shop/p/$id'
@@ -714,10 +731,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/vouchers/$id': {
       id: '/_authenticated/vouchers/$id'
-      path: '/vouchers/$id'
+      path: '/$id'
       fullPath: '/vouchers/$id'
       preLoaderRoute: typeof AuthenticatedVouchersIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVouchersRoute
     }
     '/_authenticated/customers/$id': {
       id: '/_authenticated/customers/$id'
@@ -743,6 +760,21 @@ const AuthenticatedCustomersRouteWithChildren =
     AuthenticatedCustomersRouteChildren,
   )
 
+interface AuthenticatedVouchersRouteChildren {
+  AuthenticatedVouchersIdRoute: typeof AuthenticatedVouchersIdRoute
+  AuthenticatedVouchersIndexRoute: typeof AuthenticatedVouchersIndexRoute
+}
+
+const AuthenticatedVouchersRouteChildren: AuthenticatedVouchersRouteChildren = {
+  AuthenticatedVouchersIdRoute: AuthenticatedVouchersIdRoute,
+  AuthenticatedVouchersIndexRoute: AuthenticatedVouchersIndexRoute,
+}
+
+const AuthenticatedVouchersRouteWithChildren =
+  AuthenticatedVouchersRoute._addFileChildren(
+    AuthenticatedVouchersRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
@@ -766,8 +798,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedVariantsRoute: typeof AuthenticatedVariantsRoute
-  AuthenticatedVouchersIdRoute: typeof AuthenticatedVouchersIdRoute
-  AuthenticatedVouchersIndexRoute: typeof AuthenticatedVouchersIndexRoute
+  AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -793,8 +824,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedVariantsRoute: AuthenticatedVariantsRoute,
-  AuthenticatedVouchersIdRoute: AuthenticatedVouchersIdRoute,
-  AuthenticatedVouchersIndexRoute: AuthenticatedVouchersIndexRoute,
+  AuthenticatedVouchersRoute: AuthenticatedVouchersRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -817,13 +847,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
