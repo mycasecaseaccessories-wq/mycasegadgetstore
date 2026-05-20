@@ -78,7 +78,15 @@ function VoucherDetailPage() {
       paid, payment_method: method, note: note || null,
     }).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Saved");
+    toast.success(`Voucher #${voucher?.voucher_no} saved`);
+    const { logActivity } = await import("@/lib/activity");
+    await logActivity({
+      action: "voucher.update",
+      entityType: "voucher",
+      entityId: id,
+      summary: `Voucher #${voucher?.voucher_no}`,
+      metadata: { total, paid, method },
+    });
     qc.invalidateQueries({ queryKey: ["voucher", id] });
     qc.invalidateQueries({ queryKey: ["vouchers"] });
   };
