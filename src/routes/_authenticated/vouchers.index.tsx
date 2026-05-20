@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/vouchers")({ component: VouchersPage });
+export const Route = createFileRoute("/_authenticated/vouchers/")({ component: VouchersPage });
 
 type Voucher = {
   id: string; voucher_no: number; customer_name: string | null; customer_phone: string | null;
