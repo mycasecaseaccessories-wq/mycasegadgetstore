@@ -19,7 +19,6 @@ import { Route as ShopResetPasswordRouteImport } from './routes/shop/reset-passw
 import { Route as ShopLoginRouteImport } from './routes/shop/login'
 import { Route as ShopCartRouteImport } from './routes/shop/cart'
 import { Route as ShopAccountRouteImport } from './routes/shop/account'
-import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -42,6 +41,7 @@ import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedVouchersIndexRouteImport } from './routes/_authenticated/vouchers.index'
 import { Route as ShopPIdRouteImport } from './routes/shop/p.$id'
 import { Route as AuthenticatedVouchersIdRouteImport } from './routes/_authenticated/vouchers.$id'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
@@ -94,11 +94,6 @@ const ShopAccountRoute = ShopAccountRouteImport.update({
   id: '/shop/account',
   path: '/shop/account',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
-  id: '/vouchers',
-  path: '/vouchers',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedVariantsRoute = AuthenticatedVariantsRouteImport.update({
   id: '/variants',
@@ -212,15 +207,21 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedVouchersIndexRoute =
+  AuthenticatedVouchersIndexRouteImport.update({
+    id: '/vouchers/',
+    path: '/vouchers/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const ShopPIdRoute = ShopPIdRouteImport.update({
   id: '/shop/p/$id',
   path: '/shop/p/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVouchersIdRoute = AuthenticatedVouchersIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedVouchersRoute,
+  id: '/vouchers/$id',
+  path: '/vouchers/$id',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCustomersIdRoute =
   AuthenticatedCustomersIdRouteImport.update({
@@ -254,7 +255,6 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
-  '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -265,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -291,7 +292,6 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
-  '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -302,6 +302,7 @@ export interface FileRoutesByTo {
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/vouchers': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -330,7 +331,6 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/variants': typeof AuthenticatedVariantsRoute
-  '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -341,6 +341,7 @@ export interface FileRoutesById {
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/_authenticated/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -369,7 +370,6 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/team'
     | '/variants'
-    | '/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -380,6 +380,7 @@ export interface FileRouteTypes {
     | '/customers/$id'
     | '/vouchers/$id'
     | '/shop/p/$id'
+    | '/vouchers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -406,7 +407,6 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/team'
     | '/variants'
-    | '/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -417,6 +417,7 @@ export interface FileRouteTypes {
     | '/customers/$id'
     | '/vouchers/$id'
     | '/shop/p/$id'
+    | '/vouchers'
   id:
     | '__root__'
     | '/'
@@ -444,7 +445,6 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/team'
     | '/_authenticated/variants'
-    | '/_authenticated/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -455,6 +455,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
     | '/shop/p/$id'
+    | '/_authenticated/vouchers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -542,13 +543,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/shop/account'
       preLoaderRoute: typeof ShopAccountRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/vouchers': {
-      id: '/_authenticated/vouchers'
-      path: '/vouchers'
-      fullPath: '/vouchers'
-      preLoaderRoute: typeof AuthenticatedVouchersRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/variants': {
       id: '/_authenticated/variants'
@@ -704,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/vouchers/': {
+      id: '/_authenticated/vouchers/'
+      path: '/vouchers'
+      fullPath: '/vouchers/'
+      preLoaderRoute: typeof AuthenticatedVouchersIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/shop/p/$id': {
       id: '/shop/p/$id'
       path: '/shop/p/$id'
@@ -713,10 +714,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/vouchers/$id': {
       id: '/_authenticated/vouchers/$id'
-      path: '/$id'
+      path: '/vouchers/$id'
       fullPath: '/vouchers/$id'
       preLoaderRoute: typeof AuthenticatedVouchersIdRouteImport
-      parentRoute: typeof AuthenticatedVouchersRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/customers/$id': {
       id: '/_authenticated/customers/$id'
@@ -742,19 +743,6 @@ const AuthenticatedCustomersRouteWithChildren =
     AuthenticatedCustomersRouteChildren,
   )
 
-interface AuthenticatedVouchersRouteChildren {
-  AuthenticatedVouchersIdRoute: typeof AuthenticatedVouchersIdRoute
-}
-
-const AuthenticatedVouchersRouteChildren: AuthenticatedVouchersRouteChildren = {
-  AuthenticatedVouchersIdRoute: AuthenticatedVouchersIdRoute,
-}
-
-const AuthenticatedVouchersRouteWithChildren =
-  AuthenticatedVouchersRoute._addFileChildren(
-    AuthenticatedVouchersRouteChildren,
-  )
-
 interface AuthenticatedRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
@@ -778,7 +766,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedVariantsRoute: typeof AuthenticatedVariantsRoute
-  AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRouteWithChildren
+  AuthenticatedVouchersIdRoute: typeof AuthenticatedVouchersIdRoute
+  AuthenticatedVouchersIndexRoute: typeof AuthenticatedVouchersIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -804,7 +793,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedVariantsRoute: AuthenticatedVariantsRoute,
-  AuthenticatedVouchersRoute: AuthenticatedVouchersRouteWithChildren,
+  AuthenticatedVouchersIdRoute: AuthenticatedVouchersIdRoute,
+  AuthenticatedVouchersIndexRoute: AuthenticatedVouchersIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
