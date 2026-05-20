@@ -1,14 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Search, Receipt, Eye } from "lucide-react";
+import { Plus, Search, Eye, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
+import { logActivity } from "@/lib/activity";
 
 export const Route = createFileRoute("/_authenticated/vouchers/")({ component: VouchersPage });
 
@@ -19,9 +31,11 @@ type Voucher = {
 
 function VouchersPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  const { data: vouchers = [], refetch } = useQuery({
+  const { data: vouchers = [], isLoading } = useQuery({
     queryKey: ["vouchers"],
     queryFn: async () => {
       const { data, error } = await supabase.from("vouchers").select("*").order("issued_at", { ascending: false }).limit(200);
@@ -35,9 +49,33 @@ function VouchersPage() {
   );
 
   const createBlank = async () => {
-    const { data, error } = await supabase.from("vouchers").insert({ items: [] }).select("id").single();
+    if (creating) return;
+    setCreating(true);
+    // Retry on unique-violation race (23505) up to 3 times — sequence will advance.
+    let lastError: any = null;
+    for (let i = 0; i < 3; i++) {
+      const { data, error } = await supabase.from("vouchers").insert({ items: [] }).select("id, voucher_no").single();
+      if (!error && data) {
+        toast.success(`Voucher #${data.voucher_no} created`);
+        await logActivity({ action: "voucher.create", entityType: "voucher", entityId: data.id, summary: `Voucher #${data.voucher_no}` });
+        qc.invalidateQueries({ queryKey: ["vouchers"] });
+        setCreating(false);
+        navigate({ to: "/vouchers/$id", params: { id: data.id } });
+        return;
+      }
+      lastError = error;
+      if (error?.code !== "23505") break;
+    }
+    setCreating(false);
+    toast.error(lastError?.message ?? "Failed to create voucher");
+  };
+
+  const remove = async (v: Voucher) => {
+    const { error } = await supabase.from("vouchers").delete().eq("id", v.id);
     if (error) return toast.error(error.message);
-    navigate({ to: "/vouchers/$id", params: { id: data.id } });
+    toast.success(`Voucher #${v.voucher_no} deleted`);
+    await logActivity({ action: "voucher.delete", entityType: "voucher", entityId: v.id, summary: `Voucher #${v.voucher_no}` });
+    qc.invalidateQueries({ queryKey: ["vouchers"] });
   };
 
   return (
@@ -47,7 +85,10 @@ function VouchersPage() {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search vouchers…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Button onClick={createBlank}><Plus className="mr-2 h-4 w-4" />New Voucher</Button>
+        <Button onClick={createBlank} disabled={creating}>
+          {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+          New Voucher
+        </Button>
       </div>
 
       <Card><CardContent className="overflow-x-auto p-0">
@@ -56,7 +97,8 @@ function VouchersPage() {
             <tr><th className="px-4 py-3">No.</th><th>Customer</th><th>Phone</th><th>Total</th><th>Paid</th><th>Method</th><th>Date</th><th></th></tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No vouchers</td></tr>}
+            {isLoading && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>}
+            {!isLoading && filtered.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No vouchers</td></tr>}
             {filtered.map(v => (
               <tr key={v.id} className="border-t">
                 <td className="px-4 py-3 font-mono font-medium">#{v.voucher_no}</td>
@@ -66,8 +108,23 @@ function VouchersPage() {
                 <td>{formatKS(v.paid)}</td>
                 <td>{v.payment_method ? <Badge variant="outline">{v.payment_method}</Badge> : "—"}</td>
                 <td className="text-muted-foreground text-xs">{new Date(v.issued_at).toLocaleDateString()}</td>
-                <td className="text-right pr-2">
+                <td className="text-right pr-2 whitespace-nowrap">
                   <Button asChild size="icon" variant="ghost"><Link to="/vouchers/$id" params={{ id: v.id }}><Eye className="h-4 w-4" /></Link></Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete voucher #{v.voucher_no}?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => remove(v)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </td>
               </tr>
             ))}
