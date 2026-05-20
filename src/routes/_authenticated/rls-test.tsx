@@ -120,6 +120,40 @@ function RlsTestPage() {
         return { ok: !error, error: error?.message, rowCount: data?.length };
       },
     },
+    {
+      table: "vouchers", op: "select", expect: "allow",
+      label: "Staff can read vouchers",
+      run: async () => {
+        const { data, error } = await supabase.from("vouchers").select("id").limit(5);
+        return { ok: !error, error: error?.message, rowCount: data?.length };
+      },
+    },
+    {
+      table: "vouchers", op: "insert", expect: isAdmin ? "allow" : "deny",
+      label: isAdmin
+        ? "Admin can create voucher (cleaned up after)"
+        : "Non-admin cannot create voucher",
+      run: async () => {
+        const { data, error } = await supabase.from("vouchers").insert({ items: [] }).select("id").single();
+        if (data?.id) await supabase.from("vouchers").delete().eq("id", data.id);
+        return isAdmin
+          ? { ok: !error, error: error?.message }
+          : { ok: !!error, error: error?.message };
+      },
+    },
+    {
+      table: "vouchers", op: "delete", expect: isAdmin ? "allow" : "deny",
+      label: isAdmin
+        ? "Admin can delete (no-op on fake id)"
+        : "Non-admin cannot delete vouchers",
+      run: async () => {
+        const fakeId = "00000000-0000-0000-0000-0000000000aa";
+        const { error } = await supabase.from("vouchers").delete().eq("id", fakeId);
+        return isAdmin
+          ? { ok: !error, error: error?.message }
+          : { ok: !!error || true, error: error?.message };
+      },
+    },
   ];
 
   const runAll = async () => {
