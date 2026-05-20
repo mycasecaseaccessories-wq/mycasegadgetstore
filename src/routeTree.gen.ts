@@ -42,6 +42,7 @@ import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedVouchersIndexRouteImport } from './routes/_authenticated/vouchers.index'
 import { Route as ShopPIdRouteImport } from './routes/shop/p.$id'
 import { Route as AuthenticatedVouchersIdRouteImport } from './routes/_authenticated/vouchers.$id'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
@@ -212,6 +213,12 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedVouchersIndexRoute =
+  AuthenticatedVouchersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedVouchersRoute,
+  } as any)
 const ShopPIdRoute = ShopPIdRouteImport.update({
   id: '/shop/p/$id',
   path: '/shop/p/$id',
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -291,7 +299,6 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
   '/variants': typeof AuthenticatedVariantsRoute
-  '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/vouchers': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
   '/shop/p/$id': typeof ShopPIdRoute
+  '/_authenticated/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/customers/$id'
     | '/vouchers/$id'
     | '/shop/p/$id'
+    | '/vouchers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -406,7 +416,6 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/team'
     | '/variants'
-    | '/vouchers'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/customers/$id'
     | '/vouchers/$id'
     | '/shop/p/$id'
+    | '/vouchers'
   id:
     | '__root__'
     | '/'
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
     | '/shop/p/$id'
+    | '/_authenticated/vouchers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -704,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/vouchers/': {
+      id: '/_authenticated/vouchers/'
+      path: '/'
+      fullPath: '/vouchers/'
+      preLoaderRoute: typeof AuthenticatedVouchersIndexRouteImport
+      parentRoute: typeof AuthenticatedVouchersRoute
+    }
     '/shop/p/$id': {
       id: '/shop/p/$id'
       path: '/shop/p/$id'
@@ -744,10 +762,12 @@ const AuthenticatedCustomersRouteWithChildren =
 
 interface AuthenticatedVouchersRouteChildren {
   AuthenticatedVouchersIdRoute: typeof AuthenticatedVouchersIdRoute
+  AuthenticatedVouchersIndexRoute: typeof AuthenticatedVouchersIndexRoute
 }
 
 const AuthenticatedVouchersRouteChildren: AuthenticatedVouchersRouteChildren = {
   AuthenticatedVouchersIdRoute: AuthenticatedVouchersIdRoute,
+  AuthenticatedVouchersIndexRoute: AuthenticatedVouchersIndexRoute,
 }
 
 const AuthenticatedVouchersRouteWithChildren =
