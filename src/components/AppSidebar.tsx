@@ -66,7 +66,7 @@ export function AppSidebar() {
     { title: t("nav.bulkVariants"), url: "/variants", icon: Layers, admin: false },
     { title: t("nav.calculator"), url: "/calculator", icon: Calculator, admin: false },
     { title: t("nav.orders"), url: "/orders", icon: ShoppingCart, admin: false },
-    { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt, admin: false },
+    { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt, admin: true },
     { title: t("nav.customers"), url: "/customers", icon: Users, admin: false },
     { title: t("nav.inventory"), url: "/inventory", icon: Boxes, admin: false },
     { title: t("nav.suppliers"), url: "/suppliers", icon: Truck, admin: false },
