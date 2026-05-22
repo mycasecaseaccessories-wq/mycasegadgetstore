@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
+import { useRoles } from "@/lib/roles";
 
 export const Route = createFileRoute("/_authenticated/vouchers/")({ component: VouchersPage });
 
@@ -32,6 +33,7 @@ type Voucher = {
 function VouchersPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { isAdmin } = useRoles();
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -49,6 +51,10 @@ function VouchersPage() {
   );
 
   const createBlank = async () => {
+    if (!isAdmin) {
+      toast.error("Admin access required to create vouchers");
+      return;
+    }
     if (creating) return;
     setCreating(true);
     // Retry on unique-violation race (23505) up to 3 times — sequence will advance.
@@ -71,6 +77,10 @@ function VouchersPage() {
   };
 
   const remove = async (v: Voucher) => {
+    if (!isAdmin) {
+      toast.error("Admin access required to delete vouchers");
+      return;
+    }
     const { error } = await supabase.from("vouchers").delete().eq("id", v.id);
     if (error) return toast.error(error.message);
     toast.success(`Voucher #${v.voucher_no} deleted`);
