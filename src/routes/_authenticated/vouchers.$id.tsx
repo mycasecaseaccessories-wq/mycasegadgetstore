@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Save, Printer, ArrowLeft, ReceiptText } from "lucide-react";
@@ -28,6 +28,7 @@ type Voucher = {
 function VoucherDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
   const qc = useQueryClient();
   const { data: voucher } = useQuery({
     queryKey: ["voucher", id],
@@ -54,6 +55,7 @@ function VoucherDetailPage() {
   const [paid, setPaid] = useState(0);
   const [method, setMethod] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!voucher) return;
@@ -72,12 +74,17 @@ function VoucherDetailPage() {
   const due = total - paid;
 
   const save = async () => {
+    if (saving) return;
+    setSaving(true);
     const { error } = await supabase.from("vouchers").update({
       customer_name: name || null, customer_phone: phone || null,
       items: items as any, subtotal, discount, extra_fee: extra, total,
       paid, payment_method: method, note: note || null,
     }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
     toast.success(`Voucher #${voucher?.voucher_no} saved`);
     const { logActivity } = await import("@/lib/activity");
     await logActivity({
@@ -87,8 +94,20 @@ function VoucherDetailPage() {
       summary: `Voucher #${voucher?.voucher_no}`,
       metadata: { total, paid, method },
     });
-    qc.invalidateQueries({ queryKey: ["voucher", id] });
-    qc.invalidateQueries({ queryKey: ["vouchers"] });
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["voucher", id] }),
+      qc.invalidateQueries({ queryKey: ["vouchers"] }),
+      router.invalidate(),
+    ]);
+    setSaving(false);
+  };
+
+  const goBackToList = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["vouchers"] }),
+      router.invalidate(),
+    ]);
+    navigate({ to: "/vouchers" });
   };
 
   if (!voucher) return <div className="p-6 text-muted-foreground">Loading…</div>;
@@ -96,7 +115,7 @@ function VoucherDetailPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between print:hidden">
-        <Button variant="ghost" onClick={() => navigate({ to: "/vouchers" })}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
+        <Button variant="ghost" onClick={goBackToList}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={async () => printThermalReceipt({
             voucher_no: voucher.voucher_no,
@@ -115,7 +134,7 @@ function VoucherDetailPage() {
             total, paid, issued_at: voucher.issued_at,
           }} />
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print A4</Button>
-          <Button onClick={save}><Save className="mr-2 h-4 w-4" />Save</Button>
+          <Button onClick={save} disabled={saving}><Save className="mr-2 h-4 w-4" />{saving ? "Saving…" : "Save"}</Button>
         </div>
       </div>
 
