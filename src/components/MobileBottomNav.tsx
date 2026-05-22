@@ -2,6 +2,7 @@
 // Sidebar still available via SidebarTrigger; this is an additive shortcut.
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Package, ShoppingCart, Receipt, Boxes } from "lucide-react";
+import { useRoles } from "@/lib/roles";
 
 const items = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -13,12 +14,14 @@ const items = [
 
 export function MobileBottomNav() {
   const path = useRouterState({ select: (r) => r.location.pathname });
+  const { isAdmin } = useRoles();
+  const visibleItems = items.filter((item) => item.to !== "/vouchers" || isAdmin);
   return (
     <nav
       className="sticky bottom-0 z-30 flex h-14 items-stretch justify-around border-t bg-background/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {items.map(({ to, label, icon: Icon }) => {
+      {visibleItems.map(({ to, label, icon: Icon }) => {
         const active = path === to || path.startsWith(to + "/");
         return (
           <Link
