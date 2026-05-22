@@ -84,7 +84,7 @@ export function AppSidebar() {
     { title: t("nav.backup"), url: "/backup", icon: DatabaseBackup, admin: true },
     { title: "RLS Test", url: "/rls-test", icon: ShieldCheck, admin: true },
     { title: t("nav.settings"), url: "/settings", icon: Settings, admin: true },
-  ].filter(i => !i.admin || isAdmin);
+  ].filter((i) => !i.admin || isAdmin);
 
   const handleLogout = async () => {
     await signOut();
@@ -99,7 +99,11 @@ export function AppSidebar() {
             src={settings?.logo_url}
             alt=""
             className="h-9 w-9 rounded-lg object-cover shadow-sm"
-            fallback={<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm"><Sparkles className="h-4 w-4" /></div>}
+            fallback={
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
+                <Sparkles className="h-4 w-4" />
+              </div>
+            }
           />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold">{settings?.business_name || "My Case"}</span>
