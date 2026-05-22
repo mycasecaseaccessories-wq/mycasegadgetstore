@@ -22,6 +22,7 @@ import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
 import { useRoles } from "@/lib/roles";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/_authenticated/vouchers/")({ component: VouchersPage });
 
@@ -72,7 +73,7 @@ function VouchersPage() {
     if (creating) return;
     setCreating(true);
     // Retry on unique-violation race (23505) up to 3 times — sequence will advance.
-    let lastError: any = null;
+    let lastError: PostgrestError | null = null;
     for (let i = 0; i < 3; i++) {
       const { data, error } = await supabase
         .from("vouchers")
