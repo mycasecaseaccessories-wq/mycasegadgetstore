@@ -21,6 +21,7 @@ import { ShareVoucherMenu } from "@/components/ShareVoucherMenu";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
 import { getSignedUrl } from "@/lib/storage-url";
+import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/vouchers/$id")({
   component: VoucherDetailPage,
@@ -99,7 +100,7 @@ function VoucherDetailPage() {
       .update({
         customer_name: name || null,
         customer_phone: phone || null,
-        items: items as any,
+        items: items as unknown as Json,
         subtotal,
         discount,
         extra_fee: extra,
