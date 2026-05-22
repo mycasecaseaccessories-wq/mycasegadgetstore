@@ -122,7 +122,7 @@ function RlsTestPage() {
     },
     {
       table: "vouchers", op: "select", expect: "allow",
-      label: "Staff can read vouchers",
+      label: "Admin can read vouchers",
       run: async () => {
         const { data, error } = await supabase.from("vouchers").select("id").limit(5);
         return { ok: !error, error: error?.message, rowCount: data?.length };
