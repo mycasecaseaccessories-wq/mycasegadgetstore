@@ -49,7 +49,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { isAdmin } = useRoles();
+  const { isAdmin, loading: rolesLoading } = useRoles();
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -84,7 +84,7 @@ export function AppSidebar() {
     { title: t("nav.backup"), url: "/backup", icon: DatabaseBackup, admin: true },
     { title: "RLS Test", url: "/rls-test", icon: ShieldCheck, admin: true },
     { title: t("nav.settings"), url: "/settings", icon: Settings, admin: true },
-  ].filter((i) => !i.admin || isAdmin);
+  ].filter((i) => !i.admin || isAdmin || rolesLoading);
 
   const handleLogout = async () => {
     await signOut();
