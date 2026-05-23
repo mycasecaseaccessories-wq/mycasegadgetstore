@@ -14,8 +14,8 @@ const items = [
 
 export function MobileBottomNav() {
   const path = useRouterState({ select: (r) => r.location.pathname });
-  const { isAdmin } = useRoles();
-  const visibleItems = items.filter((item) => item.to !== "/vouchers" || isAdmin);
+  const { isAdmin, loading: rolesLoading } = useRoles();
+  const visibleItems = items.filter((item) => item.to !== "/vouchers" || isAdmin || rolesLoading);
   return (
     <nav
       className="sticky bottom-0 z-30 flex h-14 items-stretch justify-around border-t bg-background/95 backdrop-blur md:hidden"
