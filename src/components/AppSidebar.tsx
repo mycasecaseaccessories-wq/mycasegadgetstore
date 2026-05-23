@@ -49,7 +49,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { isAdmin } = useRoles();
+  const { isAdmin, loading: rolesLoading } = useRoles();
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
