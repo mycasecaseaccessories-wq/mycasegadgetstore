@@ -3,11 +3,30 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard, Package, ShoppingCart, Receipt, Users, Boxes, Truck, ClipboardList,
-  Wallet, BarChart3, Settings, Search as SearchIcon, Activity, DatabaseBackup, Store,
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Receipt,
+  Users,
+  Boxes,
+  Truck,
+  ClipboardList,
+  Wallet,
+  BarChart3,
+  Settings,
+  Search as SearchIcon,
+  Activity,
+  DatabaseBackup,
+  Store,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -52,9 +71,21 @@ export function CommandPalette() {
     queryFn: async () => {
       const term = debounced.trim();
       const [{ data: products }, { data: customers }, { data: orders }] = await Promise.all([
-        supabase.from("products").select("id, name, product_code").ilike("name", `%${term}%`).limit(6),
-        supabase.from("customers").select("id, name, phone").or(`name.ilike.%${term}%,phone.ilike.%${term}%`).limit(6),
-        supabase.from("orders").select("id, order_no, customer_name").or(`customer_name.ilike.%${term}%`).limit(6),
+        supabase
+          .from("products")
+          .select("id, name, product_code")
+          .ilike("name", `%${term}%`)
+          .limit(6),
+        supabase
+          .from("customers")
+          .select("id, name, phone")
+          .or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
+          .limit(6),
+        supabase
+          .from("orders")
+          .select("id, order_no, customer_name")
+          .or(`customer_name.ilike.%${term}%`)
+          .limit(6),
       ]);
       return {
         products: products ?? [],
@@ -72,7 +103,11 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search products, orders, customers… (Cmd/Ctrl+K)" value={q} onValueChange={setQ} />
+      <CommandInput
+        placeholder="Search products, orders, customers… (Cmd/Ctrl+K)"
+        value={q}
+        onValueChange={setQ}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
@@ -81,10 +116,16 @@ export function CommandPalette() {
             {results?.products && results.products.length > 0 && (
               <CommandGroup heading="Products">
                 {results.products.map((p: any) => (
-                  <CommandItem key={`p-${p.id}`} onSelect={() => go(`/products`)} value={`product ${p.name}`}>
+                  <CommandItem
+                    key={`p-${p.id}`}
+                    onSelect={() => go(`/products`)}
+                    value={`product ${p.name}`}
+                  >
                     <Package className="mr-2 h-4 w-4" />
                     <span className="flex-1 truncate">{p.name}</span>
-                    {p.product_code && <span className="text-xs text-muted-foreground">{p.product_code}</span>}
+                    {p.product_code && (
+                      <span className="text-xs text-muted-foreground">{p.product_code}</span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -92,9 +133,15 @@ export function CommandPalette() {
             {results?.orders && results.orders.length > 0 && (
               <CommandGroup heading="Orders">
                 {results.orders.map((o: any) => (
-                  <CommandItem key={`o-${o.id}`} onSelect={() => go(`/orders`)} value={`order ${o.order_no} ${o.customer_name}`}>
+                  <CommandItem
+                    key={`o-${o.id}`}
+                    onSelect={() => go(`/orders`)}
+                    value={`order ${o.order_no} ${o.customer_name}`}
+                  >
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    <span className="flex-1 truncate">#{o.order_no} · {o.customer_name ?? "Guest"}</span>
+                    <span className="flex-1 truncate">
+                      #{o.order_no} · {o.customer_name ?? "Guest"}
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -102,7 +149,11 @@ export function CommandPalette() {
             {results?.customers && results.customers.length > 0 && (
               <CommandGroup heading="Customers">
                 {results.customers.map((c: any) => (
-                  <CommandItem key={`c-${c.id}`} onSelect={() => go(`/customers/${c.id}`)} value={`customer ${c.name} ${c.phone ?? ""}`}>
+                  <CommandItem
+                    key={`c-${c.id}`}
+                    onSelect={() => go(`/customers/${c.id}`)}
+                    value={`customer ${c.name} ${c.phone ?? ""}`}
+                  >
                     <Users className="mr-2 h-4 w-4" />
                     <span className="flex-1 truncate">{c.name}</span>
                     {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
@@ -131,7 +182,9 @@ export function CommandPalette() {
 export function CommandPaletteTrigger() {
   return (
     <button
-      onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+      onClick={() =>
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+      }
       className="hidden h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground hover:bg-muted md:inline-flex"
       aria-label="Open command palette"
     >

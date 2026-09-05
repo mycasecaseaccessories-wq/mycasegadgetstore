@@ -2,7 +2,11 @@ const KEY = "shop_wishlist";
 
 function read(): string[] {
   if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 function write(ids: string[]) {
   if (typeof window === "undefined") return;
@@ -21,5 +25,5 @@ export function toggleWish(id: string) {
   return ids.includes(id);
 }
 export function removeWish(id: string) {
-  write(read().filter(x => x !== id));
+  write(read().filter((x) => x !== id));
 }

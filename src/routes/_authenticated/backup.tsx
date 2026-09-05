@@ -14,14 +14,22 @@ export const Route = createFileRoute("/_authenticated/backup")({ component: Back
 
 // Tables that are safe to back up (excludes auth / role tables).
 const TABLES = [
-  "settings", "rates", "products", "product_variants",
-  "customers", "suppliers",
-  "orders", "order_items",
-  "vouchers", "purchase_orders", "purchase_order_items",
-  "expenses", "notes",
+  "settings",
+  "rates",
+  "products",
+  "product_variants",
+  "customers",
+  "suppliers",
+  "orders",
+  "order_items",
+  "vouchers",
+  "purchase_orders",
+  "purchase_order_items",
+  "expenses",
+  "notes",
 ] as const;
 
-type TableName = typeof TABLES[number];
+type TableName = (typeof TABLES)[number];
 
 interface Backup {
   version: 1;
@@ -84,7 +92,12 @@ function BackupPage() {
   };
 
   const handleImport = async (file: File) => {
-    if (!confirm("Restore from backup? Existing rows with matching IDs will be overwritten. Continue?")) return;
+    if (
+      !confirm(
+        "Restore from backup? Existing rows with matching IDs will be overwritten. Continue?",
+      )
+    )
+      return;
     setBusy("import");
     try {
       const text = await file.text();
@@ -95,7 +108,10 @@ function BackupPage() {
       // Restore in dependency order (parents first).
       for (const t of TABLES) {
         const rows = backup.tables[t];
-        if (!rows || rows.length === 0) { c[t] = 0; continue; }
+        if (!rows || rows.length === 0) {
+          c[t] = 0;
+          continue;
+        }
         // Upsert in chunks of 500 to stay within payload limits.
         for (let i = 0; i < rows.length; i += 500) {
           const chunk = rows.slice(i, i + 500);
@@ -126,17 +142,29 @@ function BackupPage() {
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
           <p className="text-sm text-muted-foreground">
-            Export a full snapshot of your business data as a JSON file, or restore from a previous backup.
-            Auth users and roles are <strong>not</strong> included for security.
+            Export a full snapshot of your business data as a JSON file, or restore from a previous
+            backup. Auth users and roles are <strong>not</strong> included for security.
           </p>
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleExport} disabled={busy !== null}>
-              {busy === "export" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {busy === "export" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
               Export backup
             </Button>
-            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy !== null}>
-              {busy === "import" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            <Button
+              variant="outline"
+              onClick={() => fileRef.current?.click()}
+              disabled={busy !== null}
+            >
+              {busy === "import" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               Restore from file
             </Button>
             <input
@@ -153,10 +181,15 @@ function BackupPage() {
 
           {Object.keys(counts).length > 0 && (
             <div className="rounded-md border p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Last operation</p>
+              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                Last operation
+              </p>
               <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3">
                 {Object.entries(counts).map(([t, n]) => (
-                  <div key={t} className="flex items-center justify-between rounded bg-muted/40 px-2 py-1">
+                  <div
+                    key={t}
+                    className="flex items-center justify-between rounded bg-muted/40 px-2 py-1"
+                  >
                     <span className="font-mono">{t}</span>
                     <Badge variant="outline">{n}</Badge>
                   </div>

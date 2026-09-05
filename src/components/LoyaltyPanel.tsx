@@ -43,7 +43,9 @@ export function LoyaltyPanel() {
 
   useEffect(() => {
     const off = onLoyaltyChange(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }));
-    return () => { off(); };
+    return () => {
+      off();
+    };
   }, [qc]);
 
   const save = () => {
@@ -70,22 +72,39 @@ export function LoyaltyPanel() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Earn 1 point per</Label>
-            <Input type="number" value={cfg.earnPerAmount} onChange={(e) => setCfg({ ...cfg, earnPerAmount: Number(e.target.value) })} />
+            <Input
+              type="number"
+              value={cfg.earnPerAmount}
+              onChange={(e) => setCfg({ ...cfg, earnPerAmount: Number(e.target.value) })}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">1 point = (currency)</Label>
-            <Input type="number" value={cfg.redeemValue} onChange={(e) => setCfg({ ...cfg, redeemValue: Number(e.target.value) })} />
+            <Input
+              type="number"
+              value={cfg.redeemValue}
+              onChange={(e) => setCfg({ ...cfg, redeemValue: Number(e.target.value) })}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Min points to redeem</Label>
-            <Input type="number" value={cfg.minRedeem} onChange={(e) => setCfg({ ...cfg, minRedeem: Number(e.target.value) })} />
+            <Input
+              type="number"
+              value={cfg.minRedeem}
+              onChange={(e) => setCfg({ ...cfg, minRedeem: Number(e.target.value) })}
+            />
           </div>
         </div>
-        <Button size="sm" onClick={save}><Save className="mr-2 h-4 w-4" />Save rules</Button>
+        <Button size="sm" onClick={save}>
+          <Save className="mr-2 h-4 w-4" />
+          Save rules
+        </Button>
 
         <div className="rounded-md border">
           <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Customer balances</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Customer balances
+            </p>
             <Badge variant="outline">{customers.length} customers</Badge>
           </div>
           <div className="max-h-80 divide-y overflow-y-auto">
@@ -102,10 +121,30 @@ export function LoyaltyPanel() {
                     <p className="truncate text-xs text-muted-foreground">{c.phone ?? "—"}</p>
                   </div>
                   <Badge className="font-mono">{bal} pts</Badge>
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, 10).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }))} title="+10">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      adjust(k, 10).then(() =>
+                        qc.invalidateQueries({ queryKey: ["loyalty_balances"] }),
+                      )
+                    }
+                    title="+10"
+                  >
                     <Plus className="h-3 w-3" />
                   </Button>
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => adjust(k, -10).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }))} title="-10">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      adjust(k, -10).then(() =>
+                        qc.invalidateQueries({ queryKey: ["loyalty_balances"] }),
+                      )
+                    }
+                    title="-10"
+                  >
                     <Minus className="h-3 w-3" />
                   </Button>
                   <Input
@@ -115,7 +154,9 @@ export function LoyaltyPanel() {
                     onBlur={(e) => {
                       const v = Number(e.target.value);
                       if (!Number.isNaN(v) && e.target.value !== "") {
-                        setBalance(k, v).then(() => qc.invalidateQueries({ queryKey: ["loyalty_balances"] }));
+                        setBalance(k, v).then(() =>
+                          qc.invalidateQueries({ queryKey: ["loyalty_balances"] }),
+                        );
                         e.target.value = "";
                       }
                     }}

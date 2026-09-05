@@ -1,8 +1,12 @@
 // Phase 14 — Customer messaging deep-links (SMS / Viber / Telegram / WhatsApp / Copy).
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Share2, MessageSquare, Send, Phone, Copy, MessageCircle } from "lucide-react";
 import { formatKS } from "@/lib/format";
@@ -56,7 +60,9 @@ export function ShareVoucherMenu({ data }: { data: ShareData }) {
     if (navigator.share) {
       try {
         await navigator.share({ title: `Voucher #${data.voucher_no}`, text: message });
-      } catch { /* cancelled */ }
+      } catch {
+        /* cancelled */
+      }
     } else {
       copy();
     }
@@ -65,7 +71,10 @@ export function ShareVoucherMenu({ data }: { data: ShareData }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline"><Share2 className="mr-2 h-4 w-4" />Send to customer</Button>
+        <Button variant="outline">
+          <Share2 className="mr-2 h-4 w-4" />
+          Send to customer
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-xs text-muted-foreground">
@@ -75,13 +84,20 @@ export function ShareVoucherMenu({ data }: { data: ShareData }) {
         <DropdownMenuItem onClick={() => open(`sms:${phone}?body=${encoded}`)} disabled={!phone}>
           <Phone className="mr-2 h-4 w-4" /> SMS
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => open(`https://wa.me/${phone.replace(/^\+/, "")}?text=${encoded}`)} disabled={!phone}>
+        <DropdownMenuItem
+          onClick={() => open(`https://wa.me/${phone.replace(/^\+/, "")}?text=${encoded}`)}
+          disabled={!phone}
+        >
           <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => open(`viber://forward?text=${encoded}`)}>
           <MessageSquare className="mr-2 h-4 w-4" /> Viber
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => open(`https://t.me/share/url?url=${encodeURIComponent(" ")}&text=${encoded}`)}>
+        <DropdownMenuItem
+          onClick={() =>
+            open(`https://t.me/share/url?url=${encodeURIComponent(" ")}&text=${encoded}`)
+          }
+        >
           <Send className="mr-2 h-4 w-4" /> Telegram
         </DropdownMenuItem>
         <DropdownMenuSeparator />

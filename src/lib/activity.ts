@@ -3,13 +3,24 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ActivityAction =
-  | "create" | "update" | "delete"
-  | "order.create" | "order.update" | "order.status"
-  | "voucher.create" | "voucher.update" | "voucher.print"
-  | "product.create" | "product.update" | "product.delete"
-  | "po.receive" | "expense.create"
-  | "auth.login" | "auth.logout"
-  | "settings.update" | "role.change"
+  | "create"
+  | "update"
+  | "delete"
+  | "order.create"
+  | "order.update"
+  | "order.status"
+  | "voucher.create"
+  | "voucher.update"
+  | "voucher.print"
+  | "product.create"
+  | "product.update"
+  | "product.delete"
+  | "po.receive"
+  | "expense.create"
+  | "auth.login"
+  | "auth.logout"
+  | "settings.update"
+  | "role.change"
   | string;
 
 export interface LogActivityInput {

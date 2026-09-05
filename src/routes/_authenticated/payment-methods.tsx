@@ -10,11 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/payment-methods")({ component: () => <RequireAdmin><PaymentMethodsPage /></RequireAdmin> });
+export const Route = createFileRoute("/_authenticated/payment-methods")({
+  component: () => (
+    <RequireAdmin>
+      <PaymentMethodsPage />
+    </RequireAdmin>
+  ),
+});
 
 type PM = {
   id: string;
@@ -39,7 +51,16 @@ const empty: Partial<PM> = {
   sort_order: 0,
 };
 
-const PRESETS = ["Wave Money", "KBZ Pay", "AYA Pay", "CB Pay", "Binance", "USDT (TRC20)", "Bank Transfer", "Cash on Delivery"];
+const PRESETS = [
+  "Wave Money",
+  "KBZ Pay",
+  "AYA Pay",
+  "CB Pay",
+  "Binance",
+  "USDT (TRC20)",
+  "Bank Transfer",
+  "Cash on Delivery",
+];
 
 function PaymentMethodsPage() {
   const qc = useQueryClient();
@@ -59,12 +80,22 @@ function PaymentMethodsPage() {
     },
   });
 
-  const openNew = () => { setEditing({ ...empty }); setOpen(true); };
-  const openEdit = (m: PM) => { setEditing({ ...m }); setOpen(true); };
+  const openNew = () => {
+    setEditing({ ...empty });
+    setOpen(true);
+  };
+  const openEdit = (m: PM) => {
+    setEditing({ ...m });
+    setOpen(true);
+  };
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.provider?.trim() || !editing.account_name?.trim() || !editing.account_number?.trim()) {
+    if (
+      !editing.provider?.trim() ||
+      !editing.account_name?.trim() ||
+      !editing.account_number?.trim()
+    ) {
       return toast.error("Provider, account name & number are required");
     }
     const payload = {
@@ -88,7 +119,10 @@ function PaymentMethodsPage() {
   };
 
   const toggle = async (m: PM) => {
-    const { error } = await supabase.from("payment_methods").update({ is_active: !m.is_active }).eq("id", m.id);
+    const { error } = await supabase
+      .from("payment_methods")
+      .update({ is_active: !m.is_active })
+      .eq("id", m.id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["payment_methods"] });
   };
@@ -102,7 +136,10 @@ function PaymentMethodsPage() {
   };
 
   const move = async (m: PM, dir: -1 | 1) => {
-    const { error } = await supabase.from("payment_methods").update({ sort_order: (m.sort_order ?? 0) + dir }).eq("id", m.id);
+    const { error } = await supabase
+      .from("payment_methods")
+      .update({ sort_order: (m.sort_order ?? 0) + dir })
+      .eq("id", m.id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["payment_methods"] });
   };
@@ -112,15 +149,24 @@ function PaymentMethodsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payment Methods</h1>
-          <p className="text-sm text-muted-foreground">Wave Money, KBZ Pay, AYA Pay, Binance, ဘဏ်အကောင့်များ စသဖြင့် manual payment options</p>
+          <p className="text-sm text-muted-foreground">
+            Wave Money, KBZ Pay, AYA Pay, Binance, ဘဏ်အကောင့်များ စသဖြင့် manual payment options
+          </p>
         </div>
-        <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Add method</Button>
+        <Button onClick={openNew}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add method
+        </Button>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {!isLoading && methods.length === 0 && (
-          <Card><CardContent className="p-6 text-center text-muted-foreground">No payment methods yet. Click <b>Add method</b>.</CardContent></Card>
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              No payment methods yet. Click <b>Add method</b>.
+            </CardContent>
+          </Card>
         )}
         {methods.map((m) => (
           <Card key={m.id} className={m.is_active ? "" : "opacity-60"}>
@@ -133,24 +179,49 @@ function PaymentMethodsPage() {
                 {m.bank_name && <p className="text-xs text-muted-foreground">{m.bank_name}</p>}
               </div>
               <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(m, -1)} title="Up"><GripVertical className="h-4 w-4" /></Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => move(m, -1)}
+                  title="Up"
+                >
+                  <GripVertical className="h-4 w-4" />
+                </Button>
                 <Switch checked={m.is_active} onCheckedChange={() => toggle(m)} />
               </div>
             </CardHeader>
             <CardContent className="space-y-1.5 pt-0 text-sm">
-              <p><span className="text-muted-foreground">အကောင့်နာမည်:</span> <b>{m.account_name}</b></p>
-              <p><span className="text-muted-foreground">အကောင့်နံပါတ်:</span> <b className="font-mono">{m.account_number}</b></p>
+              <p>
+                <span className="text-muted-foreground">အကောင့်နာမည်:</span> <b>{m.account_name}</b>
+              </p>
+              <p>
+                <span className="text-muted-foreground">အကောင့်နံပါတ်:</span>{" "}
+                <b className="font-mono">{m.account_number}</b>
+              </p>
               {m.note && <p className="text-xs text-muted-foreground">{m.note}</p>}
               <div className="flex justify-end gap-1 pt-1">
-                <Button size="sm" variant="outline" onClick={() => openEdit(m)}><Pencil className="mr-1 h-3 w-3" />Edit</Button>
-                <Button size="sm" variant="outline" onClick={() => remove(m)}><Trash2 className="mr-1 h-3 w-3" />Delete</Button>
+                <Button size="sm" variant="outline" onClick={() => openEdit(m)}>
+                  <Pencil className="mr-1 h-3 w-3" />
+                  Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => remove(m)}>
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setEditing(null);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit payment method" : "Add payment method"}</DialogTitle>
@@ -165,37 +236,67 @@ function PaymentMethodsPage() {
                   placeholder="Wave Money / KBZ Pay / Binance ..."
                   list="provider-presets"
                 />
-                <datalist id="provider-presets">{PRESETS.map(p => <option key={p} value={p} />)}</datalist>
+                <datalist id="provider-presets">
+                  {PRESETS.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label>အကောင့်နာမည် *</Label>
-                <Input value={editing.account_name ?? ""} onChange={(e) => setEditing({ ...editing, account_name: e.target.value })} />
+                <Input
+                  value={editing.account_name ?? ""}
+                  onChange={(e) => setEditing({ ...editing, account_name: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>အကောင့်နံပါတ် *</Label>
-                <Input value={editing.account_number ?? ""} onChange={(e) => setEditing({ ...editing, account_number: e.target.value })} />
+                <Input
+                  value={editing.account_number ?? ""}
+                  onChange={(e) => setEditing({ ...editing, account_number: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>ဘဏ်နာမည် (optional)</Label>
-                <Input value={editing.bank_name ?? ""} onChange={(e) => setEditing({ ...editing, bank_name: e.target.value })} placeholder="KBZ Bank, AYA Bank ..." />
+                <Input
+                  value={editing.bank_name ?? ""}
+                  onChange={(e) => setEditing({ ...editing, bank_name: e.target.value })}
+                  placeholder="KBZ Bank, AYA Bank ..."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>QR image URL (optional)</Label>
-                <Input value={editing.qr_url ?? ""} onChange={(e) => setEditing({ ...editing, qr_url: e.target.value })} />
+                <Input
+                  value={editing.qr_url ?? ""}
+                  onChange={(e) => setEditing({ ...editing, qr_url: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Note</Label>
-                <Textarea value={editing.note ?? ""} onChange={(e) => setEditing({ ...editing, note: e.target.value })} rows={2} />
+                <Textarea
+                  value={editing.note ?? ""}
+                  onChange={(e) => setEditing({ ...editing, note: e.target.value })}
+                  rows={2}
+                />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-2">
                 <Label className="m-0">Active</Label>
-                <Switch checked={editing.is_active ?? true} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} />
+                <Switch
+                  checked={editing.is_active ?? true}
+                  onCheckedChange={(v) => setEditing({ ...editing, is_active: v })}
+                />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}><X className="mr-2 h-4 w-4" />Cancel</Button>
-            <Button onClick={save}><Check className="mr-2 h-4 w-4" />Save</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button onClick={save}>
+              <Check className="mr-2 h-4 w-4" />
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -41,9 +41,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We could not load this page. Please try again, or return to the dashboard.
+        </p>
         <button
-          onClick={() => { router.invalidate(); reset(); }}
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
           className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Try again
@@ -64,9 +69,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "My Case — Admin Console" },
       { name: "twitter:title", content: "My Case — Admin Console" },
       { property: "og:description", content: "Product calculator and sales management dashboard." },
-      { name: "twitter:description", content: "Product calculator and sales management dashboard." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7617a98e-8bda-4ee7-93eb-9d7be1828b39" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7617a98e-8bda-4ee7-93eb-9d7be1828b39" },
+      {
+        name: "twitter:description",
+        content: "Product calculator and sales management dashboard.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7617a98e-8bda-4ee7-93eb-9d7be1828b39",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7617a98e-8bda-4ee7-93eb-9d7be1828b39",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -85,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="my" className="dark">
       <head>
         <HeadContent />
       </head>

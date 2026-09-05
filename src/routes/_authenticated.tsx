@@ -51,8 +51,12 @@ function AuthLayout() {
       return data?.currency ?? "KS";
     },
   });
-  useEffect(() => { if (currencySetting) setCurrency(currencySetting); }, [currencySetting]);
-  useEffect(() => { applyTheme(); }, []);
+  useEffect(() => {
+    if (currencySetting) setCurrency(currencySetting);
+  }, [currencySetting]);
+  useEffect(() => {
+    applyTheme();
+  }, []);
 
   if (loading) {
     return (

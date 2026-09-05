@@ -13,7 +13,9 @@ const SIGN_TTL = 60 * 60; // 1h
  *  - already-signed URL (`.../storage/v1/object/sign/<bucket>/<path>?token=...`)
  *  - bare path stored as `bucket/path/...`
  */
-export function parseStoragePath(value: string | null | undefined): { bucket: string; path: string } | null {
+export function parseStoragePath(
+  value: string | null | undefined,
+): { bucket: string; path: string } | null {
   if (!value) return null;
   const m = value.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/([^?]+)/);
   if (m) return { bucket: m[1], path: decodeURIComponent(m[2]) };
@@ -34,7 +36,9 @@ export async function getSignedUrl(value: string | null | undefined): Promise<st
   const now = Math.floor(Date.now() / 1000);
   const cached = cache.get(key);
   if (cached && cached.exp > now + 60) return cached.url;
-  const { data, error } = await supabase.storage.from(parsed.bucket).createSignedUrl(parsed.path, SIGN_TTL);
+  const { data, error } = await supabase.storage
+    .from(parsed.bucket)
+    .createSignedUrl(parsed.path, SIGN_TTL);
   if (error || !data?.signedUrl) return null;
   cache.set(key, { url: data.signedUrl, exp: now + SIGN_TTL });
   return data.signedUrl;

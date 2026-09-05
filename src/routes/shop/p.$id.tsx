@@ -20,13 +20,30 @@ function ProductPage() {
   const { data: product } = useQuery({
     queryKey: ["public-product", id],
     queryFn: async () =>
-      (await supabase.from("products").select("id, name, size, price, waiting_time, stock_status, category, note, product_code, brand, status, stock_in, sold_qty, thb_price, final_sell_mmk, image_url").eq("id", id).eq("status", "ACTIVE").maybeSingle()).data,
+      (
+        await supabase
+          .from("products")
+          .select(
+            "id, name, size, price, waiting_time, stock_status, category, note, product_code, brand, status, stock_in, sold_qty, thb_price, final_sell_mmk, image_url",
+          )
+          .eq("id", id)
+          .eq("status", "ACTIVE")
+          .maybeSingle()
+      ).data,
   });
 
   const { data: variants = [] } = useQuery({
     queryKey: ["public-variants", id],
     queryFn: async () =>
-      (await supabase.from("product_variants").select("id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, note").eq("product_id", id).eq("status", "ACTIVE")).data ?? [],
+      (
+        await supabase
+          .from("product_variants")
+          .select(
+            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, note",
+          )
+          .eq("product_id", id)
+          .eq("status", "ACTIVE")
+      ).data ?? [],
   });
 
   const { data: related = [] } = useQuery({
@@ -66,7 +83,10 @@ function ProductPage() {
       <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/shop"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link>
+            <Link to="/shop">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Link>
           </Button>
           <div className="flex items-center gap-2">
             <ShopAccountButton />
@@ -82,23 +102,36 @@ function ProductPage() {
               src={product.image_url}
               alt={product.name}
               className="h-full w-full object-cover"
-              fallback={<div className="flex h-full w-full items-center justify-center text-6xl text-muted-foreground/30">📦</div>}
+              fallback={
+                <div className="flex h-full w-full items-center justify-center text-6xl text-muted-foreground/30">
+                  📦
+                </div>
+              }
             />
           </div>
           <div className="space-y-3">
-            {product.brand && <p className="text-xs uppercase tracking-wide text-muted-foreground">{product.brand}</p>}
+            {product.brand && (
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {product.brand}
+              </p>
+            )}
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
             <p className="text-3xl font-bold text-primary">{formatKS(price)}</p>
             <div className="flex flex-wrap gap-2">
               {stock <= 0 ? (
-                <Badge variant="outline" className="bg-red-500/10 text-red-600">Out of stock</Badge>
+                <Badge variant="outline" className="bg-red-500/10 text-red-600">
+                  Out of stock
+                </Badge>
               ) : (
                 <Badge variant="outline" className="bg-green-500/10 text-green-600">
-                  <Check className="mr-1 h-3 w-3" />In stock ({stock})
+                  <Check className="mr-1 h-3 w-3" />
+                  In stock ({stock})
                 </Badge>
               )}
               {product.waiting_time && (
-                <Badge variant="outline" className="bg-muted">⏱ {product.waiting_time}</Badge>
+                <Badge variant="outline" className="bg-muted">
+                  ⏱ {product.waiting_time}
+                </Badge>
               )}
             </div>
 
@@ -118,7 +151,10 @@ function ProductPage() {
                 {variants.map((v: any) => {
                   const vPrice = Number(v.final_sell_mmk ?? v.price ?? 0);
                   return (
-                    <div key={v.id} className="flex items-center justify-between rounded-md border p-3">
+                    <div
+                      key={v.id}
+                      className="flex items-center justify-between rounded-md border p-3"
+                    >
                       <div>
                         <p className="text-sm font-medium">{v.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -127,7 +163,9 @@ function ProductPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{formatKS(vPrice)}</span>
-                        <Button size="sm" onClick={() => buy(v.id, v.name, vPrice)}>Add</Button>
+                        <Button size="sm" onClick={() => buy(v.id, v.name, vPrice)}>
+                          Add
+                        </Button>
                       </div>
                     </div>
                   );
@@ -153,18 +191,29 @@ function ProductPage() {
               {related.map((r: any) => {
                 const rp = Number(r.final_sell_mmk ?? r.price ?? 0);
                 return (
-                  <Card key={r.id} className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <Card
+                    key={r.id}
+                    className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  >
                     <Link to="/shop/p/$id" params={{ id: r.id }}>
                       <div className="aspect-square w-full overflow-hidden bg-muted">
                         <StorageImage
                           src={r.image_url}
                           alt={r.name}
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                          fallback={<div className="flex h-full w-full items-center justify-center text-3xl text-muted-foreground/40">📦</div>}
+                          fallback={
+                            <div className="flex h-full w-full items-center justify-center text-3xl text-muted-foreground/40">
+                              📦
+                            </div>
+                          }
                         />
                       </div>
                       <CardContent className="space-y-1 p-2.5">
-                        {r.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{r.brand}</p>}
+                        {r.brand && (
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {r.brand}
+                          </p>
+                        )}
                         <p className="line-clamp-2 text-xs font-medium leading-tight">{r.name}</p>
                         <p className="text-sm font-semibold text-primary">{formatKS(rp)}</p>
                       </CardContent>

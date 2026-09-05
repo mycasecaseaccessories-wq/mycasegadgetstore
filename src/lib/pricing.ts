@@ -52,9 +52,17 @@ export function calculatePricing(input: PricingInput): PricingResult {
   const buffer = Math.max(0, +(input.minimumBuffer ?? 0));
 
   const empty: PricingResult = {
-    appliedBuyRate: buy, appliedSellRate: buy + gap,
-    mmkBuyPrice: 0, baseSellPriceMMK: 0, totalExtraCost: 0, costBeforeProfit: 0,
-    finalSellMMK: 0, trueNetProfit: 0, marginPercent: 0, minimumPriceMMK: 0, belowMinimum: false,
+    appliedBuyRate: buy,
+    appliedSellRate: buy + gap,
+    mmkBuyPrice: 0,
+    baseSellPriceMMK: 0,
+    totalExtraCost: 0,
+    costBeforeProfit: 0,
+    finalSellMMK: 0,
+    trueNetProfit: 0,
+    marginPercent: 0,
+    minimumPriceMMK: 0,
+    belowMinimum: false,
   };
   if (thb <= 0 || buy <= 0) return empty;
 
@@ -67,11 +75,12 @@ export function calculatePricing(input: PricingInput): PricingResult {
   let raw: number;
   if (mode === "FIXED") raw = cost + fixed;
   else if (mode === "PERCENT") raw = cost * (1 + percent / 100);
-  else raw = cost + fixed + (cost * percent / 100);
+  else raw = cost + fixed + (cost * percent) / 100;
 
-  const minimum = input.minimumPriceMode === "buy_plus_extra_plus_buffer"
-    ? mmkBuy + extra + buffer
-    : baseSell + extra;
+  const minimum =
+    input.minimumPriceMode === "buy_plus_extra_plus_buffer"
+      ? mmkBuy + extra + buffer
+      : baseSell + extra;
   const enforced = Math.max(raw, minimum);
   const final = applyRounding(enforced, rounding);
   const profit = final - (mmkBuy + extra);

@@ -51,7 +51,10 @@ function ResetPasswordPage() {
       <header className="border-b">
         <div className="mx-auto flex max-w-md items-center px-4 py-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/shop/login"><ArrowLeft className="mr-2 h-4 w-4" />Back to sign in</Link>
+            <Link to="/shop/login">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to sign in
+            </Link>
           </Button>
         </div>
       </header>
@@ -69,14 +72,30 @@ function ResetPasswordPage() {
                 <Label htmlFor="password">New password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="password" type="password" className="pl-9" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="pl-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="confirm">Confirm password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="confirm" type="password" className="pl-9" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={6} />
+                  <Input
+                    id="confirm"
+                    type="password"
+                    className="pl-9"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    required
+                    minLength={6}
+                  />
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={busy || !ready}>

@@ -55,7 +55,9 @@ function AccountPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, order_no, total, status, payment_status, order_date, points_earned, points_redeemed")
+        .select(
+          "id, order_no, total, status, payment_status, order_date, points_earned, points_redeemed",
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       return data ?? [];
@@ -87,11 +89,17 @@ function AccountPage() {
       <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/shop"><ArrowLeft className="mr-2 h-4 w-4" />Shop</Link>
+            <Link to="/shop">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Shop
+            </Link>
           </Button>
           <div className="flex items-center gap-2">
             <CartBadge />
-            <Button variant="ghost" size="sm" onClick={logout}><LogOut className="mr-1 h-4 w-4" />Sign out</Button>
+            <Button variant="ghost" size="sm" onClick={logout}>
+              <LogOut className="mr-1 h-4 w-4" />
+              Sign out
+            </Button>
           </div>
         </div>
       </header>
@@ -127,19 +135,30 @@ function AccountPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Phone (for loyalty)</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="09xxxxxxxx"
+                />
               </div>
             </div>
-            <Button onClick={savePhone} className="w-full sm:w-auto">Save profile</Button>
+            <Button onClick={savePhone} className="w-full sm:w-auto">
+              Save profile
+            </Button>
           </CardContent>
         </Card>
 
         <div>
           <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-            <Package className="h-5 w-5" />Order history
+            <Package className="h-5 w-5" />
+            Order history
           </h2>
           {orders.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">No orders yet</CardContent></Card>
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                No orders yet
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-2">
               {orders.map((o: any) => (
@@ -147,12 +166,22 @@ function AccountPage() {
                   <CardContent className="flex items-center justify-between gap-3 p-4">
                     <div>
                       <p className="font-semibold">Order #{o.order_no}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(o.order_date)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(o.order_date)}
+                      </p>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         <Badge variant="outline">{o.status}</Badge>
                         <Badge variant="outline">{o.payment_status}</Badge>
-                        {o.points_earned > 0 && <Badge variant="outline" className="bg-primary/10 text-primary">+{o.points_earned} pts</Badge>}
-                        {o.points_redeemed > 0 && <Badge variant="outline" className="bg-orange-500/10 text-orange-600">-{o.points_redeemed} pts</Badge>}
+                        {o.points_earned > 0 && (
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            +{o.points_earned} pts
+                          </Badge>
+                        )}
+                        {o.points_redeemed > 0 && (
+                          <Badge variant="outline" className="bg-orange-500/10 text-orange-600">
+                            -{o.points_redeemed} pts
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <p className="text-right text-lg font-bold text-primary">{formatKS(o.total)}</p>
@@ -166,19 +195,26 @@ function AccountPage() {
         {loyalty && loyalty.history && loyalty.history.length > 0 && (
           <div>
             <h2 className="mb-2 text-lg font-semibold">Points activity</h2>
-            <Card><CardContent className="divide-y p-0">
-              {loyalty.history.map((h: any) => (
-                <div key={h.id} className="flex items-center justify-between p-3">
-                  <div>
-                    <p className="text-sm font-medium capitalize">{h.kind}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(h.created_at)} · {h.note}</p>
+            <Card>
+              <CardContent className="divide-y p-0">
+                {loyalty.history.map((h: any) => (
+                  <div key={h.id} className="flex items-center justify-between p-3">
+                    <div>
+                      <p className="text-sm font-medium capitalize">{h.kind}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(h.created_at)} · {h.note}
+                      </p>
+                    </div>
+                    <p
+                      className={`font-semibold ${h.delta > 0 ? "text-green-600" : "text-orange-600"}`}
+                    >
+                      {h.delta > 0 ? "+" : ""}
+                      {h.delta} pts
+                    </p>
                   </div>
-                  <p className={`font-semibold ${h.delta > 0 ? "text-green-600" : "text-orange-600"}`}>
-                    {h.delta > 0 ? "+" : ""}{h.delta} pts
-                  </p>
-                </div>
-              ))}
-            </CardContent></Card>
+                ))}
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>

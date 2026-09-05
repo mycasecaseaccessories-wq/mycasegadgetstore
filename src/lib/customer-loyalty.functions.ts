@@ -101,12 +101,15 @@ export const redeemMyPoints = createServerFn({ method: "POST" })
     const next = current - data.points;
     const newTotal = Math.max(0, Number((order as any).total ?? 0) - value);
 
-    await supabaseAdmin
-      .from("loyalty_balances")
-      .upsert(
-        { customer_key: key, points: next, customer_phone: key, updated_at: new Date().toISOString() },
-        { onConflict: "customer_key" },
-      );
+    await supabaseAdmin.from("loyalty_balances").upsert(
+      {
+        customer_key: key,
+        points: next,
+        customer_phone: key,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "customer_key" },
+    );
 
     await supabaseAdmin.from("loyalty_transactions").insert({
       customer_key: key,
@@ -159,12 +162,15 @@ export const awardMyPoints = createServerFn({ method: "POST" })
       .maybeSingle();
     const next = Number((bal as any)?.points ?? 0) + pts;
 
-    await supabaseAdmin
-      .from("loyalty_balances")
-      .upsert(
-        { customer_key: key, points: next, customer_phone: key, updated_at: new Date().toISOString() },
-        { onConflict: "customer_key" },
-      );
+    await supabaseAdmin.from("loyalty_balances").upsert(
+      {
+        customer_key: key,
+        points: next,
+        customer_phone: key,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "customer_key" },
+    );
     await supabaseAdmin.from("loyalty_transactions").insert({
       customer_key: key,
       order_id: data.orderId,

@@ -5,7 +5,9 @@ export type Theme = "light" | "dark" | "system";
 const listeners = new Set<() => void>();
 
 const getSystem = (): "light" | "dark" =>
-  typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 
 export const getTheme = (): Theme => {
   if (typeof localStorage === "undefined") return "system";
@@ -22,7 +24,11 @@ export const applyTheme = (t: Theme = getTheme()) => {
 };
 
 export const setTheme = (t: Theme) => {
-  try { localStorage.setItem(KEY, t); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(KEY, t);
+  } catch {
+    /* ignore */
+  }
   applyTheme(t);
   listeners.forEach((l) => l());
 };

@@ -15,7 +15,9 @@ interface Props {
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interface Window { BarcodeDetector?: any }
+  interface Window {
+    BarcodeDetector?: any;
+  }
 }
 
 export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Props) {
@@ -42,9 +44,13 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
       if (!supported) return;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }, audio: false,
+          video: { facingMode: "environment" },
+          audio: false,
         });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         streamRef.current = stream;
         const v = videoRef.current;
         if (!v) return;
@@ -52,7 +58,15 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
         await v.play();
 
         const detector = new window.BarcodeDetector({
-          formats: formats ?? ["qr_code", "ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"],
+          formats: formats ?? [
+            "qr_code",
+            "ean_13",
+            "ean_8",
+            "code_128",
+            "code_39",
+            "upc_a",
+            "upc_e",
+          ],
         });
 
         const tick = async () => {
@@ -66,7 +80,9 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
               onOpenChange(false);
               return;
             }
-          } catch { /* ignore frame errors */ }
+          } catch {
+            /* ignore frame errors */
+          }
           rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
@@ -76,7 +92,10 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
     };
 
     start();
-    return () => { cancelled = true; stop(); };
+    return () => {
+      cancelled = true;
+      stop();
+    };
   }, [open, supported, formats, onDetected, onOpenChange]);
 
   const submitManual = () => {
@@ -91,7 +110,10 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ScanLine className="h-4 w-4" />Scan barcode</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <ScanLine className="h-4 w-4" />
+            Scan barcode
+          </DialogTitle>
         </DialogHeader>
 
         {supported && !error ? (
@@ -117,7 +139,9 @@ export function BarcodeScanner({ open, onOpenChange, onDetected, formats }: Prop
               autoFocus={!supported}
             />
             <Button onClick={submitManual}>OK</Button>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </DialogContent>

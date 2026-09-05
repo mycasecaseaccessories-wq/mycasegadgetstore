@@ -10,7 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
-import { getCart, updateQty, removeFromCart, clearCart, cartTotal, type CartItem } from "@/lib/cart";
+import {
+  getCart,
+  updateQty,
+  removeFromCart,
+  clearCart,
+  cartTotal,
+  type CartItem,
+} from "@/lib/cart";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
 import { getConfig as getLoyaltyConfig } from "@/lib/loyalty";
@@ -63,8 +70,7 @@ function CartPage() {
   const subtotal = cartTotal(items);
   const discount = redeemPts >= loyaltyCfg.minRedeem ? redeemPts * loyaltyCfg.redeemValue : 0;
   const total = Math.max(0, subtotal - discount);
-  const canRedeem =
-    !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
+  const canRedeem = !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
   const maxRedeem = Math.min(points, Math.floor(subtotal / Math.max(loyaltyCfg.redeemValue, 1)));
 
   const checkout = async () => {
@@ -89,7 +95,11 @@ function CartPage() {
         user_id: user.id,
       };
 
-      const { data: order, error } = await supabase.from("orders").insert(orderPayload).select().single();
+      const { data: order, error } = await supabase
+        .from("orders")
+        .insert(orderPayload)
+        .select()
+        .single();
       if (error || !order) throw error ?? new Error("Failed");
 
       const { error: itemsErr } = await supabase.from("order_items").insert(
@@ -115,7 +125,9 @@ function CartPage() {
         }
         try {
           await awardFn({ data: { orderId: order.id, phone, amount: total } });
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       }
 
       clearCart();
@@ -131,31 +143,65 @@ function CartPage() {
   return (
     <div className="mx-auto min-h-screen max-w-3xl bg-background px-4 py-4">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/shop"><ArrowLeft className="mr-2 h-4 w-4" />Continue shopping</Link>
+        <Link to="/shop">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Continue shopping
+        </Link>
       </Button>
       <h1 className="mt-3 text-2xl font-bold">Your Cart</h1>
 
       <div className="mt-4 space-y-2">
         {items.length === 0 && (
-          <Card><CardContent className="p-8 text-center text-muted-foreground">Cart is empty</CardContent></Card>
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              Cart is empty
+            </CardContent>
+          </Card>
         )}
         {items.map((i) => (
-          <Card key={i.id}><CardContent className="flex items-center gap-3 p-3">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded bg-muted">
-              <StorageImage src={i.image_url} alt="" className="h-full w-full object-cover" fallback={<div className="flex h-full w-full items-center justify-center text-xl text-muted-foreground/40">📦</div>} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{i.name}</p>
-              <p className="text-xs text-muted-foreground">{formatKS(i.price)}</p>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(i.id, i.qty - 1)}><Minus className="h-3 w-3" /></Button>
-              <span className="w-6 text-center text-sm">{i.qty}</span>
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(i.id, i.qty + 1)}><Plus className="h-3 w-3" /></Button>
-            </div>
-            <p className="w-20 text-right text-sm font-semibold">{formatKS(i.price * i.qty)}</p>
-            <Button size="icon" variant="ghost" onClick={() => removeFromCart(i.id)}><Trash2 className="h-4 w-4" /></Button>
-          </CardContent></Card>
+          <Card key={i.id}>
+            <CardContent className="flex items-center gap-3 p-3">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded bg-muted">
+                <StorageImage
+                  src={i.image_url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  fallback={
+                    <div className="flex h-full w-full items-center justify-center text-xl text-muted-foreground/40">
+                      📦
+                    </div>
+                  }
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{i.name}</p>
+                <p className="text-xs text-muted-foreground">{formatKS(i.price)}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-7 w-7"
+                  onClick={() => updateQty(i.id, i.qty - 1)}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="w-6 text-center text-sm">{i.qty}</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-7 w-7"
+                  onClick={() => updateQty(i.id, i.qty + 1)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <p className="w-20 text-right text-sm font-semibold">{formatKS(i.price * i.qty)}</p>
+              <Button size="icon" variant="ghost" onClick={() => removeFromCart(i.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
@@ -183,7 +229,9 @@ function CartPage() {
                     <Badge variant="outline">{points} available</Badge>
                   </div>
                   {redeemPts > 0 && (
-                    <Button size="sm" variant="ghost" onClick={() => setRedeemPts(0)}>Clear</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setRedeemPts(0)}>
+                      Clear
+                    </Button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -199,33 +247,52 @@ function CartPage() {
                     placeholder={`Min ${loyaltyCfg.minRedeem}`}
                     className="h-9"
                   />
-                  <Button size="sm" variant="outline" onClick={() => setRedeemPts(maxRedeem)}>Max</Button>
+                  <Button size="sm" variant="outline" onClick={() => setRedeemPts(maxRedeem)}>
+                    Max
+                  </Button>
                 </div>
                 {redeemPts > 0 && redeemPts < loyaltyCfg.minRedeem && (
                   <p className="text-xs text-destructive">Minimum {loyaltyCfg.minRedeem} points</p>
                 )}
                 {redeemPts >= loyaltyCfg.minRedeem && (
                   <p className="text-xs text-muted-foreground">
-                    Discount: <span className="font-semibold text-primary">{formatKS(discount)}</span>
+                    Discount:{" "}
+                    <span className="font-semibold text-primary">{formatKS(discount)}</span>
                   </p>
                 )}
               </div>
             )}
 
             <div className="space-y-1 border-t pt-3 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>{formatKS(subtotal)}</span></div>
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatKS(subtotal)}</span>
+              </div>
               {discount > 0 && (
-                <div className="flex justify-between text-orange-600"><span>Points discount</span><span>−{formatKS(discount)}</span></div>
+                <div className="flex justify-between text-orange-600">
+                  <span>Points discount</span>
+                  <span>−{formatKS(discount)}</span>
+                </div>
               )}
               <div className="flex items-center justify-between border-t pt-2 text-lg font-bold">
-                <span>Total</span><span className="text-primary">{formatKS(total)}</span>
+                <span>Total</span>
+                <span className="text-primary">{formatKS(total)}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="space-y-1.5"><Label>Your name *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Phone *</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Delivery address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} /></div>
+              <div className="space-y-1.5">
+                <Label>Your name *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone *</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Delivery address</Label>
+                <Textarea value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
             </div>
             <Button size="lg" className="w-full" onClick={checkout} disabled={submitting}>
               {submitting ? "Placing…" : "Place order"}

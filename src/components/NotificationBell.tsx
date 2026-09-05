@@ -14,11 +14,18 @@ import { formatDateTime, formatKS } from "@/lib/format";
 const READ_KEY = "notif-read-ids";
 
 function readSet(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]")); }
-  catch { return new Set(); }
+  try {
+    return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
 }
 function saveSet(s: Set<string>) {
-  try { localStorage.setItem(READ_KEY, JSON.stringify([...s].slice(-500))); } catch {}
+  try {
+    localStorage.setItem(READ_KEY, JSON.stringify([...s].slice(-500)));
+  } catch {
+    // Storage may be unavailable in private browsing or restricted contexts.
+  }
 }
 
 interface Notif {
@@ -32,7 +39,9 @@ interface Notif {
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [read, setRead] = useState<Set<string>>(() => (typeof window !== "undefined" ? readSet() : new Set()));
+  const [read, setRead] = useState<Set<string>>(() =>
+    typeof window !== "undefined" ? readSet() : new Set(),
+  );
 
   const { data: notifs = [] } = useQuery<Notif[]>({
     queryKey: ["notifications"],
@@ -128,7 +137,9 @@ export function NotificationBell() {
         </div>
         <ScrollArea className="max-h-96">
           {notifs.length === 0 && (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">You're all caught up</p>
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+              You're all caught up
+            </p>
           )}
           <ul className="divide-y">
             {notifs.map((n) => {
@@ -138,16 +149,29 @@ export function NotificationBell() {
                 <li key={n.id}>
                   <Link
                     to={n.to}
-                    onClick={() => { markOne(n.id); setOpen(false); }}
+                    onClick={() => {
+                      markOne(n.id);
+                      setOpen(false);
+                    }}
                     className={`flex items-start gap-2 px-3 py-2 text-xs hover:bg-muted/50 ${isRead ? "opacity-60" : ""}`}
                   >
-                    <Icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${n.kind === "out-of-stock" ? "text-destructive" : n.kind === "low-stock" ? "text-amber-500" : "text-primary"}`} />
+                    <Icon
+                      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${n.kind === "out-of-stock" ? "text-destructive" : n.kind === "low-stock" ? "text-amber-500" : "text-primary"}`}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{n.title}</p>
                       <p className="truncate text-muted-foreground">{n.detail}</p>
-                      {n.time && <p className="text-[10px] text-muted-foreground">{formatDateTime(n.time)}</p>}
+                      {n.time && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDateTime(n.time)}
+                        </p>
+                      )}
                     </div>
-                    {!isRead && <Badge variant="outline" className="h-4 px-1 text-[9px]">new</Badge>}
+                    {!isRead && (
+                      <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                        new
+                      </Badge>
+                    )}
                   </Link>
                 </li>
               );

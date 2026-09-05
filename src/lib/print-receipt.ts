@@ -1,7 +1,11 @@
 // Phase 13 — Thermal 80mm receipt printer. Opens a clean popup with print dialog.
 import { formatKS } from "@/lib/format";
 
-interface ReceiptItem { product_name: string; unit_price: number; quantity: number; }
+interface ReceiptItem {
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+}
 interface ReceiptData {
   voucher_no: number | string;
   business_name?: string | null;
@@ -21,7 +25,10 @@ interface ReceiptData {
 }
 
 const esc = (s: unknown) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 
 export function printThermalReceipt(d: ReceiptData) {
   const w = window.open("", "_blank", "width=420,height=720");
@@ -36,7 +43,7 @@ export function printThermalReceipt(d: ReceiptData) {
         <td class="qty">${i.quantity} ×</td>
         <td class="unit">${esc(formatKS(i.unit_price))}</td>
         <td class="lt">${esc(formatKS(i.unit_price * i.quantity))}</td>
-      </tr>`
+      </tr>`,
     )
     .join("");
   const due = d.total - d.paid;

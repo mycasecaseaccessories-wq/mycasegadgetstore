@@ -63,7 +63,6 @@ Features:
 - Delete product
 
 - Product fields:
-
   - product name
 
   - diameter / size
@@ -105,7 +104,6 @@ Features:
 - Delete order
 
 - Order status:
-
   - Pending
 
   - Paid
@@ -141,7 +139,6 @@ Features:
 - Delete customer
 
 - Customer fields:
-
   - name
 
   - phone
@@ -238,8 +235,6 @@ No Python code.
 
 Make it production-ready and easy to use.
 
-
-
 Given File is just reference
 
 This project was built with [Lovable](https://lovable.dev).
@@ -264,3 +259,22 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Production checks
+
+Before deploying, run the complete local quality gate:
+
+```sh
+npm ci
+npm run check
+```
+
+`check` runs TypeScript validation, ESLint, and the production build. Copy
+`.env.example` to `.env.local` for local development and provide the Supabase
+public URL and publishable key through the hosting provider's environment
+settings. Never commit `.env`, service-role keys, or database passwords.
+
+Database changes live in `supabase/migrations` and are applied by Lovable Cloud
+when the project is synchronized. The production hardening migration adds
+non-negative financial/inventory constraints, workflow-state validation, and
+indexes for the most frequently used order and catalog queries.

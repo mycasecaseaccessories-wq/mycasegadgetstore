@@ -10,7 +10,11 @@ export const getCurrency = () => _currency;
 export const setCurrency = (c: string) => {
   if (!c || c === _currency) return;
   _currency = c;
-  try { localStorage.setItem(KEY, c); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(KEY, c);
+  } catch {
+    /* ignore */
+  }
   listeners.forEach((l) => l());
 };
 export const onCurrencyChange = (fn: () => void) => {
@@ -33,5 +37,11 @@ export const formatDate = (d: string | Date) => {
 
 export const formatDateTime = (d: string | Date) => {
   const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };

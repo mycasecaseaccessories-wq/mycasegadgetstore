@@ -10,7 +10,8 @@ export const qk = {
   customer: (id: string) => ["customer", id] as const,
   inventory: () => ["inventory"] as const,
   suppliers: () => ["suppliers"] as const,
-  purchaseOrders: (filters?: Record<string, unknown>) => ["purchase-orders", filters ?? {}] as const,
+  purchaseOrders: (filters?: Record<string, unknown>) =>
+    ["purchase-orders", filters ?? {}] as const,
   expenses: (filters?: Record<string, unknown>) => ["expenses", filters ?? {}] as const,
   activity: (filters?: Record<string, unknown>) => ["activity-logs", filters ?? {}] as const,
   settings: () => ["settings"] as const,

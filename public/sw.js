@@ -14,7 +14,7 @@ self.addEventListener("fetch", (event) => {
   // Network-first for navigations, cache fallback offline
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req).catch(() => caches.match(req).then((r) => r || caches.match("/")))
+      fetch(req).catch(() => caches.match(req).then((r) => r || caches.match("/"))),
     );
     return;
   }
@@ -22,11 +22,13 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(req);
-      const fetched = fetch(req).then((res) => {
-        if (res.ok) cache.put(req, res.clone());
-        return res;
-      }).catch(() => cached);
+      const fetched = fetch(req)
+        .then((res) => {
+          if (res.ok) cache.put(req, res.clone());
+          return res;
+        })
+        .catch(() => cached);
       return cached || fetched;
-    })
+    }),
   );
 });

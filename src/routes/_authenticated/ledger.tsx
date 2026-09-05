@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
@@ -33,10 +39,15 @@ function rangeFor(g: Granularity, value: string): { from: string; to: string } {
 }
 
 function downloadCsv(name: string, rows: (string | number)[][]) {
-  const csv = rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const csv = rows
+    .map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -56,7 +67,9 @@ function LedgerPage() {
           <div className="space-y-1.5">
             <Label>View</Label>
             <Select value={g} onValueChange={(v) => setG(v as Granularity)}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="day">Day</SelectItem>
                 <SelectItem value="month">Month</SelectItem>
@@ -65,15 +78,31 @@ function LedgerPage() {
             </Select>
           </div>
           {g === "day" && (
-            <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={day} onChange={e => setDay(e.target.value)} /></div>
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+            </div>
           )}
           {g === "month" && (
-            <div className="space-y-1.5"><Label>Month</Label><Input type="month" value={month} onChange={e => setMonth(e.target.value)} /></div>
+            <div className="space-y-1.5">
+              <Label>Month</Label>
+              <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+            </div>
           )}
           {g === "year" && (
-            <div className="space-y-1.5"><Label>Year</Label><Input type="number" value={year} onChange={e => setYear(e.target.value)} className="w-[120px]" /></div>
+            <div className="space-y-1.5">
+              <Label>Year</Label>
+              <Input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="w-[120px]"
+              />
+            </div>
           )}
-          <p className="ml-auto text-xs text-muted-foreground">{range.from.slice(0,10)} → {range.to.slice(0,10)}</p>
+          <p className="ml-auto text-xs text-muted-foreground">
+            {range.from.slice(0, 10)} → {range.to.slice(0, 10)}
+          </p>
         </CardContent>
       </Card>
 
@@ -82,8 +111,12 @@ function LedgerPage() {
           <TabsTrigger value="purchases">Purchases (အဝယ်)</TabsTrigger>
           <TabsTrigger value="sales">Sales (အရောင်း)</TabsTrigger>
         </TabsList>
-        <TabsContent value="purchases"><PurchaseLedger from={range.from} to={range.to} /></TabsContent>
-        <TabsContent value="sales"><SalesLedger from={range.from} to={range.to} /></TabsContent>
+        <TabsContent value="purchases">
+          <PurchaseLedger from={range.from} to={range.to} />
+        </TabsContent>
+        <TabsContent value="sales">
+          <SalesLedger from={range.from} to={range.to} />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -110,11 +143,13 @@ function PurchaseLedger({ from, to }: { from: string; to: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_order_items")
-        .select("id, product_name, variant, quantity, unit_cost, line_total, cargo_status, tracking_code, po:purchase_orders!inner(id, po_no, supplier_name, ordered_at)")
+        .select(
+          "id, product_name, variant, quantity, unit_cost, line_total, cargo_status, tracking_code, po:purchase_orders!inner(id, po_no, supplier_name, ordered_at)",
+        )
         .gte("po.ordered_at", from.slice(0, 10))
         .lte("po.ordered_at", to.slice(0, 10));
       if (error) throw error;
-      return ((data ?? []) as any[]).map(r => ({
+      return ((data ?? []) as any[]).map((r) => ({
         id: r.id,
         ordered_at: r.po?.ordered_at ?? "",
         po_no: r.po?.po_no ?? 0,
@@ -156,12 +191,18 @@ function PurchaseLedger({ from, to }: { from: string; to: string }) {
           next.line_total = q * u;
         }
         const { error } = await supabase.from("purchase_order_items").update(next).eq("id", row.id);
-        if (error) { toast.error(error.message); return false; }
+        if (error) {
+          toast.error(error.message);
+          return false;
+        }
         toast.success("Updated");
         qc.invalidateQueries({ queryKey: ["ledger-purchases"] });
         return true;
       }}
-      totals={(rs) => ({ qty: rs.reduce((s, r) => s + r.quantity, 0), amount: rs.reduce((s, r) => s + r.line_total, 0) })}
+      totals={(rs) => ({
+        qty: rs.reduce((s, r) => s + r.quantity, 0),
+        amount: rs.reduce((s, r) => s + r.line_total, 0),
+      })}
     />
   );
 }
@@ -185,12 +226,14 @@ function SalesLedger({ from, to }: { from: string; to: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_items")
-        .select("id, product_name, quantity, unit_price, line_total, order:orders!inner(id, order_no, customer_name, order_date, status, payment_status)")
+        .select(
+          "id, product_name, quantity, unit_price, line_total, order:orders!inner(id, order_no, customer_name, order_date, status, payment_status)",
+        )
         .gte("order.order_date", from)
         .lte("order.order_date", to)
         .neq("order.status", "cancelled");
       if (error) throw error;
-      return ((data ?? []) as any[]).map(r => ({
+      return ((data ?? []) as any[]).map((r) => ({
         id: r.id,
         order_at: r.order?.order_date ?? "",
         order_no: r.order?.order_no ?? 0,
@@ -212,7 +255,12 @@ function SalesLedger({ from, to }: { from: string; to: string }) {
       dateKey="order_at"
       groupBy="month"
       columns={[
-        { key: "order_at", label: "Date", type: "text", render: (r) => new Date(r.order_at).toLocaleDateString() },
+        {
+          key: "order_at",
+          label: "Date",
+          type: "text",
+          render: (r) => new Date(r.order_at).toLocaleDateString(),
+        },
         { key: "order_no", label: "Order #", type: "text", render: (r) => `#${r.order_no}` },
         { key: "customer", label: "Customer", type: "text" },
         { key: "product_name", label: "Product", type: "text" },
@@ -229,12 +277,18 @@ function SalesLedger({ from, to }: { from: string; to: string }) {
           next.line_total = q * u;
         }
         const { error } = await supabase.from("order_items").update(next).eq("id", row.id);
-        if (error) { toast.error(error.message); return false; }
+        if (error) {
+          toast.error(error.message);
+          return false;
+        }
         toast.success("Updated");
         qc.invalidateQueries({ queryKey: ["ledger-sales"] });
         return true;
       }}
-      totals={(rs) => ({ qty: rs.reduce((s, r) => s + r.quantity, 0), amount: rs.reduce((s, r) => s + r.line_total, 0) })}
+      totals={(rs) => ({
+        qty: rs.reduce((s, r) => s + r.quantity, 0),
+        amount: rs.reduce((s, r) => s + r.line_total, 0),
+      })}
     />
   );
 }
@@ -250,7 +304,14 @@ type Column<T> = {
 };
 
 function LedgerTable<T extends { id: string }>({
-  kind, rows, columns, dateKey, groupBy, onSave, totals, isLoading,
+  kind,
+  rows,
+  columns,
+  dateKey,
+  groupBy,
+  onSave,
+  totals,
+  isLoading,
 }: {
   kind: "purchases" | "sales";
   rows: T[];
@@ -269,10 +330,15 @@ function LedgerTable<T extends { id: string }>({
   const sorted = useMemo(() => {
     const copy = [...rows];
     copy.sort((a: any, b: any) => {
-      const av = a[sortKey], bv = b[sortKey];
-      if (av == null) return 1; if (bv == null) return -1;
-      if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
-      return sortDir === "asc" ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+      const av = a[sortKey],
+        bv = b[sortKey];
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === "number" && typeof bv === "number")
+        return sortDir === "asc" ? av - bv : bv - av;
+      return sortDir === "asc"
+        ? String(av).localeCompare(String(bv))
+        : String(bv).localeCompare(String(av));
     });
     return copy;
   }, [rows, sortKey, sortDir]);
@@ -291,24 +357,38 @@ function LedgerTable<T extends { id: string }>({
   const grand = totals(rows);
 
   const exportCsv = () => {
-    const header = columns.map(c => c.label);
-    const data = sorted.map(r => columns.map(c => {
-      const v = (r as any)[c.key];
-      if (c.type === "money" || c.type === "number") return v ?? 0;
-      return v ?? "";
-    }));
-    downloadCsv(`${kind}-ledger-${new Date().toISOString().slice(0,10)}.csv`, [header, ...data]);
+    const header = columns.map((c) => c.label);
+    const data = sorted.map((r) =>
+      columns.map((c) => {
+        const v = (r as any)[c.key];
+        if (c.type === "money" || c.type === "number") return v ?? 0;
+        return v ?? "";
+      }),
+    );
+    downloadCsv(`${kind}-ledger-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...data]);
   };
 
   const toggleSort = (k: string) => {
     if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("asc"); }
+    else {
+      setSortKey(k);
+      setSortDir("asc");
+    }
   };
 
-  const startEdit = (r: T) => { setEditingId(r.id); setDraft({}); };
-  const cancelEdit = () => { setEditingId(null); setDraft({}); };
+  const startEdit = (r: T) => {
+    setEditingId(r.id);
+    setDraft({});
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft({});
+  };
   const saveEdit = async (r: T) => {
-    if (Object.keys(draft).length === 0) { cancelEdit(); return; }
+    if (Object.keys(draft).length === 0) {
+      cancelEdit();
+      return;
+    }
     const ok = await onSave(r, draft);
     if (ok) cancelEdit();
   };
@@ -320,7 +400,12 @@ function LedgerTable<T extends { id: string }>({
         <Input
           type={c.type === "text" ? "text" : "number"}
           value={v}
-          onChange={(e) => setDraft({ ...draft, [c.key]: c.type === "text" ? e.target.value : Number(e.target.value) } as any)}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              [c.key]: c.type === "text" ? e.target.value : Number(e.target.value),
+            } as any)
+          }
           className="h-8 w-28"
         />
       );
@@ -333,64 +418,114 @@ function LedgerTable<T extends { id: string }>({
   };
 
   return (
-    <Card><CardContent className="p-0">
-      <div className="flex items-center justify-between gap-2 p-3">
-        <div className="text-sm text-muted-foreground">
-          {isLoading ? "Loading…" : `${rows.length} rows · Total Qty ${grand.qty.toLocaleString()} · `}
-          <b>{formatKS(grand.amount)}</b>
+    <Card>
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between gap-2 p-3">
+          <div className="text-sm text-muted-foreground">
+            {isLoading
+              ? "Loading…"
+              : `${rows.length} rows · Total Qty ${grand.qty.toLocaleString()} · `}
+            <b>{formatKS(grand.amount)}</b>
+          </div>
+          <Button size="sm" variant="outline" onClick={exportCsv}>
+            <Download className="mr-2 h-4 w-4" />
+            CSV
+          </Button>
         </div>
-        <Button size="sm" variant="outline" onClick={exportCsv}><Download className="mr-2 h-4 w-4" />CSV</Button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              {columns.map(c => (
-                <th key={c.key} className={`px-3 py-2 ${c.align === "right" ? "text-right" : ""}`}>
-                  <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => toggleSort(c.key)}>
-                    {c.label} <ArrowUpDown className="h-3 w-3 opacity-50" />
-                  </button>
-                </th>
-              ))}
-              <th className="px-3 py-2 text-right">Edit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.length === 0 && !isLoading && (
-              <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">No records</td></tr>
-            )}
-            {groups.map(([month, list]) => {
-              const t = totals(list);
-              return (
-                <Fragment key={month}>
-                  <tr key={`h-${month}`} className="border-t bg-muted/30">
-                    <td colSpan={columns.length + 1} className="px-3 py-1.5 text-xs font-semibold">
-                      {month} · {list.length} lines · Qty {t.qty.toLocaleString()} · {formatKS(t.amount)}
-                    </td>
-                  </tr>
-                  {list.map(r => (
-                    <tr key={r.id} className="border-t hover:bg-muted/20">
-                      {columns.map(c => (
-                        <td key={c.key} className={`px-3 py-2 ${c.align === "right" ? "text-right" : ""}`}>{renderCell(c, r)}</td>
-                      ))}
-                      <td className="px-3 py-2 text-right">
-                        {editingId === r.id ? (
-                          <div className="inline-flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => saveEdit(r)}><Check className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
-                          </div>
-                        ) : (
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(r)}><Pencil className="h-4 w-4" /></Button>
-                        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                {columns.map((c) => (
+                  <th
+                    key={c.key}
+                    className={`px-3 py-2 ${c.align === "right" ? "text-right" : ""}`}
+                  >
+                    <button
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => toggleSort(c.key)}
+                    >
+                      {c.label} <ArrowUpDown className="h-3 w-3 opacity-50" />
+                    </button>
+                  </th>
+                ))}
+                <th className="px-3 py-2 text-right">Edit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.length === 0 && !isLoading && (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
+                    No records
+                  </td>
+                </tr>
+              )}
+              {groups.map(([month, list]) => {
+                const t = totals(list);
+                return (
+                  <Fragment key={month}>
+                    <tr key={`h-${month}`} className="border-t bg-muted/30">
+                      <td
+                        colSpan={columns.length + 1}
+                        className="px-3 py-1.5 text-xs font-semibold"
+                      >
+                        {month} · {list.length} lines · Qty {t.qty.toLocaleString()} ·{" "}
+                        {formatKS(t.amount)}
                       </td>
                     </tr>
-                  ))}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </CardContent></Card>
+                    {list.map((r) => (
+                      <tr key={r.id} className="border-t hover:bg-muted/20">
+                        {columns.map((c) => (
+                          <td
+                            key={c.key}
+                            className={`px-3 py-2 ${c.align === "right" ? "text-right" : ""}`}
+                          >
+                            {renderCell(c, r)}
+                          </td>
+                        ))}
+                        <td className="px-3 py-2 text-right">
+                          {editingId === r.id ? (
+                            <div className="inline-flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={() => saveEdit(r)}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={cancelEdit}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => startEdit(r)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

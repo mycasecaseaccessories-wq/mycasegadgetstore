@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getTheme, setTheme, onThemeChange, resolveTheme, type Theme } from "@/lib/theme";
 
 export function ThemeToggle() {
@@ -9,7 +14,9 @@ export function ThemeToggle() {
   useEffect(() => {
     setT(getTheme());
     const off = onThemeChange(() => setT(getTheme()));
-    return () => { off(); };
+    return () => {
+      off();
+    };
   }, []);
   const resolved = resolveTheme(t);
   const Icon = resolved === "dark" ? Moon : Sun;
@@ -21,9 +28,18 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}><Sun className="mr-2 h-4 w-4" />Light{t === "light" && " ✓"}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}><Moon className="mr-2 h-4 w-4" />Dark{t === "dark" && " ✓"}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}><Monitor className="mr-2 h-4 w-4" />System{t === "system" && " ✓"}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("light")}>
+          <Sun className="mr-2 h-4 w-4" />
+          Light{t === "light" && " ✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
+          <Moon className="mr-2 h-4 w-4" />
+          Dark{t === "dark" && " ✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("system")}>
+          <Monitor className="mr-2 h-4 w-4" />
+          System{t === "system" && " ✓"}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

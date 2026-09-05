@@ -5,7 +5,13 @@ import { Save, Plus, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -46,31 +52,68 @@ function BulkVariantsPage() {
     queryKey: ["variants", productId],
     queryFn: async () => {
       if (!productId) return [];
-      const { data, error } = await supabase.from("product_variants").select("*").eq("product_id", productId).order("created_at");
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", productId)
+        .order("created_at");
       if (error) throw error;
       return data as Variant[];
     },
     enabled: !!productId,
   });
 
-  useEffect(() => { setRows(variants); }, [variants]);
+  useEffect(() => {
+    setRows(variants);
+  }, [variants]);
 
-  const filtered = useMemo(() => rows.filter(r => !search || [r.name, r.size, r.color, r.variant_code].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())), [rows, search]);
+  const filtered = useMemo(
+    () =>
+      rows.filter(
+        (r) =>
+          !search ||
+          [r.name, r.size, r.color, r.variant_code]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      ),
+    [rows, search],
+  );
 
   const update = (id: string, patch: Partial<Variant>) => {
-    setRows(rs => rs.map(r => r.id === id ? { ...r, ...patch, _dirty: true } : r));
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch, _dirty: true } : r)));
   };
 
   const addRow = () => {
     if (!productId) return toast.error("Select a product first");
     const tmpId = "new-" + Math.random().toString(36).slice(2);
-    setRows(rs => [...rs, { id: tmpId, product_id: productId, name: "New variant", size: "", color: "", price: 0, stock_in: 0, sold_qty: 0, status: "ACTIVE", variant_code: "", _dirty: true, _new: true }]);
+    setRows((rs) => [
+      ...rs,
+      {
+        id: tmpId,
+        product_id: productId,
+        name: "New variant",
+        size: "",
+        color: "",
+        price: 0,
+        stock_in: 0,
+        sold_qty: 0,
+        status: "ACTIVE",
+        variant_code: "",
+        _dirty: true,
+        _new: true,
+      },
+    ]);
   };
 
   const removeRow = async (id: string) => {
-    const r = rows.find(x => x.id === id);
+    const r = rows.find((x) => x.id === id);
     if (!r) return;
-    if (r._new) { setRows(rs => rs.filter(x => x.id !== id)); return; }
+    if (r._new) {
+      setRows((rs) => rs.filter((x) => x.id !== id));
+      return;
+    }
     if (!confirm("Delete this variant?")) return;
     const { error } = await supabase.from("product_variants").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -79,7 +122,7 @@ function BulkVariantsPage() {
   };
 
   const saveAll = async () => {
-    const dirty = rows.filter(r => r._dirty);
+    const dirty = rows.filter((r) => r._dirty);
     if (dirty.length === 0) return toast.info("Nothing to save");
     try {
       for (const r of dirty) {
@@ -99,7 +142,7 @@ function BulkVariantsPage() {
     }
   };
 
-  const dirtyCount = rows.filter(r => r._dirty).length;
+  const dirtyCount = rows.filter((r) => r._dirty).length;
 
   return (
     <div className="space-y-4">
@@ -108,9 +151,15 @@ function BulkVariantsPage() {
           <div className="min-w-[220px] flex-1 space-y-1.5">
             <label className="text-xs text-muted-foreground">Product</label>
             <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger><SelectValue placeholder="Select product…" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select product…" />
+              </SelectTrigger>
               <SelectContent>
-                {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                {products.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -118,42 +167,119 @@ function BulkVariantsPage() {
             <>
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Filter rows…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+                <Input
+                  placeholder="Filter rows…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-              <Button variant="outline" onClick={addRow}><Plus className="mr-2 h-4 w-4" />Add row</Button>
-              <Button onClick={saveAll} disabled={dirtyCount === 0}><Save className="mr-2 h-4 w-4" />Save {dirtyCount > 0 && `(${dirtyCount})`}</Button>
+              <Button variant="outline" onClick={addRow}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add row
+              </Button>
+              <Button onClick={saveAll} disabled={dirtyCount === 0}>
+                <Save className="mr-2 h-4 w-4" />
+                Save {dirtyCount > 0 && `(${dirtyCount})`}
+              </Button>
             </>
           )}
         </CardContent>
       </Card>
 
       {!productId ? (
-        <Card><CardContent className="p-12 text-center text-muted-foreground">Select a product to edit its variants in bulk.</CardContent></Card>
+        <Card>
+          <CardContent className="p-12 text-center text-muted-foreground">
+            Select a product to edit its variants in bulk.
+          </CardContent>
+        </Card>
       ) : (
         <Card>
-          <CardHeader><CardTitle className="text-base">Variants ({filtered.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Variants ({filtered.length})</CardTitle>
+          </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-2 py-3">Name</th><th>Size</th><th>Color</th><th>Code</th>
-                  <th>Price (KS)</th><th>Stock In</th><th>Sold</th><th>Status</th><th className="px-2 text-right">×</th>
+                  <th className="px-2 py-3">Name</th>
+                  <th>Size</th>
+                  <th>Color</th>
+                  <th>Code</th>
+                  <th>Price (KS)</th>
+                  <th>Stock In</th>
+                  <th>Sold</th>
+                  <th>Status</th>
+                  <th className="px-2 text-right">×</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No variants. Click "Add row".</td></tr>}
-                {filtered.map(r => (
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      No variants. Click "Add row".
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((r) => (
                   <tr key={r.id} className={`border-t ${r._dirty ? "bg-amber-500/5" : ""}`}>
-                    <td className="px-2 py-1"><Input value={r.name} onChange={e => update(r.id, { name: e.target.value })} className="h-8" /></td>
-                    <td><Input value={r.size ?? ""} onChange={e => update(r.id, { size: e.target.value })} className="h-8 w-20" /></td>
-                    <td><Input value={r.color ?? ""} onChange={e => update(r.id, { color: e.target.value })} className="h-8 w-24" /></td>
-                    <td><Input value={r.variant_code ?? ""} onChange={e => update(r.id, { variant_code: e.target.value })} className="h-8 w-24" /></td>
-                    <td><Input type="number" value={r.price} onChange={e => update(r.id, { price: Number(e.target.value) })} className="h-8 w-24" /></td>
-                    <td><Input type="number" value={r.stock_in} onChange={e => update(r.id, { stock_in: Number(e.target.value) })} className="h-8 w-20" /></td>
-                    <td><Input type="number" value={r.sold_qty} onChange={e => update(r.id, { sold_qty: Number(e.target.value) })} className="h-8 w-20" /></td>
+                    <td className="px-2 py-1">
+                      <Input
+                        value={r.name}
+                        onChange={(e) => update(r.id, { name: e.target.value })}
+                        className="h-8"
+                      />
+                    </td>
                     <td>
-                      <Select value={r.status} onValueChange={v => update(r.id, { status: v })}>
-                        <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                      <Input
+                        value={r.size ?? ""}
+                        onChange={(e) => update(r.id, { size: e.target.value })}
+                        className="h-8 w-20"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        value={r.color ?? ""}
+                        onChange={(e) => update(r.id, { color: e.target.value })}
+                        className="h-8 w-24"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        value={r.variant_code ?? ""}
+                        onChange={(e) => update(r.id, { variant_code: e.target.value })}
+                        className="h-8 w-24"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        value={r.price}
+                        onChange={(e) => update(r.id, { price: Number(e.target.value) })}
+                        className="h-8 w-24"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        value={r.stock_in}
+                        onChange={(e) => update(r.id, { stock_in: Number(e.target.value) })}
+                        className="h-8 w-20"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        value={r.sold_qty}
+                        onChange={(e) => update(r.id, { sold_qty: Number(e.target.value) })}
+                        className="h-8 w-20"
+                      />
+                    </td>
+                    <td>
+                      <Select value={r.status} onValueChange={(v) => update(r.id, { status: v })}>
+                        <SelectTrigger className="h-8 w-28">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="ACTIVE">Active</SelectItem>
                           <SelectItem value="INACTIVE">Inactive</SelectItem>
@@ -162,7 +288,9 @@ function BulkVariantsPage() {
                       </Select>
                     </td>
                     <td className="px-2 text-right">
-                      <Button size="icon" variant="ghost" onClick={() => removeRow(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => removeRow(r.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

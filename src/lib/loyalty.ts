@@ -5,9 +5,9 @@ const CFG_KEY = "mycase.loyalty.config.v1";
 
 export interface LoyaltyConfig {
   enabled: boolean;
-  earnPerAmount: number;   // amount in active currency that earns 1 point
-  redeemValue: number;     // 1 point = X currency units when redeemed
-  minRedeem: number;       // minimum points required to redeem
+  earnPerAmount: number; // amount in active currency that earns 1 point
+  redeemValue: number; // 1 point = X currency units when redeemed
+  minRedeem: number; // minimum points required to redeem
 }
 
 const DEFAULT_CONFIG: LoyaltyConfig = {
@@ -75,7 +75,13 @@ export async function getAllBalances(): Promise<any[]> {
 async function applyDelta(
   key: string,
   delta: number,
-  meta: { kind: "earn" | "redeem" | "adjust"; orderId?: string | null; value?: number; note?: string; customer?: { id?: string | null; name?: string | null; phone?: string | null } }
+  meta: {
+    kind: "earn" | "redeem" | "adjust";
+    orderId?: string | null;
+    value?: number;
+    note?: string;
+    customer?: { id?: string | null; name?: string | null; phone?: string | null };
+  },
 ) {
   if (!key) return 0;
   const current = await getBalance(key);
@@ -108,10 +114,11 @@ export async function awardForPurchase(
   key: string,
   amount: number,
   orderId?: string | null,
-  customer?: { id?: string | null; name?: string | null; phone?: string | null }
+  customer?: { id?: string | null; name?: string | null; phone?: string | null },
 ): Promise<number> {
   const pts = pointsFor(amount);
-  if (pts > 0) await applyDelta(key, pts, { kind: "earn", orderId, customer, note: `Earned from order` });
+  if (pts > 0)
+    await applyDelta(key, pts, { kind: "earn", orderId, customer, note: `Earned from order` });
   return pts;
 }
 
@@ -119,7 +126,7 @@ export async function awardForPurchase(
 export async function redeem(
   key: string,
   points: number,
-  orderId?: string | null
+  orderId?: string | null,
 ): Promise<number> {
   const cfg = getConfig();
   const bal = await getBalance(key);

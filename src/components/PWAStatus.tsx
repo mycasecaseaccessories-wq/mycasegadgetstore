@@ -14,7 +14,9 @@ const DISMISS_KEY = "pwa-install-dismissed";
 
 export function PWAStatus() {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
-  const [offline, setOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
+  const [offline, setOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false,
+  );
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
@@ -96,8 +98,14 @@ export function PWAStatus() {
             <p className="text-sm font-semibold">Install My Case</p>
             <p className="text-xs text-muted-foreground">Faster access, works offline.</p>
           </div>
-          <Button size="sm" onClick={handleInstall}>Install</Button>
-          <button onClick={handleDismiss} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">
+          <Button size="sm" onClick={handleInstall}>
+            Install
+          </Button>
+          <button
+            onClick={handleDismiss}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -56,9 +56,15 @@ export function DashboardWidgets() {
         </CardHeader>
         <CardContent className="space-y-3 pt-4 text-sm">
           <Row label="Active products" value={(inv?.totalProducts ?? 0).toString()} />
-          <Row label="Out of stock" value={(inv?.outOfStock ?? 0).toString()} accent={inv?.outOfStock ? "text-destructive" : ""} />
+          <Row
+            label="Out of stock"
+            value={(inv?.outOfStock ?? 0).toString()}
+            accent={inv?.outOfStock ? "text-destructive" : ""}
+          />
           <Row label="Stock value" value={formatKS(inv?.stockValue ?? 0)} />
-          <Link to="/inventory" className="mt-2 inline-block text-xs text-primary hover:underline">View inventory →</Link>
+          <Link to="/inventory" className="mt-2 inline-block text-xs text-primary hover:underline">
+            View inventory →
+          </Link>
         </CardContent>
       </Card>
 
@@ -67,20 +73,30 @@ export function DashboardWidgets() {
           <CardTitle className="flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4 text-amber-500" /> Low-stock Alerts
           </CardTitle>
-          <Badge variant="outline" className="text-[10px]">{inv?.low.length ?? 0}</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {inv?.low.length ?? 0}
+          </Badge>
         </CardHeader>
         <CardContent className="pt-3 text-sm">
           {(!inv?.low || inv.low.length === 0) && (
-            <p className="py-6 text-center text-xs text-muted-foreground">All stock levels are healthy</p>
+            <p className="py-6 text-center text-xs text-muted-foreground">
+              All stock levels are healthy
+            </p>
           )}
           <ul className="space-y-1.5">
             {inv?.low.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 hover:bg-muted/40">
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-2 rounded px-2 py-1.5 hover:bg-muted/40"
+              >
                 <span className="flex items-center gap-2 truncate">
                   {p.remaining === 0 && <PackageX className="h-3 w-3 text-destructive" />}
                   <span className="truncate">{p.name}</span>
                 </span>
-                <Badge variant={p.remaining === 0 ? "destructive" : "outline"} className="text-[10px]">
+                <Badge
+                  variant={p.remaining === 0 ? "destructive" : "outline"}
+                  className="text-[10px]"
+                >
                   {p.remaining} left
                 </Badge>
               </li>
@@ -95,7 +111,9 @@ export function DashboardWidgets() {
             <CardTitle className="flex items-center gap-2 text-sm">
               <ActivityIcon className="h-4 w-4 text-primary" /> Recent Activity
             </CardTitle>
-            <Link to="/activity" className="text-xs text-primary hover:underline">View all</Link>
+            <Link to="/activity" className="text-xs text-primary hover:underline">
+              View all
+            </Link>
           </CardHeader>
           <CardContent className="pt-3 text-sm">
             {(!recent || recent.length === 0) && (
@@ -106,9 +124,13 @@ export function DashboardWidgets() {
                 <li key={r.id} className="flex items-start justify-between gap-2 text-xs">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{r.summary ?? r.action}</p>
-                    <p className="text-[10px] text-muted-foreground">{r.user_name ?? "—"} · {formatDateTime(r.created_at)}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {r.user_name ?? "—"} · {formatDateTime(r.created_at)}
+                    </p>
                   </div>
-                  <Badge variant="outline" className="font-mono text-[9px]">{r.action}</Badge>
+                  <Badge variant="outline" className="font-mono text-[9px]">
+                    {r.action}
+                  </Badge>
                 </li>
               ))}
             </ul>
