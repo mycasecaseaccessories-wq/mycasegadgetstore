@@ -26,6 +26,10 @@ export function parseStoragePath(
   return null;
 }
 
+function publicProxyUrl(bucket: string, path: string) {
+  return `/api/public/image?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
+}
+
 export async function getSignedUrl(value: string | null | undefined): Promise<string | null> {
   if (!value) return null;
   // External URL (not Supabase storage) — use as-is
@@ -36,10 +40,21 @@ export async function getSignedUrl(value: string | null | undefined): Promise<st
   const now = Math.floor(Date.now() / 1000);
   const cached = cache.get(key);
   if (cached && cached.exp > now + 60) return cached.url;
-  const { data, error } = await supabase.storage
-    .from(parsed.bucket)
-    .createSignedUrl(parsed.path, SIGN_TTL);
-  if (error || !data?.signedUrl) return null;
-  cache.set(key, { url: data.signedUrl, exp: now + SIGN_TTL });
-  return data.signedUrl;
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session) {
+    const { data, error } = await supabase.storage
+      .from(parsed.bucket)
+      .createSignedUrl(parsed.path, SIGN_TTL);
+    if (!error && data?.signedUrl) {
+      cache.set(key, { url: data.signedUrl, exp: now + SIGN_TTL });
+      return data.signedUrl;
+    }
+  }
+
+  // Signed-in signing failed or visitor is anonymous — go through the public proxy
+  const proxied = publicProxyUrl(parsed.bucket, parsed.path);
+  cache.set(key, { url: proxied, exp: now + SIGN_TTL });
+  return proxied;
 }
+
