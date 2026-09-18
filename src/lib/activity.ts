@@ -1,6 +1,7 @@
 // Phase 5 — Lightweight audit-log helper.
 // Fail-silent: logging never blocks or breaks calling business logic.
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export type ActivityAction =
   | "create"
@@ -28,7 +29,7 @@ export interface LogActivityInput {
   entityType?: string;
   entityId?: string | number | null;
   summary?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
 }
 
 export async function logActivity(input: LogActivityInput): Promise<void> {
@@ -39,12 +40,15 @@ export async function logActivity(input: LogActivityInput): Promise<void> {
 
     await supabase.from("activity_logs").insert({
       user_id: user.id,
-      user_name: (user.user_metadata as any)?.full_name ?? user.email ?? null,
+      user_name:
+        typeof user.user_metadata?.full_name === "string"
+          ? user.user_metadata.full_name
+          : (user.email ?? null),
       action: input.action,
       entity_type: input.entityType ?? null,
       entity_id: input.entityId != null ? String(input.entityId) : null,
       summary: input.summary ?? null,
-      metadata: (input.metadata ?? {}) as any,
+      metadata: input.metadata ?? {},
     });
   } catch {
     // never throw from audit logger

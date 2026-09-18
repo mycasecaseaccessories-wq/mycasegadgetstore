@@ -1,5 +1,6 @@
 // Phase 19/20 — Customer loyalty (config in localStorage, balances in Supabase).
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 const CFG_KEY = "mycase.loyalty.config.v1";
 
@@ -18,6 +19,9 @@ const DEFAULT_CONFIG: LoyaltyConfig = {
 };
 
 type Listener = () => void;
+type LoyaltyBalance = Database["public"]["Tables"]["loyalty_balances"]["Row"];
+type LoyaltyBalanceInsert = Database["public"]["Tables"]["loyalty_balances"]["Insert"];
+type LoyaltyTransactionInsert = Database["public"]["Tables"]["loyalty_transactions"]["Insert"];
 const listeners = new Set<Listener>();
 const emit = () => listeners.forEach((l) => l());
 export function onLoyaltyChange(fn: Listener) {
@@ -57,19 +61,19 @@ export function pointsFor(amount: number): number {
 export async function getBalance(key: string): Promise<number> {
   if (!key) return 0;
   const { data } = await supabase
-    .from("loyalty_balances" as any)
+    .from("loyalty_balances")
     .select("points")
     .eq("customer_key", key)
     .maybeSingle();
-  return Number((data as any)?.points ?? 0);
+  return Number(data?.points ?? 0);
 }
 
-export async function getAllBalances(): Promise<any[]> {
+export async function getAllBalances(): Promise<LoyaltyBalance[]> {
   const { data } = await supabase
-    .from("loyalty_balances" as any)
+    .from("loyalty_balances")
     .select("*")
     .order("points", { ascending: false });
-  return (data as any[]) ?? [];
+  return data ?? [];
 }
 
 async function applyDelta(
@@ -86,25 +90,24 @@ async function applyDelta(
   if (!key) return 0;
   const current = await getBalance(key);
   const next = Math.max(0, current + delta);
-  const row: any = {
+  const row: LoyaltyBalanceInsert = {
     customer_key: key,
     points: next,
     updated_at: new Date().toISOString(),
   };
-  if (meta.customer) {
-    if (meta.customer.id) row.customer_id = meta.customer.id;
-    if (meta.customer.name) row.customer_name = meta.customer.name;
-    if (meta.customer.phone) row.customer_phone = meta.customer.phone;
-  }
-  await supabase.from("loyalty_balances" as any).upsert(row, { onConflict: "customer_key" });
-  await supabase.from("loyalty_transactions" as any).insert({
+  if (meta.customer?.id) row.customer_id = meta.customer.id;
+  if (meta.customer?.name) row.customer_name = meta.customer.name;
+  if (meta.customer?.phone) row.customer_phone = meta.customer.phone;
+  await supabase.from("loyalty_balances").upsert(row, { onConflict: "customer_key" });
+  const transaction: LoyaltyTransactionInsert = {
     customer_key: key,
     order_id: meta.orderId ?? null,
     kind: meta.kind,
     delta,
     value: meta.value ?? 0,
     note: meta.note ?? null,
-  } as any);
+  };
+  await supabase.from("loyalty_transactions").insert(transaction);
   emit();
   return next;
 }
