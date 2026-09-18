@@ -1,19 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useAuth } from "@/lib/auth";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
-  const { session, loading } = useAuth();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (loading) return;
-    navigate({ to: session ? "/dashboard" : "/login", replace: true });
-  }, [session, loading, navigate]);
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-    </div>
-  );
+  return <Navigate to="/shop" replace />;
 }
