@@ -44,6 +44,7 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedVouchersIndexRouteImport } from './routes/_authenticated/vouchers.index'
 import { Route as ShopPIdRouteImport } from './routes/shop/p.$id'
+import { Route as ApiPublicImageRouteImport } from './routes/api/public/image'
 import { Route as AuthenticatedVouchersIdRouteImport } from './routes/_authenticated/vouchers.$id'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
 
@@ -224,6 +225,11 @@ const ShopPIdRoute = ShopPIdRouteImport.update({
   path: '/shop/p/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicImageRoute = ApiPublicImageRouteImport.update({
+  id: '/api/public/image',
+  path: '/api/public/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVouchersIdRoute = AuthenticatedVouchersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/shop/': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/api/public/image': typeof ApiPublicImageRoute
   '/shop/p/$id': typeof ShopPIdRoute
   '/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopIndexRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/api/public/image': typeof ApiPublicImageRoute
   '/shop/p/$id': typeof ShopPIdRoute
   '/vouchers': typeof AuthenticatedVouchersIndexRoute
 }
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/shop/': typeof ShopIndexRoute
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/vouchers/$id': typeof AuthenticatedVouchersIdRoute
+  '/api/public/image': typeof ApiPublicImageRoute
   '/shop/p/$id': typeof ShopPIdRoute
   '/_authenticated/vouchers/': typeof AuthenticatedVouchersIndexRoute
 }
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/shop/'
     | '/customers/$id'
     | '/vouchers/$id'
+    | '/api/public/image'
     | '/shop/p/$id'
     | '/vouchers/'
   fileRoutesByTo: FileRoutesByTo
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/customers/$id'
     | '/vouchers/$id'
+    | '/api/public/image'
     | '/shop/p/$id'
     | '/vouchers'
   id:
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/shop/'
     | '/_authenticated/customers/$id'
     | '/_authenticated/vouchers/$id'
+    | '/api/public/image'
     | '/shop/p/$id'
     | '/_authenticated/vouchers/'
   fileRoutesById: FileRoutesById
@@ -479,6 +491,7 @@ export interface RootRouteChildren {
   ShopTrackRoute: typeof ShopTrackRoute
   ShopWishlistRoute: typeof ShopWishlistRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  ApiPublicImageRoute: typeof ApiPublicImageRoute
   ShopPIdRoute: typeof ShopPIdRoute
 }
 
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopPIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/image': {
+      id: '/api/public/image'
+      path: '/api/public/image'
+      fullPath: '/api/public/image'
+      preLoaderRoute: typeof ApiPublicImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/vouchers/$id': {
       id: '/_authenticated/vouchers/$id'
       path: '/$id'
@@ -842,6 +862,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopTrackRoute: ShopTrackRoute,
   ShopWishlistRoute: ShopWishlistRoute,
   ShopIndexRoute: ShopIndexRoute,
+  ApiPublicImageRoute: ApiPublicImageRoute,
   ShopPIdRoute: ShopPIdRoute,
 }
 export const routeTree = rootRouteImport
