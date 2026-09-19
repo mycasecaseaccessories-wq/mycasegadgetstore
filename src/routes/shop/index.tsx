@@ -62,22 +62,34 @@ function Storefront() {
 
   const { data: settings } = useQuery({
     queryKey: ["public-settings"],
-    queryFn: async () =>
-      (await supabase.from("settings").select("business_name, logo_url").limit(1).maybeSingle())
-        .data,
+    queryFn: async () => {
+      try {
+        return (
+          await supabase.from("settings").select("business_name, logo_url").limit(1).maybeSingle()
+        ).data;
+      } catch (error) {
+        console.error("Unable to load storefront settings", error);
+        return null;
+      }
+    },
   });
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["public-products"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("products")
-        .select(
-          "id, name, price, image_url, brand, category, stock_in, sold_qty, final_sell_mmk, created_at",
-        )
-        .eq("status", "ACTIVE")
-        .order("created_at", { ascending: false });
-      return (data ?? []) as Product[];
+      try {
+        const { data } = await supabase
+          .from("products")
+          .select(
+            "id, name, price, image_url, brand, category, stock_in, sold_qty, final_sell_mmk, created_at",
+          )
+          .eq("status", "ACTIVE")
+          .order("created_at", { ascending: false });
+        return (data ?? []) as Product[];
+      } catch (error) {
+        console.error("Unable to load storefront products", error);
+        return [];
+      }
     },
   });
 

@@ -16,27 +16,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    let unsubscribe = () => {};
+    try {
+      const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+        if (mounted) {
+          setSession(s);
+          setLoading(false);
+        }
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
+      supabase.auth
+        .getSession()
+        .then(({ data }) => {
+          if (mounted) setSession(data.session);
+        })
+        .catch((error) => {
+          console.error("Unable to restore the current session", error);
+          if (mounted) setSession(null);
+        })
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
+    } catch (error) {
+      console.error("Supabase authentication is unavailable", error);
       if (mounted) {
-        setSession(s);
+        setSession(null);
         setLoading(false);
       }
-    });
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (mounted) setSession(data.session);
-      })
-      .catch((error) => {
-        console.error("Unable to restore the current session", error);
-        if (mounted) setSession(null);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    }
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
