@@ -145,22 +145,35 @@
 
 /* Phase 13 — Print styles: clean voucher / receipt output, hide app chrome. */
 @media print {
-  html, body {
+  html,
+  body {
     background: #fff !important;
     color: #000 !important;
   }
   /* Hide app shell: sidebar, header, bottom nav, popovers, toasts */
-  [data-sidebar], header.sticky, nav.sticky, [data-sonner-toaster], .print\:hidden {
+  [data-sidebar],
+  header.sticky,
+  nav.sticky,
+  [data-sonner-toaster],
+  .print\:hidden {
     display: none !important;
   }
   main {
     padding: 0 !important;
   }
   /* Ensure cards are flat for print */
-  .print\:shadow-none { box-shadow: none !important; }
-  .print\:border-0 { border: 0 !important; }
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:border-0 {
+    border: 0 !important;
+  }
   /* Avoid breaking rows across pages */
-  tr, .receipt-row { break-inside: avoid; page-break-inside: avoid; }
+  tr,
+  .receipt-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
 
 /* Phase 13 — Thermal 80mm receipt mode (apply .receipt-80 to a wrapper) */
@@ -175,11 +188,132 @@
     color: #000 !important;
     background: #fff !important;
   }
-  .receipt-80 * { color: #000 !important; background: transparent !important; border-color: #000 !important; }
-  .receipt-80 table { width: 100% !important; }
-  .receipt-80 input, .receipt-80 textarea, .receipt-80 select, .receipt-80 button { display: none !important; }
-  .receipt-80 .receipt-value { display: inline !important; }
-  @page { size: 80mm auto; margin: 0; }
+  .receipt-80 * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
+  }
+  .receipt-80 table {
+    width: 100% !important;
+  }
+  .receipt-80 input,
+  .receipt-80 textarea,
+  .receipt-80 select,
+  .receipt-80 button {
+    display: none !important;
+  }
+  .receipt-80 .receipt-value {
+    display: inline !important;
+  }
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
 }
-.receipt-value { display: none; }
+.receipt-value {
+  display: none;
+}
 
+/* MY CASE — Quiet Tech motion system. Motion is intentionally soft and disabled
+ * for users who prefer reduced motion. */
+@keyframes mycase-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mycase-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes mycase-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.motion-page > * {
+  animation: mycase-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.motion-page > .motion-section:nth-of-type(2) {
+  animation-delay: 0.08s;
+}
+.motion-page > .motion-section:nth-of-type(3) {
+  animation-delay: 0.14s;
+}
+.motion-page > .motion-section:nth-of-type(4) {
+  animation-delay: 0.2s;
+}
+
+.motion-hero-art {
+  animation: mycase-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.motion-hero-art > img,
+.motion-hero-art picture img {
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.motion-hero-art:hover > img,
+.motion-hero-art:hover picture img {
+  transform: scale(1.035);
+}
+
+.motion-card,
+.motion-product {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+.motion-card:hover {
+  transform: translateY(-5px);
+}
+.motion-product:hover {
+  transform: translateY(-3px);
+}
+.motion-card img,
+.motion-product img {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.motion-card:hover img,
+.motion-product:hover img {
+  transform: scale(1.045);
+}
+
+.motion-product button {
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.motion-product button:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

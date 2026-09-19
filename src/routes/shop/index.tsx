@@ -242,8 +242,8 @@ function Storefront() {
         </div>
       </header>
 
-      <main>
-        <section className="mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-10 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:pb-20 lg:pt-16">
+      <main className="motion-page">
+        <section className="motion-hero mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-10 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:pb-20 lg:pt-16">
           <div className="flex flex-col justify-center">
             <p className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.24em] text-[#247a62]">
               <Sparkles className="h-4 w-4" /> New season, better essentials
@@ -288,7 +288,7 @@ function Storefront() {
               </span>
             </div>
           </div>
-          <div className="relative min-h-[340px] overflow-hidden rounded-[2rem] bg-[#dcece3] lg:min-h-[500px]">
+          <div className="motion-hero-art relative min-h-[340px] overflow-hidden rounded-[2rem] bg-[#dcece3] lg:min-h-[500px]">
             {newArrivals[0] ? (
               <StorageImage
                 src={newArrivals[0].image_url}
@@ -313,7 +313,7 @@ function Storefront() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
+        <section className="motion-section mx-auto max-w-7xl px-4 pb-12 lg:px-8">
           <SectionHeading eyebrow="Browse the collection" title="Shop by category" />
           {categoryCards.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -321,7 +321,7 @@ function Storefront() {
                 <button
                   key={name}
                   onClick={() => chooseCategory(name)}
-                  className="group relative aspect-[1.2] overflow-hidden rounded-2xl bg-[#e4ece7] text-left"
+                  className="motion-card group relative aspect-[1.2] overflow-hidden rounded-2xl bg-[#e4ece7] text-left"
                 >
                   <StorageImage
                     src={product?.image_url}
@@ -344,7 +344,7 @@ function Storefront() {
           )}
         </section>
 
-        <section className="border-y border-[#dfe6e1] bg-white/70 py-12 dark:bg-card/30">
+        <section className="motion-section border-y border-[#dfe6e1] bg-white/70 py-12 dark:bg-card/30">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <SectionHeading
               eyebrow="Just landed"
@@ -365,7 +365,10 @@ function Storefront() {
           </div>
         </section>
 
-        <section id="collection" className="mx-auto max-w-7xl scroll-mt-32 px-4 py-12 lg:px-8">
+        <section
+          id="collection"
+          className="motion-section mx-auto max-w-7xl scroll-mt-32 px-4 py-12 lg:px-8"
+        >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#247a62]">
@@ -498,7 +501,7 @@ function ProductCard({ product }: { product: Product }) {
     return () => window.removeEventListener("wishlist-updated", handler);
   }, [product.id]);
   return (
-    <article className="group">
+    <article className="motion-product group">
       <div className="relative overflow-hidden rounded-2xl bg-[#e8efea] dark:bg-muted">
         <Link to="/shop/p/$id" params={{ id: product.id }}>
           <div className="aspect-[0.92] overflow-hidden">

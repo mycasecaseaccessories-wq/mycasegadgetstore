@@ -138,7 +138,7 @@ function CartPage() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6 lg:py-10">
+      <main className="motion-page mx-auto max-w-5xl px-4 py-6 lg:py-10">
         <Button variant="ghost" size="sm" asChild className="mb-4 -ml-3">
           <Link to="/shop">
             <ArrowLeft className="mr-2 h-4 w-4" />

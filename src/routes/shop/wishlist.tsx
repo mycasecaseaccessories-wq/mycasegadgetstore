@@ -48,7 +48,7 @@ function WishlistPage() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 py-6">
+      <main className="motion-page mx-auto max-w-4xl px-4 py-6">
         <Link
           to="/shop"
           className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"

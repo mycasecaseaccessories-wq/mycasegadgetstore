@@ -81,7 +81,7 @@ function ProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="motion-page min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Button variant="ghost" size="sm" asChild>
@@ -99,7 +99,7 @@ function ProductPage() {
 
       <div className="mx-auto max-w-5xl px-4 py-4">
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="aspect-square overflow-hidden rounded-2xl bg-muted">
+          <div className="motion-hero-art aspect-square overflow-hidden rounded-2xl bg-muted">
             <StorageImage
               src={product.image_url}
               alt={product.name}
@@ -111,7 +111,7 @@ function ProductPage() {
               }
             />
           </div>
-          <div className="space-y-3">
+          <div className="motion-section space-y-3">
             {product.brand && (
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 {product.brand}
