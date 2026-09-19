@@ -7,9 +7,15 @@ export function ShopAccountButton() {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
-    return () => sub.subscription.unsubscribe();
+    let unsubscribe = () => {};
+    try {
+      supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+      const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
+      unsubscribe = () => sub.subscription.unsubscribe();
+    } catch (error) {
+      console.error("Store account authentication is unavailable", error);
+    }
+    return unsubscribe;
   }, []);
 
   return (

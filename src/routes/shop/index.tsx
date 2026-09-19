@@ -62,6 +62,7 @@ function Storefront() {
 
   const { data: settings } = useQuery({
     queryKey: ["public-settings"],
+    enabled: typeof window !== "undefined",
     queryFn: async () => {
       try {
         return (
@@ -76,6 +77,7 @@ function Storefront() {
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["public-products"],
+    enabled: typeof window !== "undefined",
     queryFn: async () => {
       try {
         const { data } = await supabase

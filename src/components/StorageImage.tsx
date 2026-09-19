@@ -10,7 +10,7 @@ export function StorageImage({ src, fallback = null, alt = "", ...rest }: Props)
   const { data } = useQuery({
     queryKey: ["signed-url", src ?? ""],
     queryFn: () => getSignedUrl(src),
-    enabled: !!src,
+    enabled: !!src && typeof window !== "undefined",
     staleTime: 50 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
