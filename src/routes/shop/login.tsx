@@ -42,10 +42,16 @@ function LoginPage() {
         if (error) throw error;
         toast.success("Check your email to verify your account.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        nav({ to: "/shop/account" });
+        const { data: roleRows } = data.user
+          ? await supabase.from("user_roles").select("role").eq("user_id", data.user.id)
+          : { data: [] };
+        const isStaffAccount = (roleRows ?? []).some(
+          (row) => row.role === "admin" || row.role === "staff",
+        );
+        nav({ to: isStaffAccount ? "/dashboard" : "/shop/account" });
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
@@ -227,6 +233,12 @@ function LoginPage() {
                   </button>
                 </>
               )}
+            </p>
+            <p className="text-center text-xs text-muted-foreground">
+              Staff or admin?{" "}
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                Open Admin Console
+              </Link>
             </p>
           </CardContent>
         </Card>
