@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.create_order_with_items(text, text, text, numeric, numeric, integer, jsonb) FROM anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM anon;

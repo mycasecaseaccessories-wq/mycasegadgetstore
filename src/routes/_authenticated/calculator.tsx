@@ -117,9 +117,9 @@ function CalculatorPage() {
     setSaving(true);
 
     const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
-      p_customer_name: customerName || null,
-      p_customer_phone: customerPhone || null,
-      p_delivery_note: deliveryNote || null,
+      p_customer_name: customerName || "",
+      p_customer_phone: customerPhone || "",
+      p_delivery_note: deliveryNote || "",
       p_discount: discount,
       p_extra_fee: extra,
       p_redeem_points: key && redeemValue > 0 ? safeRedeemPts : 0,
