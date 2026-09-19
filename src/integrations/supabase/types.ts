@@ -879,7 +879,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_order_with_items: {
+        Args: {
+          p_customer_name: string
+          p_customer_phone: string
+          p_delivery_note: string
+          p_discount: number
+          p_extra_fee: number
+          p_items: Json
+          p_redeem_points: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
