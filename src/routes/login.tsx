@@ -23,12 +23,25 @@ function LoginPage() {
   const onLogin = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    await logActivity({ action: "auth.login", summary: `Signed in as ${email}` });
-    toast.success("Welcome back");
-    navigate({ to: "/dashboard" });
+    try {
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise<never>((_, reject) =>
+          window.setTimeout(() => reject(new Error("Sign in timed out. Please try again.")), 15000),
+        ),
+      ]);
+      if (result.error) {
+        toast.error(result.error.message);
+        return;
+      }
+      void logActivity({ action: "auth.login", summary: `Signed in as ${email}` });
+      toast.success("Welcome back");
+      navigate({ to: "/dashboard" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
