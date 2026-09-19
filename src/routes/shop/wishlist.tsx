@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Trash2 } from "lucide-react";
+import { ArrowLeft, Heart, ShoppingBag, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImage } from "@/components/StorageImage";
 import { formatKS } from "@/lib/format";
 import { getWishlist, removeWish } from "@/lib/wishlist";
+import { CartBadge } from "@/components/shop/CartBadge";
+import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
 
 export const Route = createFileRoute("/shop/wishlist")({ component: WishlistPage });
 
@@ -35,22 +37,45 @@ function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-          <Link to="/shop" className="text-sm font-semibold">
-            ← Back to shop
+      <header className="border-b border-[#dfe6e1]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
+          <Link to="/shop" className="text-base font-black tracking-[0.22em]">
+            MY CASE
           </Link>
-          <h1 className="flex items-center gap-2 text-sm font-medium">
-            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-            My Wishlist
-          </h1>
+          <div className="flex items-center gap-2">
+            <ShopAccountButton />
+            <CartBadge />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">
+        <Link
+          to="/shop"
+          className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to shop
+        </Link>
+        <h1 className="flex items-center gap-2 text-3xl font-black tracking-[-0.03em]">
+          <Heart className="h-6 w-6" />
+          Wishlist
+        </h1>
         {ids.length === 0 ? (
-          <p className="py-16 text-center text-muted-foreground">
-            Your wishlist is empty. Tap the ♥ on any product to save it.
-          </p>
+          <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-[#cbd8cf] px-5 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e4f2e9] text-[#247a62]">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <h2 className="mt-4 font-bold">Nothing saved yet.</h2>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Tap the heart on any product to keep it close for later.
+            </p>
+            <Button
+              asChild
+              className="mt-5 rounded-full bg-[#18211f] text-white hover:bg-[#247a62]"
+            >
+              <Link to="/shop">Explore products</Link>
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {products.map((p: any) => (

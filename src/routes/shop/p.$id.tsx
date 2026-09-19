@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, ShieldCheck, Truck } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,22 +61,23 @@ function ProductPage() {
       return (await q).data ?? [];
     },
   });
+  const [quantity, setQuantity] = useState(1);
 
   if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
 
   const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
   const price = Number(product.final_sell_mmk ?? product.price ?? 0);
 
-  const buy = (variantId?: string, variantName?: string, variantPrice?: number) => {
+  const buy = (variantId?: string, variantName?: string, variantPrice?: number, qty = quantity) => {
     addToCart({
       id: variantId ?? product.id,
       product_id: product.id,
       name: variantName ? `${product.name} — ${variantName}` : product.name,
       price: variantPrice ?? price,
-      qty: 1,
+      qty,
       image_url: product.image_url ?? null,
     });
-    toast.success("Added to cart");
+    toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };
 
   return (
@@ -136,9 +138,39 @@ function ProductPage() {
             </div>
 
             {variants.length === 0 ? (
-              <Button size="lg" className="mt-2 w-full" disabled={stock <= 0} onClick={() => buy()}>
-                Add to cart
-              </Button>
+              <div className="mt-2 flex gap-2">
+                <div className="flex h-12 items-center rounded-xl border">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Decrease quantity"
+                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-9 text-center text-sm font-semibold" aria-live="polite">
+                    {quantity}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Increase quantity"
+                    onClick={() => setQuantity((value) => Math.min(Math.max(1, stock), value + 1))}
+                    disabled={quantity >= stock}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  size="lg"
+                  className="h-12 flex-1 rounded-xl"
+                  disabled={stock <= 0}
+                  onClick={() => buy()}
+                >
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  Add to cart
+                </Button>
+              </div>
             ) : (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium">Choose variant:</p>
@@ -157,7 +189,11 @@ function ProductPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{formatKS(vPrice)}</span>
-                        <Button size="sm" onClick={() => buy(v.id, v.name, vPrice)}>
+                        <Button
+                          size="sm"
+                          disabled={(v.stock_in ?? 0) - (v.sold_qty ?? 0) <= 0}
+                          onClick={() => buy(v.id, v.name, vPrice, 1)}
+                        >
                           Add
                         </Button>
                       </div>
@@ -169,14 +205,52 @@ function ProductPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-2 rounded-md border p-2">
-                <Truck className="h-4 w-4 text-primary" /> Fast delivery
+                <Check className="h-4 w-4 text-primary" /> Live stock status
               </div>
               <div className="flex items-center gap-2 rounded-md border p-2">
-                <ShieldCheck className="h-4 w-4 text-primary" /> Quality checked
+                <ShieldCheck className="h-4 w-4 text-primary" /> Secure account checkout
               </div>
             </div>
           </div>
         </div>
+
+        <section className="mt-10 grid gap-6 border-y border-[#dfe6e1] py-8 sm:grid-cols-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Product details</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {product.name} is available through the MY CASE storefront while stock lasts.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Specifications</h2>
+            <dl className="mt-3 grid gap-2 text-sm text-muted-foreground">
+              {product.brand && (
+                <div className="flex justify-between gap-3">
+                  <dt>Brand</dt>
+                  <dd className="font-medium text-foreground">{product.brand}</dd>
+                </div>
+              )}
+              {product.category && (
+                <div className="flex justify-between gap-3">
+                  <dt>Category</dt>
+                  <dd className="font-medium text-foreground">{product.category}</dd>
+                </div>
+              )}
+              {product.size && (
+                <div className="flex justify-between gap-3">
+                  <dt>Size / model</dt>
+                  <dd className="font-medium text-foreground">{product.size}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Shopping note</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Prices are shown in MMK. Add the item to your cart to continue when you are ready.
+            </p>
+          </div>
+        </section>
 
         {related.length > 0 && (
           <section className="mt-10">
