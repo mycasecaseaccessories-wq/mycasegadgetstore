@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
 import { getConfig as getLoyaltyConfig } from "@/lib/loyalty";
-import { getMyLoyalty, redeemMyPoints, awardMyPoints } from "@/lib/customer-loyalty.functions";
+import { getMyLoyalty, awardMyPoints } from "@/lib/customer-loyalty.functions";
 
 export const Route = createFileRoute("/shop/cart")({ component: CartPage });
 
@@ -37,7 +37,6 @@ function CartPage() {
   const [redeemPts, setRedeemPts] = useState(0);
 
   const fetchLoyalty = useServerFn(getMyLoyalty);
-  const redeemFn = useServerFn(redeemMyPoints);
   const awardFn = useServerFn(awardMyPoints);
 
   const loyaltyCfg = getLoyaltyConfig();
@@ -83,55 +82,39 @@ function CartPage() {
     if (!name || !phone) return toast.error("Name & phone required");
     setSubmitting(true);
     try {
-      const orderPayload: any = {
-        customer_name: name,
-        customer_phone: phone,
-        delivery_note: address,
-        subtotal,
-        total: subtotal,
-        discount: 0,
-        status: "pending",
-        payment_status: "unpaid",
-        user_id: user.id,
-      };
-
-      const { data: order, error } = await supabase
-        .from("orders")
-        .insert(orderPayload)
-        .select()
-        .single();
-      if (error || !order) throw error ?? new Error("Failed");
-
-      const { error: itemsErr } = await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: order.id,
+      const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
+        p_customer_name: name,
+        p_customer_phone: phone,
+        p_delivery_note: address,
+        p_discount: 0,
+        p_extra_fee: 0,
+        p_redeem_points: redeemPts,
+        p_items: items.map((i) => ({
           product_id: i.product_id,
           product_name: i.name,
           unit_price: i.price,
           quantity: i.qty,
           line_total: i.price * i.qty,
         })),
-      );
-      if (itemsErr) throw itemsErr;
+      });
+      if (error || !orderId) throw error ?? new Error("Failed");
 
-      // Loyalty: redeem (if requested) + award. Server reads config from settings.
+      // Award points after successful order creation. Redemption is committed atomically by the RPC.
       if (phone) {
-        if (redeemPts > 0) {
-          try {
-            await redeemFn({ data: { orderId: order.id, phone, points: redeemPts } });
-          } catch (e: any) {
-            toast.error(`Redeem skipped: ${e?.message ?? "failed"}`);
-          }
-        }
         try {
-          await awardFn({ data: { orderId: order.id, phone, amount: total } });
+          const { data: savedOrder } = await supabase
+            .from("orders")
+            .select("total")
+            .eq("id", orderId)
+            .maybeSingle();
+          await awardFn({ data: { orderId, phone, amount: Number(savedOrder?.total ?? total) } });
         } catch {
           /* non-fatal */
         }
       }
 
       clearCart();
-      toast.success(`Order #${order.order_no} placed!`);
+      toast.success("Order placed successfully!");
       nav({ to: "/shop/account" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");

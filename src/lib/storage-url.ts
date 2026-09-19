@@ -57,4 +57,3 @@ export async function getSignedUrl(value: string | null | undefined): Promise<st
   cache.set(key, { url: proxied, exp: now + SIGN_TTL });
   return proxied;
 }
-

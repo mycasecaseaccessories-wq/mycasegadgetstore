@@ -24,7 +24,7 @@ function ProductPage() {
         await supabase
           .from("products")
           .select(
-            "id, name, size, price, waiting_time, stock_status, category, note, product_code, brand, status, stock_in, sold_qty, thb_price, final_sell_mmk, image_url",
+            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url",
           )
           .eq("id", id)
           .eq("status", "ACTIVE")
@@ -39,7 +39,7 @@ function ProductPage() {
         await supabase
           .from("product_variants")
           .select(
-            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, note",
+            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status",
           )
           .eq("product_id", id)
           .eq("status", "ACTIVE")
@@ -134,12 +134,6 @@ function ProductPage() {
                 </Badge>
               )}
             </div>
-
-            {product.note && (
-              <p className="whitespace-pre-line rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
-                {product.note}
-              </p>
-            )}
 
             {variants.length === 0 ? (
               <Button size="lg" className="mt-2 w-full" disabled={stock <= 0} onClick={() => buy()}>

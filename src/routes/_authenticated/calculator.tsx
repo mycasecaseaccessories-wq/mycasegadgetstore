@@ -17,15 +17,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
-import {
-  awardForPurchase,
-  redeem,
-  getBalance,
-  getConfig,
-  customerKey,
-  pointsFor,
-  adjust,
-} from "@/lib/loyalty";
+import { awardForPurchase, getBalance, getConfig, customerKey, pointsFor } from "@/lib/loyalty";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/calculator")({ component: CalculatorPage });
@@ -124,52 +116,24 @@ function CalculatorPage() {
       return toast.error("Discount and extra fee must be valid non-negative amounts");
     setSaving(true);
 
-    // Apply redeem first (deducts from balance)
-    let appliedValue = 0;
-    let appliedPts = 0;
-    if (key && redeemValue > 0) {
-      appliedValue = await redeem(key, safeRedeemPts);
-      if (appliedValue > 0) appliedPts = safeRedeemPts;
-    }
-    const finalTotal = Math.max(0, subtotal - discount + extra - appliedValue);
-
-    const { data: order, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_name: customerName || null,
-        customer_phone: customerPhone || null,
-        subtotal,
-        discount,
-        extra_fee: extra,
-        total: finalTotal,
-        delivery_note: deliveryNote || null,
-        status: "pending",
-        payment_status: "unpaid",
-        points_redeemed: appliedPts,
-        points_value: appliedValue,
-        points_earned: 0,
-      } as any)
-      .select("id")
-      .single();
-    if (error || !order) {
-      if (appliedPts > 0 && key) await adjust(key, appliedPts);
-      setSaving(false);
-      return toast.error(error?.message ?? "Failed");
-    }
-
-    const items = lines.map((l) => ({
-      ...l,
-      order_id: order.id,
-      line_total: l.unit_price * l.quantity,
-    }));
-    const { error: e2 } = await supabase.from("order_items").insert(items as any);
+    const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
+      p_customer_name: customerName || null,
+      p_customer_phone: customerPhone || null,
+      p_delivery_note: deliveryNote || null,
+      p_discount: discount,
+      p_extra_fee: extra,
+      p_redeem_points: key && redeemValue > 0 ? safeRedeemPts : 0,
+      p_items: lines.map((l) => ({
+        product_id: l.product_id,
+        product_name: l.product_name,
+        unit_price: l.unit_price,
+        quantity: l.quantity,
+        line_total: l.unit_price * l.quantity,
+      })),
+    });
     setSaving(false);
-    if (e2) {
-      await supabase.from("orders").delete().eq("id", order.id);
-      if (appliedPts > 0 && key) await adjust(key, appliedPts);
-      return toast.error(`Order could not be completed: ${e2.message}`);
-    }
-    toast.success(`Order saved${appliedPts ? ` · -${appliedPts} pts` : ""}`);
+    if (error || !orderId) return toast.error(error?.message ?? "Failed");
+    toast.success(`Order saved${safeRedeemPts > 0 ? ` · -${safeRedeemPts} pts` : ""}`);
     navigate({ to: "/orders" });
   };
 
