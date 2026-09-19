@@ -64,14 +64,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#0a0a0a" },
-      { title: "My Case — Admin Console" },
-      { name: "description", content: "Product calculator and sales management dashboard." },
-      { property: "og:title", content: "My Case — Admin Console" },
-      { name: "twitter:title", content: "My Case — Admin Console" },
-      { property: "og:description", content: "Product calculator and sales management dashboard." },
+      { title: "My Case Gadget Store" },
+      {
+        name: "description",
+        content: "Shop phone cases, accessories, and gadgets from My Case.",
+      },
+      { property: "og:title", content: "My Case Gadget Store" },
+      { name: "twitter:title", content: "My Case Gadget Store" },
+      {
+        property: "og:description",
+        content: "Shop phone cases, accessories, and gadgets from My Case.",
+      },
       {
         name: "twitter:description",
-        content: "Product calculator and sales management dashboard.",
+        content: "Shop phone cases, accessories, and gadgets from My Case.",
       },
       {
         property: "og:image",

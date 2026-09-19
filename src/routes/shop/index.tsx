@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Sparkles, ChevronRight, Flame, Clock, Heart, MapPin } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  ChevronRight,
+  Flame,
+  Clock,
+  Heart,
+  MapPin,
+  ShoppingCart,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +21,8 @@ import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
 import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
 import { isWished, toggleWish } from "@/lib/wishlist";
+import { addToCart } from "@/lib/cart";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/shop/")({ component: Storefront });
 
@@ -231,7 +242,15 @@ function Storefront() {
             ? `${filtered.length} result${filtered.length === 1 ? "" : "s"}`
             : "All products"}
         </h2>
-        <ProductGrid products={filtered} />
+        <ProductGrid
+          products={filtered}
+          onReset={() => {
+            setSearch("");
+            setActiveCategory("all");
+            setActiveBrand("all");
+            setSort("newest");
+          }}
+        />
       </main>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
@@ -298,9 +317,17 @@ function Section({
   );
 }
 
-function ProductGrid({ products }: { products: any[] }) {
+function ProductGrid({ products, onReset }: { products: any[]; onReset: () => void }) {
   if (products.length === 0)
-    return <p className="py-12 text-center text-muted-foreground">No products found</p>;
+    return (
+      <div className="rounded-2xl border border-dashed px-4 py-14 text-center">
+        <p className="font-medium">No products found</p>
+        <p className="mt-1 text-sm text-muted-foreground">Try a different search or filter.</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={onReset}>
+          Clear filters
+        </Button>
+      </div>
+    );
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {products.map((p) => (
@@ -359,9 +386,36 @@ function ProductCard({ p, className = "" }: { p: any; className?: string }) {
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>
             )}
             <p className="line-clamp-2 text-sm font-medium leading-tight">{p.name}</p>
-            <p className="pt-1 font-semibold text-primary">{formatKS(price)}</p>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="font-semibold text-primary">{formatKS(price)}</p>
+              <span className="text-[10px] text-muted-foreground">
+                {stock > 0 ? `${stock} in stock` : "Out of stock"}
+              </span>
+            </div>
           </CardContent>
         </Link>
+        <div className="px-3 pb-3">
+          <Button
+            size="sm"
+            className="w-full"
+            variant="secondary"
+            disabled={stock <= 0}
+            onClick={() => {
+              addToCart({
+                id: p.id,
+                product_id: p.id,
+                name: p.name,
+                price,
+                qty: 1,
+                image_url: p.image_url ?? null,
+              });
+              toast.success("Added to cart");
+            }}
+          >
+            <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+            {stock > 0 ? "Add to cart" : "Out of stock"}
+          </Button>
+        </div>
       </div>
     </Card>
   );

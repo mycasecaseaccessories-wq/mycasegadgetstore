@@ -24,6 +24,7 @@ import {
   getConfig,
   customerKey,
   pointsFor,
+  adjust,
 } from "@/lib/loyalty";
 import { toast } from "sonner";
 
@@ -109,6 +110,18 @@ function CalculatorPage() {
 
   const saveOrder = async () => {
     if (lines.length === 0) return toast.error("Add at least one product");
+    if (
+      lines.some(
+        (line) =>
+          !Number.isFinite(line.unit_price) ||
+          line.unit_price < 0 ||
+          !Number.isFinite(line.quantity) ||
+          line.quantity <= 0,
+      )
+    )
+      return toast.error("Check product prices and quantities");
+    if (!Number.isFinite(discount) || discount < 0 || !Number.isFinite(extra) || extra < 0)
+      return toast.error("Discount and extra fee must be valid non-negative amounts");
     setSaving(true);
 
     // Apply redeem first (deducts from balance)
@@ -139,6 +152,7 @@ function CalculatorPage() {
       .select("id")
       .single();
     if (error || !order) {
+      if (appliedPts > 0 && key) await adjust(key, appliedPts);
       setSaving(false);
       return toast.error(error?.message ?? "Failed");
     }
@@ -150,7 +164,11 @@ function CalculatorPage() {
     }));
     const { error: e2 } = await supabase.from("order_items").insert(items as any);
     setSaving(false);
-    if (e2) return toast.error(e2.message);
+    if (e2) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      if (appliedPts > 0 && key) await adjust(key, appliedPts);
+      return toast.error(`Order could not be completed: ${e2.message}`);
+    }
     toast.success(`Order saved${appliedPts ? ` · -${appliedPts} pts` : ""}`);
     navigate({ to: "/orders" });
   };
@@ -208,7 +226,12 @@ function CalculatorPage() {
                         onChange={(e) =>
                           setLines((ls) =>
                             ls.map((x, j) =>
-                              j === i ? { ...x, unit_price: Number(e.target.value) } : x,
+                              j === i
+                                ? {
+                                    ...x,
+                                    unit_price: Math.max(0, Number(e.target.value) || 0),
+                                  }
+                                : x,
                             ),
                           )
                         }
@@ -223,7 +246,12 @@ function CalculatorPage() {
                         onChange={(e) =>
                           setLines((ls) =>
                             ls.map((x, j) =>
-                              j === i ? { ...x, quantity: Math.max(1, Number(e.target.value)) } : x,
+                              j === i
+                                ? {
+                                    ...x,
+                                    quantity: Math.max(1, Number(e.target.value) || 1),
+                                  }
+                                : x,
                             ),
                           )
                         }
@@ -281,12 +309,17 @@ function CalculatorPage() {
             <Input
               type="number"
               value={discount}
-              onChange={(e) => setDiscount(Number(e.target.value))}
+              onChange={(e) => setDiscount(Math.max(0, Number(e.target.value) || 0))}
             />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Extra Fee</Label>
-            <Input type="number" value={extra} onChange={(e) => setExtra(Number(e.target.value))} />
+            <Input
+              type="number"
+              min={0}
+              value={extra}
+              onChange={(e) => setExtra(Math.max(0, Number(e.target.value) || 0))}
+            />
           </div>
 
           {cfg.enabled && key && (
@@ -308,7 +341,7 @@ function CalculatorPage() {
                     min={0}
                     max={balance}
                     value={redeemPts}
-                    onChange={(e) => setRedeemPts(Number(e.target.value))}
+                    onChange={(e) => setRedeemPts(Math.max(0, Number(e.target.value) || 0))}
                   />
                   <Button
                     size="sm"
