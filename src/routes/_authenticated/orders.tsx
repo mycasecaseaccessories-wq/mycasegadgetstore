@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pencil, Trash2, Search, Eye } from "lucide-react";
+import { Pencil, Trash2, Search, Eye, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +54,8 @@ function OrdersPage() {
   const { data: orders = [] } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
+      // Expiry is lazy and automatic: every Orders refresh releases stale unpaid reservations.
+      await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
       const { data, error } = await (supabase.from("orders" as any) as any)
         .select("*, items:order_items(fulfillment_type), payment_method:payment_methods(provider, account_name, account_number)")
         .order("created_at", { ascending: false });
@@ -136,6 +138,15 @@ function OrdersPage() {
     qc.invalidateQueries({ queryKey: ["loyalty_balances"] });
   };
 
+  const expirePending = async () => {
+    const { data, error } = await supabase.rpc("expire_pending_order_reservations", {
+      p_limit: 100,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(data ? `${data} expired order(s) cancelled and stock released` : "No expired orders");
+    qc.invalidateQueries({ queryKey: ["orders"] });
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Delete this order?")) return;
     const target = orders.find((o) => o.id === id);
@@ -187,6 +198,10 @@ function OrdersPage() {
             <SelectItem value="MIXED">Mixed</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={expirePending} className="ml-auto">
+          <Clock3 className="mr-2 h-4 w-4" />
+          Expire unpaid pending
+        </Button>
       </div>
 
       <Card>

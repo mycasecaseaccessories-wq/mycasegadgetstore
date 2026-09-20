@@ -898,6 +898,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      expire_pending_order_reservations: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
