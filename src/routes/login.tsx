@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,6 +86,12 @@ function LoginPage() {
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign in
           </Button>
+          <a
+            href="/shop/login"
+            className="flex items-center justify-center gap-1 text-center text-xs font-medium text-primary hover:underline"
+          >
+            <KeyRound className="h-3.5 w-3.5" /> Forgot password? Reset from account sign-in
+          </a>
           <p className="text-center text-xs text-muted-foreground">
             Staff အသစ်ထည့်ရန် admin သည် Team စာမျက်နှာမှသာ ဖိတ်ခေါ်နိုင်ပါသည်။
           </p>

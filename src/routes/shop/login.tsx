@@ -29,9 +29,14 @@ function LoginPage() {
     setBusy(true);
     try {
       if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/shop/reset-password`,
-        });
+        const { error } = await Promise.race([
+          supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/shop/reset-password`,
+          }),
+          new Promise<never>((_, reject) =>
+            window.setTimeout(() => reject(new Error("Reset request timed out. Please try again.")), 15000),
+          ),
+        ]);
         if (error) throw error;
         toast.success("Password reset email sent. Check your inbox.");
         setMode("signin");

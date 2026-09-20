@@ -16,6 +16,7 @@ function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkExpired, setLinkExpired] = useState(false);
 
   useEffect(() => {
     // Supabase auto-handles the recovery token in URL hash (#access_token=...&type=recovery)
@@ -23,10 +24,17 @@ function ResetPasswordPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || session) setReady(true);
     });
+    const timer = window.setTimeout(() => setLinkExpired(true), 10000);
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
+      if (data.session) {
+        setReady(true);
+        window.clearTimeout(timer);
+      }
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -64,9 +72,23 @@ function ResetPasswordPage() {
             <div className="text-center">
               <h1 className="text-2xl font-bold">Set new password</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {ready ? "Choose a new password for your account" : "Verifying reset link…"}
+                {ready
+                  ? "Choose a new password for your account"
+                  : linkExpired
+                    ? "This reset link is invalid or has expired"
+                    : "Verifying reset link…"}
               </p>
             </div>
+            {linkExpired && !ready ? (
+              <div className="space-y-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Request a new reset email and open the newest link from the same browser.
+                </p>
+                <Button type="button" className="w-full" asChild>
+                  <Link to="/shop/login">Request new reset link</Link>
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={submit} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="password">New password</Label>
@@ -102,6 +124,7 @@ function ResetPasswordPage() {
                 {busy ? "Updating…" : "Update password"}
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
       </main>

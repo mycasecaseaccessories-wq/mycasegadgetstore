@@ -25,8 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
       unsubscribe = () => sub.subscription.unsubscribe();
-      supabase.auth
-        .getSession()
+      Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) =>
+          window.setTimeout(() => reject(new Error("Session restore timed out")), 10000),
+        ),
+      ])
         .then(({ data }) => {
           if (mounted) setSession(data.session);
         })
