@@ -266,3 +266,65 @@ REVOKE ALL ON FUNCTION public.create_order_with_items(text, text, text, numeric,
 GRANT EXECUTE ON FUNCTION public.create_order_with_items(text, text, text, numeric, numeric, jsonb, integer) TO authenticated;
 REVOKE ALL ON FUNCTION public.sync_order_inventory_on_status() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.release_order_inventory_on_delete() FROM PUBLIC, anon, authenticated;
+
+-- When preorder stock arrives, reserve the physical quantity and convert only
+-- those preorder items to in-stock fulfillment. Completion then moves the
+-- reservation to sold_qty through the normal lifecycle trigger.
+CREATE OR REPLACE FUNCTION public.fulfill_preorder_order(p_order_id uuid)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_order record;
+  v_item record;
+  v_available integer;
+  v_count integer := 0;
+BEGIN
+  IF v_uid IS NULL OR NOT (private.has_role(v_uid, 'admin'::app_role) OR private.has_role(v_uid, 'staff'::app_role)) THEN
+    RAISE EXCEPTION 'Admin or staff permission required';
+  END IF;
+
+  SELECT * INTO v_order FROM public.orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Order not found'; END IF;
+  IF v_order.status IN ('cancelled', 'completed') THEN RAISE EXCEPTION 'Order cannot be fulfilled'; END IF;
+
+  FOR v_item IN
+    SELECT * FROM public.order_items
+    WHERE order_id = p_order_id AND fulfillment_type = 'PREORDER'
+    FOR UPDATE
+  LOOP
+    IF v_item.variant_id IS NULL THEN
+      SELECT stock_in - sold_qty - reserved_qty INTO v_available
+      FROM public.products WHERE id = v_item.product_id FOR UPDATE;
+      IF COALESCE(v_available, 0) < v_item.quantity THEN
+        RAISE EXCEPTION 'Insufficient stock for %', v_item.product_name;
+      END IF;
+      UPDATE public.products
+      SET reserved_qty = COALESCE(reserved_qty, 0) + v_item.quantity, updated_at = now()
+      WHERE id = v_item.product_id;
+    ELSE
+      SELECT stock_in - sold_qty - reserved_qty INTO v_available
+      FROM public.product_variants WHERE id = v_item.variant_id FOR UPDATE;
+      IF COALESCE(v_available, 0) < v_item.quantity THEN
+        RAISE EXCEPTION 'Insufficient stock for variant %', v_item.product_name;
+      END IF;
+      UPDATE public.product_variants
+      SET reserved_qty = COALESCE(reserved_qty, 0) + v_item.quantity, updated_at = now()
+      WHERE id = v_item.variant_id;
+    END IF;
+    UPDATE public.order_items SET fulfillment_type = 'IN_STOCK' WHERE id = v_item.id;
+    v_count := v_count + 1;
+  END LOOP;
+
+  IF v_count > 0 AND v_order.status = 'pending' THEN
+    UPDATE public.orders SET status = 'processing', updated_at = now() WHERE id = p_order_id;
+  END IF;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fulfill_preorder_order(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fulfill_preorder_order(uuid) TO authenticated;

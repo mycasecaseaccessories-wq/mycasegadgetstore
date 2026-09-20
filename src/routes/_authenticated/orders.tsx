@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pencil, Trash2, Search, Eye, Clock3 } from "lucide-react";
+import { Pencil, Trash2, Search, Eye, Clock3, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,6 +145,17 @@ function OrdersPage() {
     if (error) return toast.error(error.message);
     toast.success(data ? `${data} expired order(s) cancelled and stock released` : "No expired orders");
     qc.invalidateQueries({ queryKey: ["orders"] });
+  };
+
+  const fulfillPreorder = async (orderId: string) => {
+    const { data, error } = await (supabase as any).rpc("fulfill_preorder_order", {
+      p_order_id: orderId,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(data ? `${data} preorder item(s) marked arrived and reserved` : "No preorder items to fulfill");
+    setViewing(null);
+    qc.invalidateQueries({ queryKey: ["orders"] });
+    qc.invalidateQueries({ queryKey: ["order_items"] });
   };
 
   const remove = async (id: string) => {
@@ -291,6 +302,17 @@ function OrdersPage() {
                     <Button size="icon" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {(o.items ?? []).some((item: any) => item.fulfillment_type === "PREORDER") &&
+                      !["cancelled", "completed"].includes(o.status) && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Mark preorder stock arrived"
+                          onClick={() => fulfillPreorder(o.id)}
+                        >
+                          <PackageCheck className="h-4 w-4" />
+                        </Button>
+                      )}
                     <Button size="icon" variant="ghost" onClick={() => setEditing({ ...o })}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -516,6 +538,13 @@ function OrdersPage() {
               {viewing.delivery_note && (
                 <div className="rounded bg-muted p-2 text-xs">{viewing.delivery_note}</div>
               )}
+              {items.some((it: any) => it.fulfillment_type === "PREORDER") &&
+                !["cancelled", "completed"].includes(viewing.status) && (
+                  <Button className="w-full" onClick={() => fulfillPreorder(viewing.id)}>
+                    <PackageCheck className="mr-2 h-4 w-4" />
+                    Mark preorder stock arrived
+                  </Button>
+                )}
             </div>
           )}
         </DialogContent>
