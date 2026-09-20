@@ -49,6 +49,13 @@ type Product = {
   stock_in: number;
   sold_qty: number;
   low_stock_threshold: number;
+  selling_mode: "IN_STOCK" | "PREORDER" | "BOTH";
+  availability: "AVAILABLE" | "COMING_SOON" | "OUT_OF_STOCK" | "DISCONTINUED";
+  preorder_enabled: boolean;
+  preorder_deposit: number;
+  preorder_deposit_type: "FIXED" | "PERCENTAGE";
+  reserved_qty: number;
+  published: boolean;
 };
 
 const empty: Partial<Product> = {
@@ -62,6 +69,13 @@ const empty: Partial<Product> = {
   image_url: null,
   stock_in: 0,
   low_stock_threshold: 5,
+  selling_mode: "IN_STOCK",
+  availability: "AVAILABLE",
+  preorder_enabled: false,
+  preorder_deposit: 0,
+  preorder_deposit_type: "FIXED",
+  reserved_qty: 0,
+  published: true,
 };
 
 function ProductsPage() {
@@ -80,7 +94,7 @@ function ProductsPage() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Product[];
+      return data as unknown as Product[];
     },
   });
 
@@ -94,10 +108,17 @@ function ProductsPage() {
 
   const save = async () => {
     if (!form.name) return toast.error("Name is required");
-    const payload = { ...form, price: Number(form.price ?? 0) };
+    const payload = {
+      ...form,
+      price: Math.max(0, Number(form.price ?? 0)),
+      stock_in: Math.max(0, Number(form.stock_in ?? 0)),
+      reserved_qty: Math.max(0, Number(form.reserved_qty ?? 0)),
+      preorder_deposit: Math.max(0, Number(form.preorder_deposit ?? 0)),
+      preorder_enabled: form.selling_mode !== "IN_STOCK",
+    };
     const isUpdate = !!form.id;
     const { data, error } = isUpdate
-      ? await supabase.from("products").update(payload).eq("id", form.id!).select().maybeSingle()
+      ? await supabase.from("products").update(payload as any).eq("id", form.id!).select().maybeSingle()
       : await supabase
           .from("products")
           .insert(payload as any)
@@ -245,6 +266,76 @@ function ProductsPage() {
                   />
                 </div>
                 <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Selling method</Label>
+                  <Select
+                    value={form.selling_mode ?? "IN_STOCK"}
+                    onValueChange={(value: Product["selling_mode"]) =>
+                      setForm({
+                        ...form,
+                        selling_mode: value,
+                        preorder_enabled: value !== "IN_STOCK",
+                        availability: value === "PREORDER" ? "COMING_SOON" : form.availability,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IN_STOCK">In stock</SelectItem>
+                      <SelectItem value="PREORDER">Pre-order</SelectItem>
+                      <SelectItem value="BOTH">Both</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Both keeps selling available stock and accepts pre-orders after stock reaches zero.
+                  </p>
+                </div>
+                {form.selling_mode !== "IN_STOCK" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label>Pre-order arrival</Label>
+                      <Input
+                        value={form.waiting_time ?? ""}
+                        onChange={(e) => setForm({ ...form, waiting_time: e.target.value })}
+                        placeholder="e.g. 7–14 days"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Deposit type</Label>
+                      <Select
+                        value={form.preorder_deposit_type ?? "FIXED"}
+                        onValueChange={(value: Product["preorder_deposit_type"]) =>
+                          setForm({ ...form, preorder_deposit_type: value })
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="FIXED">Fixed amount (KS)</SelectItem>
+                          <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>
+                        Deposit {form.preorder_deposit_type === "PERCENTAGE" ? "(%)" : "(KS)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={form.preorder_deposit_type === "PERCENTAGE" ? 100 : undefined}
+                        value={form.preorder_deposit ?? 0}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            preorder_deposit: Math.max(0, Number(e.target.value) || 0),
+                          })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label>Stock Status</Label>
                   <Select
                     value={form.stock_status ?? "in_stock"}
@@ -294,6 +385,7 @@ function ProductsPage() {
                 <th>Category</th>
                 <th>Price</th>
                 <th>Stock</th>
+                <th>Selling method</th>
                 <th>Status</th>
                 <th className="px-4 text-right">Actions</th>
               </tr>
@@ -301,14 +393,14 @@ function ProductsPage() {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {!isLoading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     No products
                   </td>
                 </tr>
@@ -349,6 +441,15 @@ function ProductsPage() {
                         }
                       >
                         {p.stock_status.replace("_", " ")}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Badge variant="outline" className="whitespace-nowrap">
+                        {p.selling_mode === "BOTH"
+                          ? "Both"
+                          : p.selling_mode === "PREORDER"
+                            ? "Pre-order"
+                            : "In stock"}
                       </Badge>
                     </td>
                     <td className="px-4 text-right">
