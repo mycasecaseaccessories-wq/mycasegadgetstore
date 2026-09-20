@@ -3,6 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
 
+const STABLE_AUTH_STORAGE_KEY = "mycasegadgetstore-auth-v1";
+const LEGACY_AUTH_STORAGE_KEY = "sb-gkqljdegkpnjvjiitgqd-auth-token";
+
+function getAuthStorage() {
+  const storage = brokeredPreviewStorage();
+  if (typeof window !== "undefined" && storage === window.localStorage) {
+    const current = window.localStorage.getItem(STABLE_AUTH_STORAGE_KEY);
+    const legacy = window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
+    if (!current && legacy) window.localStorage.setItem(STABLE_AUTH_STORAGE_KEY, legacy);
+  }
+  return storage;
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -22,9 +35,11 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: brokeredPreviewStorage(),
+      storage: getAuthStorage(),
+      storageKey: STABLE_AUTH_STORAGE_KEY,
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
   });
 }
