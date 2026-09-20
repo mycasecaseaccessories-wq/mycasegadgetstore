@@ -16,7 +16,7 @@ export const trackOrders = createServerFn({ method: "POST" })
     let q = supabaseAdmin
       .from("orders")
       .select(
-        "id, order_no, status, payment_status, total, customer_name, customer_phone, delivery_note, created_at, items:order_items(id, product_name, quantity, line_total)",
+        "id, order_no, status, payment_status, total, customer_name, customer_phone, delivery_note, created_at, items:order_items(id, product_name, quantity, line_total, fulfillment_type, estimated_arrival, deposit_required)",
       )
       .eq("customer_phone", data.phone);
     if (data.orderNo) q = q.eq("order_no", Number(data.orderNo));

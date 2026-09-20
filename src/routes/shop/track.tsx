@@ -16,6 +16,9 @@ export const Route = createFileRoute("/shop/track")({ component: TrackPage });
 function statusBadge(s: string) {
   const map: Record<string, string> = {
     pending: "bg-amber-500/15 text-amber-600",
+    paid: "bg-blue-500/15 text-blue-600",
+    processing: "bg-purple-500/15 text-purple-600",
+    completed: "bg-green-500/15 text-green-600",
     confirmed: "bg-blue-500/15 text-blue-600",
     shipped: "bg-purple-500/15 text-purple-600",
     delivered: "bg-green-500/15 text-green-600",
@@ -126,8 +129,30 @@ function TrackPage() {
                     <div className="mt-3 space-y-1 border-t pt-3 text-sm">
                       {(o.items ?? []).map((it: any) => (
                         <div key={it.id} className="flex justify-between">
-                          <span>
-                            {it.product_name} ×{it.quantity}
+                          <span className="flex flex-col gap-1">
+                            <span>{it.product_name} ×{it.quantity}</span>
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  it.fulfillment_type === "PREORDER"
+                                    ? "w-fit text-[10px] bg-amber-500/10 text-amber-700"
+                                    : "w-fit text-[10px] bg-emerald-500/10 text-emerald-700"
+                                }
+                              >
+                                {it.fulfillment_type === "PREORDER" ? "Pre-order" : "In-stock"}
+                              </Badge>
+                              {it.fulfillment_type === "PREORDER" && it.estimated_arrival && (
+                                <span className="text-[11px] text-muted-foreground">
+                                  ETA: {it.estimated_arrival}
+                                </span>
+                              )}
+                              {it.fulfillment_type === "PREORDER" && Number(it.deposit_required ?? 0) > 0 && (
+                                <span className="text-[11px] text-muted-foreground">
+                                  Deposit: {formatKS(Number(it.deposit_required))}
+                                </span>
+                              )}
+                            </span>
                           </span>
                           <span>{formatKS(Number(it.line_total))}</span>
                         </div>

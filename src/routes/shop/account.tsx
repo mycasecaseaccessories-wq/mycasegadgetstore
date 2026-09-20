@@ -53,10 +53,9 @@ function AccountPage() {
     queryKey: ["my-orders", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("orders")
+      const { data } = await (supabase.from("orders" as any) as any)
         .select(
-          "id, order_no, total, status, payment_status, order_date, points_earned, points_redeemed",
+          "id, order_no, total, status, payment_status, order_date, points_earned, points_redeemed, items:order_items(id, product_name, quantity, line_total, fulfillment_type, estimated_arrival, deposit_required)",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -182,7 +181,35 @@ function AccountPage() {
                             -{o.points_redeemed} pts
                           </Badge>
                         )}
+                        {(() => {
+                          const types = (o.items ?? []).map((item: any) => item.fulfillment_type);
+                          const mixed = types.includes("IN_STOCK") && types.includes("PREORDER");
+                          const value = mixed ? "MIXED" : types[0] ?? "IN_STOCK";
+                          return (
+                            <Badge
+                              variant="outline"
+                              className={
+                                value === "PREORDER"
+                                  ? "bg-amber-500/10 text-amber-700"
+                                  : value === "MIXED"
+                                    ? "bg-purple-500/10 text-purple-700"
+                                    : "bg-emerald-500/10 text-emerald-700"
+                              }
+                            >
+                              {value === "PREORDER" ? "Pre-order" : value === "MIXED" ? "Mixed" : "In-stock"}
+                            </Badge>
+                          );
+                        })()}
                       </div>
+                      {(o.items ?? []).some((item: any) => item.fulfillment_type === "PREORDER") && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Pre-order ETA: {(o.items ?? [])
+                            .filter((item: any) => item.fulfillment_type === "PREORDER")
+                            .map((item: any) => item.estimated_arrival)
+                            .filter(Boolean)
+                            .join(", ") || "To be confirmed"}
+                        </p>
+                      )}
                     </div>
                     <p className="text-right text-lg font-bold text-primary">{formatKS(o.total)}</p>
                   </CardContent>
