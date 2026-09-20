@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Trash2, Plus, Minus, Sparkles, LogIn, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ function CartPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [paymentMethodId, setPaymentMethodId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [points, setPoints] = useState(0);
   const [redeemPts, setRedeemPts] = useState(0);
@@ -73,6 +75,22 @@ function CartPage() {
   const total = Math.max(0, subtotal - discount);
   const canRedeem = !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
   const maxRedeem = Math.min(points, Math.floor(subtotal / Math.max(loyaltyCfg.redeemValue, 1)));
+  const hasPreorder = items.some((item) => item.fulfillment_type === "PREORDER");
+  const depositTotal = items.reduce(
+    (sum, item) => sum + Number(item.deposit_required ?? 0) * item.qty,
+    0,
+  );
+  const { data: paymentMethods = [] } = useQuery({
+    queryKey: ["active-payment-methods"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("payment_methods" as any) as any)
+        .select("id, provider, account_name, account_number, bank_name, note, qr_url")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
@@ -82,6 +100,9 @@ function CartPage() {
       return;
     }
     if (!name || !phone) return toast.error("Name & phone required");
+    if (hasPreorder && !paymentMethodId) {
+      return toast.error("Select a payment method for the pre-order deposit");
+    }
     setSubmitting(true);
     try {
       const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
@@ -103,6 +124,12 @@ function CartPage() {
           })),
       });
       if (error || !orderId) throw error ?? new Error("Failed");
+
+      const { error: paymentError } = await supabase.rpc("finalize_order_payment_details", {
+        p_order_id: orderId,
+        p_payment_method_id: paymentMethodId || null,
+      });
+      if (paymentError) throw paymentError;
 
       // Award points after successful order creation. Redemption is committed atomically by the RPC.
       if (phone) {
@@ -333,6 +360,12 @@ function CartPage() {
                   <span>Total</span>
                   <span className="text-primary">{formatKS(total)}</span>
                 </div>
+                {hasPreorder && depositTotal > 0 && (
+                  <div className="flex justify-between text-amber-700">
+                    <span>Pre-order deposit due</span>
+                    <span>{formatKS(depositTotal)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -348,6 +381,28 @@ function CartPage() {
                   <Label>Delivery address</Label>
                   <Textarea value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
+                {hasPreorder && (
+                  <div className="space-y-1.5">
+                    <Label>Deposit payment method *</Label>
+                    <select
+                      value={paymentMethodId}
+                      onChange={(e) => setPaymentMethodId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Select payment method</option>
+                      {paymentMethods.map((method: any) => (
+                        <option key={method.id} value={method.id}>
+                          {method.provider} · {method.account_name} · {method.account_number}
+                        </option>
+                      ))}
+                    </select>
+                    {paymentMethods.length === 0 && (
+                      <p className="text-xs text-destructive">
+                        No active payment method is configured. Please contact the store.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               <Button size="lg" className="w-full" onClick={checkout} disabled={submitting}>
                 {submitting ? "Placing…" : "Place order"}

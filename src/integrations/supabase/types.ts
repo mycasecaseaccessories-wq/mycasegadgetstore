@@ -891,6 +891,13 @@ export type Database = {
         }
         Returns: string
       }
+      finalize_order_payment_details: {
+        Args: {
+          p_order_id: string
+          p_payment_method_id?: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "staff"

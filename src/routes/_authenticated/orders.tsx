@@ -55,7 +55,7 @@ function OrdersPage() {
     queryKey: ["orders"],
     queryFn: async () => {
       const { data, error } = await (supabase.from("orders" as any) as any)
-        .select("*, items:order_items(fulfillment_type)")
+        .select("*, items:order_items(fulfillment_type), payment_method:payment_methods(provider, account_name, account_number)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Order[];
@@ -199,6 +199,7 @@ function OrdersPage() {
                 <th>Phone</th>
                 <th>Total</th>
                 <th>Fulfillment</th>
+                <th>Deposit</th>
                 <th>Status</th>
                 <th>Payment</th>
                 <th>Points</th>
@@ -209,7 +210,7 @@ function OrdersPage() {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                     No orders
                   </td>
                 </tr>
@@ -240,6 +241,15 @@ function OrdersPage() {
                         </Badge>
                       );
                     })()}
+                  </td>
+                  <td className="text-xs">
+                    {Number(o.deposit_total ?? 0) > 0 ? (
+                      <span className={o.deposit_status === "paid" ? "text-emerald-600" : "text-amber-600"}>
+                        {o.deposit_status ?? "unpaid"} · {formatKS(o.deposit_total)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td>
                     <Badge variant="outline" className={statusColors[o.status]}>
