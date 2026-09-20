@@ -36,10 +36,9 @@ function ProductPage() {
     queryKey: ["public-variants", id],
     queryFn: async () =>
       (
-        await supabase
-          .from("product_variants")
+        await (supabase.from("product_variants" as any) as any)
           .select(
-            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status",
+            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
           )
           .eq("product_id", id)
           .eq("status", "ACTIVE")
@@ -72,17 +71,34 @@ function ProductPage() {
     : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
   const fulfillmentType = stock <= 0 && canPreorder ? "PREORDER" : "IN_STOCK";
 
-  const buy = (variantId?: string, variantName?: string, variantPrice?: number, qty = quantity) => {
+  const buy = (variant?: any, qty = quantity) => {
+    const variantId = variant?.id;
+    const variantName = variant?.name;
+    const variantPrice = variant ? Number(variant.final_sell_mmk ?? variant.price ?? 0) : undefined;
+    const variantStock = variant
+      ? Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0)
+      : stock;
+    const variantCanPreorder = variant
+      ? Boolean(variant.preorder_enabled) && (variant.selling_mode === "PREORDER" || variant.selling_mode === "BOTH")
+      : canPreorder;
+    const selectedPrice = variantPrice ?? price;
+    const variantDeposit = variant
+      ? variant.preorder_deposit_type === "PERCENTAGE"
+        ? Math.min(selectedPrice, (selectedPrice * Math.min(100, Math.max(0, Number(variant.preorder_deposit ?? 0)))) / 100)
+        : Math.min(selectedPrice, Math.max(0, Number(variant.preorder_deposit ?? 0)))
+      : preorderDeposit;
+    const selectedFulfillment = variantStock <= 0 && variantCanPreorder ? "PREORDER" : "IN_STOCK";
     addToCart({
       id: variantId ?? product.id,
       product_id: product.id,
+      variant_id: variantId ?? null,
       name: variantName ? `${product.name} — ${variantName}` : product.name,
-      price: variantPrice ?? price,
+      price: selectedPrice,
       qty,
       image_url: product.image_url ?? null,
-      fulfillment_type: fulfillmentType,
-      estimated_arrival: product.waiting_time,
-      deposit_required: preorderDeposit,
+      fulfillment_type: selectedFulfillment,
+      estimated_arrival: variant?.waiting_time ?? product.waiting_time,
+      deposit_required: variantDeposit,
     });
     toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };
@@ -192,6 +208,9 @@ function ProductPage() {
                 <p className="text-sm font-medium">Choose variant:</p>
                 {variants.map((v: any) => {
                   const vPrice = Number(v.final_sell_mmk ?? v.price ?? 0);
+                  const vStock = Number(v.stock_in ?? 0) - Number(v.sold_qty ?? 0) - Number(v.reserved_qty ?? 0);
+                  const vCanPreorder = Boolean(v.preorder_enabled) && (v.selling_mode === "PREORDER" || v.selling_mode === "BOTH");
+                  const vFulfillment = vStock <= 0 && vCanPreorder ? "PREORDER" : "IN_STOCK";
                   return (
                     <div
                       key={v.id}
@@ -202,15 +221,18 @@ function ProductPage() {
                         <p className="text-xs text-muted-foreground">
                           {[v.color, v.size].filter(Boolean).join(" / ")}
                         </p>
+                        <Badge variant="outline" className={vFulfillment === "PREORDER" ? "mt-1 bg-amber-500/10 text-amber-700" : "mt-1 bg-green-500/10 text-green-600"}>
+                          {vFulfillment === "PREORDER" ? "Pre-order" : vStock > 0 ? `${vStock} in stock` : "Out of stock"}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{formatKS(vPrice)}</span>
                         <Button
                           size="sm"
-                          disabled={(v.stock_in ?? 0) - (v.sold_qty ?? 0) <= 0}
-                          onClick={() => buy(v.id, v.name, vPrice, 1)}
+                          disabled={vStock <= 0 && !vCanPreorder}
+                          onClick={() => buy(v, 1)}
                         >
-                          Add
+                          {vFulfillment === "PREORDER" ? "Pre-order" : "Add"}
                         </Button>
                       </div>
                     </div>

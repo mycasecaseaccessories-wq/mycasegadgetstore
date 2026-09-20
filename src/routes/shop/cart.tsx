@@ -114,6 +114,7 @@ function CartPage() {
         p_redeem_points: redeemPts,
           p_items: items.map((i) => ({
             product_id: i.product_id,
+            variant_id: i.variant_id ?? null,
             product_name: i.name,
             unit_price: i.price,
             quantity: i.qty,
