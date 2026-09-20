@@ -47,15 +47,15 @@ function OrdersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<string>("all");
   const [editing, setEditing] = useState<Order | null>(null);
   const [viewing, setViewing] = useState<Order | null>(null);
 
   const { data: orders = [] } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
+      const { data, error } = await (supabase.from("orders" as any) as any)
+        .select("*, items:order_items(fulfillment_type)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Order[];
@@ -66,8 +66,7 @@ function OrdersPage() {
     queryKey: ["order_items", viewing?.id],
     queryFn: async () => {
       if (!viewing) return [];
-      const { data, error } = await supabase
-        .from("order_items")
+      const { data, error } = await (supabase.from("order_items" as any) as any)
         .select("*")
         .eq("order_id", viewing.id);
       if (error) throw error;
@@ -85,13 +84,19 @@ function OrdersPage() {
         .toLowerCase()
         .includes(search.toLowerCase());
     const matchesFilter = filter === "all" || o.status === filter;
-    return matchesSearch && matchesFilter;
+    const fulfillmentTypes = (o.items ?? []).map((item: any) => item.fulfillment_type);
+    const orderFulfillment =
+      fulfillmentTypes.includes("IN_STOCK") && fulfillmentTypes.includes("PREORDER")
+        ? "MIXED"
+        : fulfillmentTypes[0] ?? "IN_STOCK";
+    const matchesFulfillment = fulfillmentFilter === "all" || orderFulfillment === fulfillmentFilter;
+    return matchesSearch && matchesFilter && matchesFulfillment;
   });
 
   const save = async () => {
     if (!editing) return;
     const original = orders.find((o) => o.id === editing.id);
-    const { id, order_no, created_at, updated_at, ...payload } = editing;
+    const { id, order_no, created_at, updated_at, items: _items, ...payload } = editing;
 
     // Award points when transitioning to paid/completed (and not already awarded)
     const becomesPaid =
@@ -171,6 +176,17 @@ function OrdersPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={fulfillmentFilter} onValueChange={setFulfillmentFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All fulfillment</SelectItem>
+            <SelectItem value="IN_STOCK">In-stock</SelectItem>
+            <SelectItem value="PREORDER">Pre-order</SelectItem>
+            <SelectItem value="MIXED">Mixed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -182,6 +198,7 @@ function OrdersPage() {
                 <th>Customer</th>
                 <th>Phone</th>
                 <th>Total</th>
+                <th>Fulfillment</th>
                 <th>Status</th>
                 <th>Payment</th>
                 <th>Points</th>
@@ -192,7 +209,7 @@ function OrdersPage() {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     No orders
                   </td>
                 </tr>
@@ -203,6 +220,27 @@ function OrdersPage() {
                   <td>{o.customer_name ?? "—"}</td>
                   <td className="text-muted-foreground">{o.customer_phone ?? "—"}</td>
                   <td className="font-medium">{formatKS(o.total)}</td>
+                  <td>
+                    {(() => {
+                      const types = (o.items ?? []).map((item: any) => item.fulfillment_type);
+                      const mixed = types.includes("IN_STOCK") && types.includes("PREORDER");
+                      const value = mixed ? "MIXED" : types[0] ?? "IN_STOCK";
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={
+                            value === "PREORDER"
+                              ? "bg-amber-500/10 text-amber-700"
+                              : value === "MIXED"
+                                ? "bg-purple-500/10 text-purple-700"
+                                : "bg-emerald-500/10 text-emerald-700"
+                          }
+                        >
+                          {value === "PREORDER" ? "Pre-order" : value === "MIXED" ? "Mixed" : "In-stock"}
+                        </Badge>
+                      );
+                    })()}
+                  </td>
                   <td>
                     <Badge variant="outline" className={statusColors[o.status]}>
                       {o.status}
@@ -383,6 +421,7 @@ function OrdersPage() {
                     <tr>
                       <th className="px-3 py-2">Item</th>
                       <th>Qty</th>
+                      <th>Fulfillment</th>
                       <th className="text-right">Total</th>
                     </tr>
                   </thead>
@@ -391,6 +430,28 @@ function OrdersPage() {
                       <tr key={it.id} className="border-t">
                         <td className="px-3 py-2">{it.product_name}</td>
                         <td>{it.quantity}</td>
+                        <td>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant="outline"
+                              className={
+                                it.fulfillment_type === "PREORDER"
+                                  ? "w-fit bg-amber-500/10 text-amber-700"
+                                  : "w-fit bg-emerald-500/10 text-emerald-700"
+                              }
+                            >
+                              {it.fulfillment_type === "PREORDER" ? "Pre-order" : "In-stock"}
+                            </Badge>
+                            {it.fulfillment_type === "PREORDER" && it.estimated_arrival && (
+                              <span className="text-[11px] text-muted-foreground">ETA: {it.estimated_arrival}</span>
+                            )}
+                            {it.fulfillment_type === "PREORDER" && Number(it.deposit_required ?? 0) > 0 && (
+                              <span className="text-[11px] text-muted-foreground">
+                                Deposit: {formatKS(it.deposit_required)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="text-right">{formatKS(it.line_total)}</td>
                       </tr>
                     ))}
