@@ -39,9 +39,11 @@ function LoginPage() {
         const { error } = await supabase.auth.verifyOtp({
           email,
           token: verificationCode.trim(),
-          type: "signup",
+          type: "email",
         });
         if (error) throw error;
+        const { error: passwordError } = await supabase.auth.updateUser({ password });
+        if (passwordError) throw passwordError;
         toast.success("Email verified. Your account is ready.");
         setAwaitingVerification(false);
         nav({ to: "/shop/account" });
@@ -49,11 +51,10 @@ function LoginPage() {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match.");
         }
-        const { error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signInWithOtp({
           email,
-          password,
           options: {
-            emailRedirectTo: `${window.location.origin}/shop/account`,
+            shouldCreateUser: true,
             data: { full_name: name },
           },
         });
