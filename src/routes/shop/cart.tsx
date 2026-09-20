@@ -91,13 +91,16 @@ function CartPage() {
         p_discount: 0,
         p_extra_fee: 0,
         p_redeem_points: redeemPts,
-        p_items: items.map((i) => ({
-          product_id: i.product_id,
-          product_name: i.name,
-          unit_price: i.price,
-          quantity: i.qty,
-          line_total: i.price * i.qty,
-        })),
+          p_items: items.map((i) => ({
+            product_id: i.product_id,
+            product_name: i.name,
+            unit_price: i.price,
+            quantity: i.qty,
+            line_total: i.price * i.qty,
+            fulfillment_type: i.fulfillment_type ?? "IN_STOCK",
+            estimated_arrival: i.estimated_arrival ?? null,
+            deposit_required: i.deposit_required ?? 0,
+          })),
       });
       if (error || !orderId) throw error ?? new Error("Failed");
 
@@ -199,6 +202,28 @@ function CartPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{i.name}</p>
                   <p className="text-xs text-muted-foreground">{formatKS(i.price)}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className={
+                        i.fulfillment_type === "PREORDER"
+                          ? "border-amber-300 bg-amber-50 text-amber-800"
+                          : "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      }
+                    >
+                      {i.fulfillment_type === "PREORDER" ? "PRE-ORDER" : "IN STOCK"}
+                    </Badge>
+                    {i.fulfillment_type === "PREORDER" && i.estimated_arrival && (
+                      <span className="text-[11px] text-muted-foreground">
+                        ETA: {i.estimated_arrival}
+                      </span>
+                    )}
+                  </div>
+                  {i.fulfillment_type === "PREORDER" && (i.deposit_required ?? 0) > 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Deposit: {formatKS(i.deposit_required ?? 0)}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button

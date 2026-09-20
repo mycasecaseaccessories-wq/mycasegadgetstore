@@ -22,10 +22,9 @@ function ProductPage() {
     queryKey: ["public-product", id],
     queryFn: async () =>
       (
-        await supabase
-          .from("products")
+        await (supabase.from("products" as any) as any)
           .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url",
+            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type",
           )
           .eq("id", id)
           .eq("status", "ACTIVE")
@@ -51,8 +50,7 @@ function ProductPage() {
     queryKey: ["public-related", product?.category, id],
     enabled: !!product,
     queryFn: async () => {
-      const q = supabase
-        .from("products")
+      const q = (supabase.from("products" as any) as any)
         .select("id, name, image_url, brand, price, final_sell_mmk")
         .eq("status", "ACTIVE")
         .neq("id", id)
@@ -67,6 +65,12 @@ function ProductPage() {
 
   const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
   const price = Number(product.final_sell_mmk ?? product.price ?? 0);
+  const canPreorder = Boolean(product.preorder_enabled) &&
+    (product.selling_mode === "PREORDER" || product.selling_mode === "BOTH");
+  const preorderDeposit = product.preorder_deposit_type === "PERCENTAGE"
+    ? Math.min(price, (price * Math.min(100, Math.max(0, Number(product.preorder_deposit ?? 0)))) / 100)
+    : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
+  const fulfillmentType = stock <= 0 && canPreorder ? "PREORDER" : "IN_STOCK";
 
   const buy = (variantId?: string, variantName?: string, variantPrice?: number, qty = quantity) => {
     addToCart({
@@ -76,6 +80,9 @@ function ProductPage() {
       price: variantPrice ?? price,
       qty,
       image_url: product.image_url ?? null,
+      fulfillment_type: fulfillmentType,
+      estimated_arrival: product.waiting_time,
+      deposit_required: preorderDeposit,
     });
     toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };
@@ -120,7 +127,11 @@ function ProductPage() {
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
             <p className="text-3xl font-bold text-primary">{formatKS(price)}</p>
             <div className="flex flex-wrap gap-2">
-              {stock <= 0 ? (
+              {stock <= 0 && canPreorder ? (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-700">
+                  Pre-order available
+                </Badge>
+              ) : stock <= 0 ? (
                 <Badge variant="outline" className="bg-red-500/10 text-red-600">
                   Out of stock
                 </Badge>
@@ -133,6 +144,11 @@ function ProductPage() {
               {product.waiting_time && (
                 <Badge variant="outline" className="bg-muted">
                   ⏱ {product.waiting_time}
+                </Badge>
+              )}
+              {canPreorder && preorderDeposit > 0 && (
+                <Badge variant="outline" className="bg-muted">
+                  Deposit {formatKS(preorderDeposit)}
                 </Badge>
               )}
             </div>
@@ -164,11 +180,11 @@ function ProductPage() {
                 <Button
                   size="lg"
                   className="h-12 flex-1 rounded-xl"
-                  disabled={stock <= 0}
+                  disabled={stock <= 0 && !canPreorder}
                   onClick={() => buy()}
                 >
                   <ShoppingBag className="mr-2 h-4 w-4" />
-                  Add to cart
+                  {fulfillmentType === "PREORDER" ? "Pre-order" : "Add to cart"}
                 </Button>
               </div>
             ) : (

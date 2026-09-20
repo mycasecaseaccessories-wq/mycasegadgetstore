@@ -50,6 +50,12 @@ type Product = {
   category: string | null;
   stock_in: number | null;
   sold_qty: number | null;
+  selling_mode: "IN_STOCK" | "PREORDER" | "BOTH" | null;
+  availability: "AVAILABLE" | "COMING_SOON" | "OUT_OF_STOCK" | "DISCONTINUED" | null;
+  preorder_enabled: boolean | null;
+  preorder_deposit: number | null;
+  preorder_deposit_type: "FIXED" | "PERCENTAGE" | null;
+  waiting_time: string | null;
   created_at: string;
 };
 
@@ -80,10 +86,9 @@ function Storefront() {
     enabled: typeof window !== "undefined",
     queryFn: async () => {
       try {
-        const { data } = await supabase
-          .from("products")
+        const { data } = await (supabase.from("products" as any) as any)
           .select(
-            "id, name, price, image_url, brand, category, stock_in, sold_qty, final_sell_mmk, created_at",
+            "id, name, price, image_url, brand, category, stock_in, sold_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
           )
           .eq("status", "ACTIVE")
           .order("created_at", { ascending: false });
@@ -508,6 +513,9 @@ function ProductCard({ product }: { product: Product }) {
   const [wished, setWished] = useState(false);
   const stock = stockValue(product);
   const price = priceOf(product);
+  const canPreorder = Boolean(product.preorder_enabled) &&
+    (product.selling_mode === "PREORDER" || product.selling_mode === "BOTH");
+  const isPreorder = stock <= 0 && canPreorder;
   useEffect(() => {
     setWished(isWished(product.id));
     const handler = () => setWished(isWished(product.id));
@@ -543,12 +551,16 @@ function ProductCard({ product }: { product: Product }) {
         >
           <Heart className={wished ? "h-4 w-4 fill-current" : "h-4 w-4"} />
         </button>
-        {stock <= 0 && (
+        {isPreorder ? (
+          <Badge className="absolute left-3 top-3 bg-[#7c5a25] text-white">Pre-order</Badge>
+        ) : stock <= 0 ? (
           <Badge className="absolute left-3 top-3 bg-[#18211f] text-white">Out of stock</Badge>
-        )}
+        ) : product.selling_mode === "BOTH" ? (
+          <Badge className="absolute left-3 top-3 bg-[#247a62] text-white">In stock + Pre-order</Badge>
+        ) : null}
         <Button
           size="sm"
-          disabled={stock <= 0}
+          disabled={stock <= 0 && !canPreorder}
           onClick={() => {
             addToCart({
               id: product.id,
@@ -557,8 +569,11 @@ function ProductCard({ product }: { product: Product }) {
               price,
               qty: 1,
               image_url: product.image_url,
+              fulfillment_type: isPreorder ? "PREORDER" : "IN_STOCK",
+              estimated_arrival: product.waiting_time,
+              deposit_required: depositFor(product, price),
             });
-            toast.success("Added to cart");
+            toast.success(isPreorder ? "Pre-order added to cart" : "Added to cart");
           }}
           className="absolute bottom-3 left-3 right-3 hidden rounded-full bg-white text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
         >
@@ -567,6 +582,8 @@ function ProductCard({ product }: { product: Product }) {
               <ShoppingBag className="mr-2 h-3.5 w-3.5" />
               Add to cart
             </>
+          ) : canPreorder ? (
+            "Pre-order"
           ) : (
             "Out of stock"
           )}
@@ -582,7 +599,7 @@ function ProductCard({ product }: { product: Product }) {
         <div className="mt-2 flex items-center justify-between gap-2">
           <p className="font-bold">{formatKS(price)}</p>
           <span className="text-[10px] text-muted-foreground">
-            {stock > 0 ? "In stock" : "Unavailable"}
+            {stock > 0 ? "In stock" : canPreorder ? "Pre-order" : "Unavailable"}
           </span>
         </div>
       </Link>
@@ -801,4 +818,11 @@ function priceOf(product: Product) {
 }
 function stockValue(product: Product) {
   return Math.max(0, (product.stock_in ?? 0) - (product.sold_qty ?? 0));
+}
+
+function depositFor(product: Product, price: number) {
+  const raw = Number(product.preorder_deposit ?? 0);
+  return product.preorder_deposit_type === "PERCENTAGE"
+    ? Math.min(price, (price * Math.min(100, Math.max(0, raw))) / 100)
+    : Math.min(price, Math.max(0, raw));
 }

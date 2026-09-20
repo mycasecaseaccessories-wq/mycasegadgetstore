@@ -5,6 +5,9 @@ export type CartItem = {
   price: number;
   qty: number;
   image_url: string | null;
+  fulfillment_type?: "IN_STOCK" | "PREORDER";
+  estimated_arrival?: string | null;
+  deposit_required?: number;
 };
 
 const KEY = "shop_cart";
