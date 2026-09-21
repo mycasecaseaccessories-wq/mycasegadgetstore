@@ -94,11 +94,6 @@ function CartPage() {
 
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
-    if (!user) {
-      toast.error("Please sign in to place an order");
-      nav({ to: "/shop/login" });
-      return;
-    }
     if (!name || !phone) return toast.error("Name & phone required");
     if (hasPreorder && !paymentMethodId) {
       return toast.error("Select a payment method for the pre-order deposit");
@@ -148,7 +143,7 @@ function CartPage() {
 
       clearCart();
       toast.success("Order placed successfully!");
-      nav({ to: "/shop/account" });
+      nav({ to: user ? "/shop/account" : "/shop" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
@@ -292,11 +287,14 @@ function CartPage() {
               {!user && (
                 <div className="rounded-lg border border-dashed p-3 text-sm">
                   <p className="mb-2 text-muted-foreground">
-                    <LogIn className="mr-1 inline h-4 w-4" />
-                    Sign in to track this order, view history, and earn loyalty points.
+                    <ShoppingBag className="mr-1 inline h-4 w-4" />
+                    You can checkout as a guest. Sign in is optional for order history and loyalty points.
                   </p>
                   <Button asChild size="sm" variant="outline">
-                    <Link to="/shop/login">Sign in / Sign up</Link>
+                    <Link to="/shop/login">
+                      <LogIn className="mr-1 h-4 w-4" />
+                      Sign in for loyalty points
+                    </Link>
                   </Button>
                 </div>
               )}
