@@ -24,7 +24,7 @@ function ProductPage() {
       (
         await (supabase.from("products" as any) as any)
           .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type",
+            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
           )
           .eq("id", id)
           .eq("status", "ACTIVE")
@@ -252,41 +252,45 @@ function ProductPage() {
           </div>
         </div>
 
-        <section className="mt-10 grid gap-6 border-y border-[#dfe6e1] py-8 sm:grid-cols-3">
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Product details</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {product.name} is available through the MY CASE storefront while stock lasts.
-            </p>
+        <section className="mt-10 border-y border-[#dfe6e1] py-8">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Product details</h2>
+              <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                {product.description || `${product.name} is available through the MY CASE storefront while stock lasts.`}
+              </p>
+              {product.highlights && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-bold">Highlights</h3>
+                  <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                    {String(product.highlights).split("\n").filter(Boolean).map((item: string) => (
+                      <li key={item} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Specifications</h2>
+              <dl className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                {product.brand && <div className="flex justify-between gap-3 border-b pb-2"><dt>Brand</dt><dd className="font-medium text-foreground">{product.brand}</dd></div>}
+                {product.category && <div className="flex justify-between gap-3 border-b pb-2"><dt>Category</dt><dd className="font-medium text-foreground">{product.category}</dd></div>}
+                {product.size && <div className="flex justify-between gap-3 border-b pb-2"><dt>Size / model</dt><dd className="font-medium text-foreground">{product.size}</dd></div>}
+              </dl>
+              {product.specifications && (
+                <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                  {String(product.specifications).split("\n").filter(Boolean).map((line: string) => {
+                    const [label, ...rest] = line.split(":");
+                    return <div key={line} className="flex justify-between gap-3 border-b pb-2"><span>{label}</span><span className="text-right font-medium text-foreground">{rest.join(":").trim() || label}</span></div>;
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Specifications</h2>
-            <dl className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              {product.brand && (
-                <div className="flex justify-between gap-3">
-                  <dt>Brand</dt>
-                  <dd className="font-medium text-foreground">{product.brand}</dd>
-                </div>
-              )}
-              {product.category && (
-                <div className="flex justify-between gap-3">
-                  <dt>Category</dt>
-                  <dd className="font-medium text-foreground">{product.category}</dd>
-                </div>
-              )}
-              {product.size && (
-                <div className="flex justify-between gap-3">
-                  <dt>Size / model</dt>
-                  <dd className="font-medium text-foreground">{product.size}</dd>
-                </div>
-              )}
-            </dl>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em]">Shopping note</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Prices are shown in MMK. Add the item to your cart to continue when you are ready.
-            </p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-muted/50 p-4"><p className="text-xs font-bold uppercase tracking-wide">Delivery</p><p className="mt-2 text-sm text-muted-foreground">{product.shipping_info || product.waiting_time || "Contact us for delivery timing."}</p></div>
+            <div className="rounded-xl bg-muted/50 p-4"><p className="text-xs font-bold uppercase tracking-wide">Warranty</p><p className="mt-2 text-sm text-muted-foreground">{product.warranty_info || "Store warranty terms apply."}</p></div>
+            <div className="rounded-xl bg-muted/50 p-4"><p className="text-xs font-bold uppercase tracking-wide">Shopping note</p><p className="mt-2 text-sm text-muted-foreground">Prices are shown in MMK. Guest checkout is available.</p></div>
           </div>
         </section>
 

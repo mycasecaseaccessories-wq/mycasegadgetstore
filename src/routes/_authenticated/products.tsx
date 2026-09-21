@@ -45,6 +45,11 @@ type Product = {
   stock_status: string;
   category: string | null;
   note: string | null;
+  description: string | null;
+  highlights: string | null;
+  specifications: string | null;
+  warranty_info: string | null;
+  shipping_info: string | null;
   image_url: string | null;
   stock_in: number;
   sold_qty: number;
@@ -66,6 +71,11 @@ const empty: Partial<Product> = {
   stock_status: "in_stock",
   category: "",
   note: "",
+  description: "",
+  highlights: "",
+  specifications: "",
+  warranty_info: "",
+  shipping_info: "",
   image_url: null,
   stock_in: 0,
   low_stock_threshold: 5,
@@ -356,6 +366,49 @@ function ProductsPage() {
                   <Textarea
                     value={form.note ?? ""}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Product description</Label>
+                  <Textarea
+                    value={form.description ?? ""}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Explain what the product is, who it is for, and why customers will love it."
+                    rows={4}
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Highlights</Label>
+                  <Textarea
+                    value={form.highlights ?? ""}
+                    onChange={(e) => setForm({ ...form, highlights: e.target.value })}
+                    placeholder="One benefit per line, for example: Fast charging\nCompact travel size\n1-year warranty"
+                    rows={4}
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Specifications</Label>
+                  <Textarea
+                    value={form.specifications ?? ""}
+                    onChange={(e) => setForm({ ...form, specifications: e.target.value })}
+                    placeholder="One specification per line, for example: Capacity: 10,000mAh\nInput: USB-C\nWeight: 220g"
+                    rows={4}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Warranty</Label>
+                  <Input
+                    value={form.warranty_info ?? ""}
+                    onChange={(e) => setForm({ ...form, warranty_info: e.target.value })}
+                    placeholder="e.g. 1 year"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Shipping information</Label>
+                  <Input
+                    value={form.shipping_info ?? ""}
+                    onChange={(e) => setForm({ ...form, shipping_info: e.target.value })}
+                    placeholder="e.g. Yangon 1–2 days"
                   />
                 </div>
 

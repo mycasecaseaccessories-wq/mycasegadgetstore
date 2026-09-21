@@ -34,6 +34,11 @@ export async function getSignedUrl(value: string | null | undefined): Promise<st
   if (!value) return null;
   // External URL (not Supabase storage) — use as-is
   if (/^https?:\/\//.test(value) && !value.includes("/storage/v1/object/")) return value;
+  // Product and branding assets are public catalog media. Keep public URLs
+  // intact so anonymous storefront visitors do not depend on a server proxy.
+  if (value.includes("/storage/v1/object/public/")) return value;
+  // A previously generated signed URL is already ready to render.
+  if (value.includes("/storage/v1/object/sign/")) return value;
   const parsed = parseStoragePath(value);
   if (!parsed) return value ?? null;
   const key = `${parsed.bucket}/${parsed.path}`;
