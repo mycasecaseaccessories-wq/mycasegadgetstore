@@ -17,8 +17,6 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState("");
@@ -40,16 +38,6 @@ function LoginPage() {
         if (error) throw error;
         toast.success("Password reset email sent. Check your inbox.");
         setMode("signin");
-      } else if (mode === "signup" && awaitingVerification) {
-        const { error } = await supabase.auth.verifyOtp({
-          email,
-          token: verificationCode.trim(),
-          type: "email",
-        });
-        if (error) throw error;
-        toast.success("Email verified. Your account is ready.");
-        setAwaitingVerification(false);
-        nav({ to: "/shop/account" });
       } else if (mode === "signup") {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match.");
@@ -59,11 +47,14 @@ function LoginPage() {
           password,
           options: {
             data: { full_name: name },
+            emailRedirectTo: `${window.location.origin}/shop/account`,
           },
         });
         if (error) throw error;
-        setAwaitingVerification(true);
-        toast.success("Verification code sent. Check your email.");
+        toast.success("Confirmation link sent. Check your email and open the link to finish signup.");
+        setPassword("");
+        setConfirmPassword("");
+        setMode("signin");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -196,22 +187,7 @@ function LoginPage() {
                   />
                 </div>
               </div>
-              {mode === "signup" && awaitingVerification ? (
-                <div className="space-y-1.5">
-                  <Label htmlFor="verification-code">Verification code</Label>
-                  <Input
-                    id="verification-code"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter 6-digit code"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">Code sent to {email}</p>
-                </div>
-              ) : mode !== "forgot" && (
+              {mode !== "forgot" && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
@@ -279,9 +255,7 @@ function LoginPage() {
               <Button type="submit" className="w-full" disabled={busy}>
                 {busy
                   ? "Please wait…"
-                  : mode === "signup" && awaitingVerification
-                    ? "Verify email"
-                    : mode === "signin"
+                  : mode === "signin"
                     ? "Sign in"
                     : mode === "signup"
                       ? "Create account"
