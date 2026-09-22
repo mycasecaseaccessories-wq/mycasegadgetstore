@@ -123,7 +123,14 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      // The previous cache-first worker could return null on Safari when a
+      // request failed and no cached response existed. Remove old workers so
+      // they cannot intercept storefront navigation or image requests.
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().catch(() => {});
+        });
+      }).catch(() => {});
     }
   }, []);
   return (
