@@ -24,7 +24,7 @@ function ProductPage() {
       (
         await (supabase.from("products" as any) as any)
           .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
+            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
           )
           .eq("id", id)
           .eq("status", "ACTIVE")
@@ -59,8 +59,15 @@ function ProductPage() {
     },
   });
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
+
+  const galleryImages = Array.from(new Set([
+    product.image_url,
+    ...(Array.isArray(product.gallery_images) ? product.gallery_images : []),
+  ].filter(Boolean))) as string[];
+  const heroImage = selectedImage ?? galleryImages[0] ?? null;
 
   const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
   const price = Number(product.final_sell_mmk ?? product.price ?? 0);
@@ -122,9 +129,10 @@ function ProductPage() {
 
       <div className="mx-auto max-w-5xl px-4 py-4">
         <div className="grid gap-6 md:grid-cols-2">
+          <div>
           <div className="motion-hero-art aspect-square overflow-hidden rounded-2xl bg-muted">
             <StorageImage
-              src={product.image_url}
+              src={heroImage}
               alt={product.name}
               className="h-full w-full object-cover"
               fallback={
@@ -133,6 +141,16 @@ function ProductPage() {
                 </div>
               }
             />
+          </div>
+          {galleryImages.length > 1 && (
+            <div className="mt-3 grid grid-cols-6 gap-2">
+              {galleryImages.map((image) => (
+                <button key={image} type="button" onClick={() => setSelectedImage(image)} className={`aspect-square overflow-hidden rounded-lg border-2 ${heroImage === image ? "border-primary" : "border-transparent"}`}>
+                  <StorageImage src={image} alt="Product thumbnail" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
           </div>
           <div className="motion-section space-y-3">
             {product.brand && (
@@ -267,6 +285,13 @@ function ProductPage() {
                       <li key={item} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{item}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {Array.isArray(product.description_images) && product.description_images.length > 0 && (
+                <div className="mt-8 space-y-3">
+                  {product.description_images.map((image: string) => (
+                    <StorageImage key={image} src={image} alt={`${product.name} details`} className="w-full rounded-xl border object-cover" />
+                  ))}
                 </div>
               )}
             </div>

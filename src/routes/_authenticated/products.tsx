@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle, ScanLine } from "lucide-react";
 import { VariantsDialog } from "@/components/VariantsDialog";
 import { ImageUpload } from "@/components/ImageUpload";
+import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { StorageImage } from "@/components/StorageImage";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,8 @@ type Product = {
   warranty_info: string | null;
   shipping_info: string | null;
   image_url: string | null;
+  gallery_images: string[];
+  description_images: string[];
   stock_in: number;
   sold_qty: number;
   low_stock_threshold: number;
@@ -77,6 +80,8 @@ const empty: Partial<Product> = {
   warranty_info: "",
   shipping_info: "",
   image_url: null,
+  gallery_images: [],
+  description_images: [],
   stock_in: 0,
   low_stock_threshold: 5,
   selling_mode: "IN_STOCK",
@@ -192,6 +197,12 @@ function ProductsPage() {
             toast.success(`Scanned: ${code}`);
           }}
         />
+        <Button asChild variant="outline">
+          <Link to="/variants">
+            <Layers className="mr-2 h-4 w-4" />
+            Bulk Variants
+          </Link>
+        </Button>
         <Dialog
           open={open}
           onOpenChange={(v) => {
@@ -215,9 +226,27 @@ function ProductsPage() {
                   <Label className="mb-1.5 block">Image</Label>
                   <ImageUpload
                     value={form.image_url}
-                    onChange={(url) => setForm({ ...form, image_url: url })}
+                    onChange={(url) => setForm({ ...form, image_url: url, gallery_images: url ? [url, ...(form.gallery_images ?? []).filter((image) => image !== url)] : form.gallery_images ?? [] })}
                     bucket="product-images"
                     size="md"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <MultiImageUpload
+                    value={form.gallery_images ?? []}
+                    onChange={(gallery_images) =>
+                      setForm({ ...form, gallery_images, image_url: gallery_images[0] ?? form.image_url ?? null })
+                    }
+                    label="Product gallery"
+                    hint="Add multiple product photos. The first photo is used as the cover."
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <MultiImageUpload
+                    value={form.description_images ?? []}
+                    onChange={(description_images) => setForm({ ...form, description_images })}
+                    label="Description photos"
+                    hint="Add feature photos, size charts, usage photos, or other description images."
                   />
                 </div>
                 <div className="sm:col-span-2 space-y-1.5">

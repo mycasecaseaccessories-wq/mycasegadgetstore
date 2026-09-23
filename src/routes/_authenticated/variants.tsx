@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Save, Plus, Trash2, Search } from "lucide-react";
+import { Save, Plus, Trash2, Search, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,10 @@ function BulkVariantsPage() {
   const [productId, setProductId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<Variant[]>([]);
+  const [colors, setColors] = useState("");
+  const [models, setModels] = useState("");
+  const [bulkPrice, setBulkPrice] = useState(0);
+  const [bulkStock, setBulkStock] = useState(0);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products-min"],
@@ -144,6 +148,37 @@ function BulkVariantsPage() {
 
   const dirtyCount = rows.filter((r) => r._dirty).length;
 
+  const createCombinations = async () => {
+    if (!productId) return toast.error("Select a product first");
+    const colorList = colors.split(",").map((value) => value.trim()).filter(Boolean);
+    const modelList = models.split(",").map((value) => value.trim()).filter(Boolean);
+    if (!colorList.length && !modelList.length) return toast.error("Enter at least one color or model");
+    const colorsToUse = colorList.length ? colorList : [""];
+    const modelsToUse = modelList.length ? modelList : [""];
+    const productName = products.find((product) => product.id === productId)?.name ?? "Product";
+    const payload = colorsToUse.flatMap((color) => modelsToUse.map((model) => ({
+      product_id: productId,
+      name: [color, model].filter(Boolean).join(" / ") || "Default",
+      color: color || null,
+      size: model || null,
+      variant_code: null,
+      price: Math.max(0, Number(bulkPrice) || 0),
+      stock_in: Math.max(0, Number(bulkStock) || 0),
+      sold_qty: 0,
+      reserved_qty: 0,
+      status: "ACTIVE",
+    })));
+    const existing = new Set(rows.map((row) => `${row.color ?? ""}|${row.size ?? ""}`));
+    const fresh = payload.filter((row) => !existing.has(`${row.color ?? ""}|${row.size ?? ""}`));
+    if (!fresh.length) return toast.info("Those color/model combinations already exist");
+    const { error } = await supabase.from("product_variants").insert(fresh as any);
+    if (error) return toast.error(error.message);
+    toast.success(`${fresh.length} variants created for ${productName}`);
+    setColors("");
+    setModels("");
+    qc.invalidateQueries({ queryKey: ["variants", productId] });
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -165,6 +200,21 @@ function BulkVariantsPage() {
           </div>
           {productId && (
             <>
+              <div className="w-full rounded-lg border border-dashed p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <WandSparkles className="h-4 w-4 text-primary" />
+                  Create color/model combinations
+                </div>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Colors: Black, White" />
+                  <Input value={models} onChange={(e) => setModels(e.target.value)} placeholder="Models: 128GB, 256GB" />
+                  <Input type="number" value={bulkPrice} onChange={(e) => setBulkPrice(Number(e.target.value))} placeholder="Price" />
+                  <Input type="number" value={bulkStock} onChange={(e) => setBulkStock(Number(e.target.value))} placeholder="Stock each" />
+                </div>
+                <Button className="mt-2" size="sm" variant="outline" onClick={createCombinations}>
+                  <WandSparkles className="mr-2 h-3.5 w-3.5" /> Create all combinations
+                </Button>
+              </div>
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
