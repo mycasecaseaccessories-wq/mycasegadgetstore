@@ -38,8 +38,10 @@ function BulkVariantsPage() {
   const [productId, setProductId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<Variant[]>([]);
-  const [colors, setColors] = useState("");
-  const [models, setModels] = useState("");
+  const [colors, setColors] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("");
+  const [modelInput, setModelInput] = useState("");
   const [bulkPrice, setBulkPrice] = useState(0);
   const [bulkStock, setBulkStock] = useState(0);
 
@@ -158,8 +160,8 @@ function BulkVariantsPage() {
 
   const createCombinations = async () => {
     if (!productId) return toast.error("Select a product first");
-    const colorList = colors.split(",").map((value) => value.trim()).filter(Boolean);
-    const modelList = models.split(",").map((value) => value.trim()).filter(Boolean);
+    const colorList = colors;
+    const modelList = models;
     if (!colorList.length && !modelList.length) return toast.error("Enter at least one color or model");
     const colorsToUse = colorList.length ? colorList : [""];
     const modelsToUse = modelList.length ? modelList : [""];
@@ -182,8 +184,10 @@ function BulkVariantsPage() {
     const { error } = await supabase.from("product_variants").insert(fresh as any);
     if (error) return toast.error(error.message);
     toast.success(`${fresh.length} variants created for ${productName}`);
-    setColors("");
-    setModels("");
+    setColors([]);
+    setModels([]);
+    setColorInput("");
+    setModelInput("");
     qc.invalidateQueries({ queryKey: ["variants", productId] });
   };
 
@@ -214,10 +218,18 @@ function BulkVariantsPage() {
                   Create color/model combinations
                 </div>
                 <div className="grid gap-2 sm:grid-cols-4">
-                  <Input list="variant-color-options" value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Colors: Black, White" />
+                  <div className="flex gap-2">
+                    <Input list="variant-color-options" value={colorInput} onChange={(e) => setColorInput(e.target.value)} placeholder="Enter one color" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const value = colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } } }} />
+                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } }}>Add</Button>
+                  </div>
                   <datalist id="variant-color-options">{colorOptions.map((color) => <option key={color} value={color} />)}</datalist>
-                  <Input list="variant-model-options" value={models} onChange={(e) => setModels(e.target.value)} placeholder="Models: 128GB, 256GB" />
+                  <div className="flex min-h-6 flex-wrap gap-1">{colors.map((color) => <button type="button" key={color} onClick={() => setColors(colors.filter((item) => item !== color))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{color} ×</button>)}</div>
+                  <div className="flex gap-2">
+                    <Input list="variant-model-options" value={modelInput} onChange={(e) => setModelInput(e.target.value)} placeholder="Enter one model" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const value = modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } } }} />
+                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } }}>Add</Button>
+                  </div>
                   <datalist id="variant-model-options">{modelOptions.map((model) => <option key={model} value={model} />)}</datalist>
+                  <div className="flex min-h-6 flex-wrap gap-1">{models.map((model) => <button type="button" key={model} onClick={() => setModels(models.filter((item) => item !== model))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{model} ×</button>)}</div>
                   <Input type="number" value={bulkPrice} onChange={(e) => setBulkPrice(Number(e.target.value))} placeholder="Price" />
                   <Input type="number" value={bulkStock} onChange={(e) => setBulkStock(Number(e.target.value))} placeholder="Stock each" />
                 </div>

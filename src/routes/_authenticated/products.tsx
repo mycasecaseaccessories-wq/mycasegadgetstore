@@ -123,6 +123,7 @@ function ProductsPage() {
       .includes(search.toLowerCase()),
   );
   const brandOptions = Array.from(new Set(products.map((product) => product.brand).filter(Boolean))) as string[];
+  const categoryOptions = Array.from(new Set(products.map((product) => product.category).filter(Boolean))) as string[];
 
   const save = async () => {
     if (!form.name) return toast.error("Name is required");
@@ -285,9 +286,14 @@ function ProductsPage() {
                 <div className="space-y-1.5">
                   <Label>Category</Label>
                   <Input
+                    list="product-category-options"
                     value={form.category ?? ""}
+                    placeholder="Choose or type a new category"
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                   />
+                  <datalist id="product-category-options">
+                    {categoryOptions.map((category) => <option key={category} value={category} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Brand</Label>
