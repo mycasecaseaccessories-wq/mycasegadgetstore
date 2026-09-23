@@ -47,7 +47,10 @@ function BulkVariantsPage() {
     queryKey: ["products-min"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("id, name").order("name");
-      if (error) throw error;
+      if (error) {
+        toast.error(error.message);
+        return [];
+      }
       return data as Product[];
     },
   });
@@ -61,7 +64,10 @@ function BulkVariantsPage() {
         .select("*")
         .eq("product_id", productId)
         .order("created_at");
-      if (error) throw error;
+      if (error) {
+        toast.error(error.message);
+        return [];
+      }
       return data as Variant[];
     },
     enabled: !!productId,
@@ -84,6 +90,8 @@ function BulkVariantsPage() {
       ),
     [rows, search],
   );
+  const colorOptions = Array.from(new Set(rows.map((row) => row.color).filter(Boolean))) as string[];
+  const modelOptions = Array.from(new Set(rows.map((row) => row.size).filter(Boolean))) as string[];
 
   const update = (id: string, patch: Partial<Variant>) => {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch, _dirty: true } : r)));
@@ -206,8 +214,10 @@ function BulkVariantsPage() {
                   Create color/model combinations
                 </div>
                 <div className="grid gap-2 sm:grid-cols-4">
-                  <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Colors: Black, White" />
-                  <Input value={models} onChange={(e) => setModels(e.target.value)} placeholder="Models: 128GB, 256GB" />
+                  <Input list="variant-color-options" value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Colors: Black, White" />
+                  <datalist id="variant-color-options">{colorOptions.map((color) => <option key={color} value={color} />)}</datalist>
+                  <Input list="variant-model-options" value={models} onChange={(e) => setModels(e.target.value)} placeholder="Models: 128GB, 256GB" />
+                  <datalist id="variant-model-options">{modelOptions.map((model) => <option key={model} value={model} />)}</datalist>
                   <Input type="number" value={bulkPrice} onChange={(e) => setBulkPrice(Number(e.target.value))} placeholder="Price" />
                   <Input type="number" value={bulkStock} onChange={(e) => setBulkStock(Number(e.target.value))} placeholder="Stock each" />
                 </div>

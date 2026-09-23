@@ -45,6 +45,7 @@ type Product = {
   waiting_time: string | null;
   stock_status: string;
   category: string | null;
+  brand: string | null;
   note: string | null;
   description: string | null;
   highlights: string | null;
@@ -73,6 +74,7 @@ const empty: Partial<Product> = {
   waiting_time: "",
   stock_status: "in_stock",
   category: "",
+  brand: "",
   note: "",
   description: "",
   highlights: "",
@@ -120,6 +122,7 @@ function ProductsPage() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  const brandOptions = Array.from(new Set(products.map((product) => product.brand).filter(Boolean))) as string[];
 
   const save = async () => {
     if (!form.name) return toast.error("Name is required");
@@ -285,6 +288,18 @@ function ProductsPage() {
                     value={form.category ?? ""}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Brand</Label>
+                  <Input
+                    list="product-brand-options"
+                    value={form.brand ?? ""}
+                    onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                    placeholder="Choose or type a new brand"
+                  />
+                  <datalist id="product-brand-options">
+                    {brandOptions.map((brand) => <option key={brand} value={brand} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Stock In</Label>
