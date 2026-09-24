@@ -34,6 +34,14 @@ import { formatKS } from "@/lib/format";
 import { calculatePricing, type ProfitMode, type RoundingRule } from "@/lib/pricing";
 import { toast } from "sonner";
 import { useEffect, useMemo } from "react";
+import {
+  CUSTOM_OPTION,
+  DEFAULT_BRANDS,
+  DEFAULT_CATEGORIES,
+  DEFAULT_MODELS,
+  selectValue,
+  uniqueOptions,
+} from "@/lib/catalog-options";
 
 export const Route = createFileRoute("/_authenticated/products")({ component: ProductsPage });
 
@@ -122,13 +130,17 @@ function ProductsPage() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const brandOptions = Array.from(new Set(products.map((product) => product.brand).filter(Boolean))) as string[];
-  const categoryOptions = Array.from(new Set(products.map((product) => product.category).filter(Boolean))) as string[];
+  const brandOptions = uniqueOptions(DEFAULT_BRANDS, products.map((product) => product.brand));
+  const categoryOptions = uniqueOptions(DEFAULT_CATEGORIES, products.map((product) => product.category));
+  const modelOptions = uniqueOptions(DEFAULT_MODELS, products.map((product) => product.size));
 
   const save = async () => {
     if (!form.name) return toast.error("Name is required");
     const payload = {
       ...form,
+      size: form.size === CUSTOM_OPTION ? "" : form.size,
+      category: form.category === CUSTOM_OPTION ? "" : form.category,
+      brand: form.brand === CUSTOM_OPTION ? "" : form.brand,
       price: Math.max(0, Number(form.price ?? 0)),
       stock_in: Math.max(0, Number(form.stock_in ?? 0)),
       reserved_qty: Math.max(0, Number(form.reserved_qty ?? 0)),
@@ -261,11 +273,20 @@ function ProductsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Diameter / Size</Label>
-                  <Input
-                    value={form.size ?? ""}
-                    onChange={(e) => setForm({ ...form, size: e.target.value })}
-                  />
+                  <Label>Model / Size</Label>
+                  <Select
+                    value={selectValue(form.size, modelOptions)}
+                    onValueChange={(value) => setForm({ ...form, size: value === CUSTOM_OPTION ? "" : value })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Choose model / size" /></SelectTrigger>
+                    <SelectContent>
+                      {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+                      <SelectItem value={CUSTOM_OPTION}>Custom model / size…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.size && !modelOptions.includes(form.size) && (
+                    <Input value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} placeholder="Custom model / size" />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Price (KS)</Label>
@@ -285,27 +306,35 @@ function ProductsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Category</Label>
-                  <Input
-                    list="product-category-options"
-                    value={form.category ?? ""}
-                    placeholder="Choose or type a new category"
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  />
-                  <datalist id="product-category-options">
-                    {categoryOptions.map((category) => <option key={category} value={category} />)}
-                  </datalist>
+                  <Select
+                    value={selectValue(form.category, categoryOptions)}
+                    onValueChange={(value) => setForm({ ...form, category: value === CUSTOM_OPTION ? "" : value })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Choose category" /></SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                      <SelectItem value={CUSTOM_OPTION}>Custom category…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.category && !categoryOptions.includes(form.category) && (
+                    <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Custom category" />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Brand</Label>
-                  <Input
-                    list="product-brand-options"
-                    value={form.brand ?? ""}
-                    onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                    placeholder="Choose or type a new brand"
-                  />
-                  <datalist id="product-brand-options">
-                    {brandOptions.map((brand) => <option key={brand} value={brand} />)}
-                  </datalist>
+                  <Select
+                    value={selectValue(form.brand, brandOptions)}
+                    onValueChange={(value) => setForm({ ...form, brand: value === CUSTOM_OPTION ? "" : value })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Choose brand" /></SelectTrigger>
+                    <SelectContent>
+                      {brandOptions.map((brand) => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
+                      <SelectItem value={CUSTOM_OPTION}>Custom brand…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.brand && !brandOptions.includes(form.brand) && (
+                    <Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Custom brand" />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Stock In</Label>

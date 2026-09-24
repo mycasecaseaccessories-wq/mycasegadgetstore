@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Save, Plus, Trash2, Search, WandSparkles } from "lucide-react";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,13 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  CUSTOM_OPTION,
+  DEFAULT_COLORS,
+  DEFAULT_MODELS,
+  selectValue,
+  uniqueOptions,
+} from "@/lib/catalog-options";
 
 export const Route = createFileRoute("/_authenticated/variants")({ component: BulkVariantsPage });
 
@@ -28,6 +36,7 @@ type Variant = {
   sold_qty: number;
   status: string;
   variant_code: string | null;
+  image_url: string | null;
   _dirty?: boolean;
   _new?: boolean;
 };
@@ -92,8 +101,8 @@ function BulkVariantsPage() {
       ),
     [rows, search],
   );
-  const colorOptions = Array.from(new Set(rows.map((row) => row.color).filter(Boolean))) as string[];
-  const modelOptions = Array.from(new Set(rows.map((row) => row.size).filter(Boolean))) as string[];
+  const colorOptions = uniqueOptions(DEFAULT_COLORS, rows.map((row) => row.color));
+  const modelOptions = uniqueOptions(DEFAULT_MODELS, rows.map((row) => row.size));
 
   const update = (id: string, patch: Partial<Variant>) => {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch, _dirty: true } : r)));
@@ -115,6 +124,7 @@ function BulkVariantsPage() {
         sold_qty: 0,
         status: "ACTIVE",
         variant_code: "",
+        image_url: null,
         _dirty: true,
         _new: true,
       },
@@ -219,16 +229,26 @@ function BulkVariantsPage() {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-4">
                   <div className="flex gap-2">
-                    <Input list="variant-color-options" value={colorInput} onChange={(e) => setColorInput(e.target.value)} placeholder="Enter one color" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const value = colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } } }} />
+                    <Select value={colorInput || ""} onValueChange={(value) => setColorInput(value === CUSTOM_OPTION ? "" : value)}>
+                      <SelectTrigger><SelectValue placeholder="Choose color" /></SelectTrigger>
+                      <SelectContent>
+                        {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+                        <SelectItem value={CUSTOM_OPTION}>Custom color…</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button type="button" size="sm" variant="outline" onClick={() => { const value = colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } }}>Add</Button>
                   </div>
-                  <datalist id="variant-color-options">{colorOptions.map((color) => <option key={color} value={color} />)}</datalist>
                   <div className="flex min-h-6 flex-wrap gap-1">{colors.map((color) => <button type="button" key={color} onClick={() => setColors(colors.filter((item) => item !== color))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{color} ×</button>)}</div>
                   <div className="flex gap-2">
-                    <Input list="variant-model-options" value={modelInput} onChange={(e) => setModelInput(e.target.value)} placeholder="Enter one model" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const value = modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } } }} />
+                    <Select value={modelInput || ""} onValueChange={(value) => setModelInput(value === CUSTOM_OPTION ? "" : value)}>
+                      <SelectTrigger><SelectValue placeholder="Choose model" /></SelectTrigger>
+                      <SelectContent>
+                        {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+                        <SelectItem value={CUSTOM_OPTION}>Custom model…</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button type="button" size="sm" variant="outline" onClick={() => { const value = modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } }}>Add</Button>
                   </div>
-                  <datalist id="variant-model-options">{modelOptions.map((model) => <option key={model} value={model} />)}</datalist>
                   <div className="flex min-h-6 flex-wrap gap-1">{models.map((model) => <button type="button" key={model} onClick={() => setModels(models.filter((item) => item !== model))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{model} ×</button>)}</div>
                   <Input type="number" value={bulkPrice} onChange={(e) => setBulkPrice(Number(e.target.value))} placeholder="Price" />
                   <Input type="number" value={bulkStock} onChange={(e) => setBulkStock(Number(e.target.value))} placeholder="Stock each" />
@@ -274,7 +294,8 @@ function BulkVariantsPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-2 py-3">Name</th>
+                  <th className="px-2 py-3">Image</th>
+                  <th>Name</th>
                   <th>Size</th>
                   <th>Color</th>
                   <th>Code</th>
@@ -288,13 +309,21 @@ function BulkVariantsPage() {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                       No variants. Click "Add row".
                     </td>
                   </tr>
                 )}
                 {filtered.map((r) => (
                   <tr key={r.id} className={`border-t ${r._dirty ? "bg-amber-500/5" : ""}`}>
+                    <td className="px-2 py-1">
+                      <ImageUpload
+                        value={r.image_url}
+                        onChange={(image_url) => update(r.id, { image_url })}
+                        bucket="product-images"
+                        size="sm"
+                      />
+                    </td>
                     <td className="px-2 py-1">
                       <Input
                         value={r.name}
@@ -303,18 +332,24 @@ function BulkVariantsPage() {
                       />
                     </td>
                     <td>
-                      <Input
-                        value={r.size ?? ""}
-                        onChange={(e) => update(r.id, { size: e.target.value })}
-                        className="h-8 w-20"
-                      />
+                      <Select value={selectValue(r.size, modelOptions)} onValueChange={(value) => update(r.id, { size: value === CUSTOM_OPTION ? "" : value })}>
+                        <SelectTrigger className="h-8 w-28"><SelectValue placeholder="Model" /></SelectTrigger>
+                        <SelectContent>
+                          {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+                          <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {r.size && !modelOptions.includes(r.size) && <Input value={r.size} onChange={(e) => update(r.id, { size: e.target.value })} className="mt-1 h-8 w-28" />}
                     </td>
                     <td>
-                      <Input
-                        value={r.color ?? ""}
-                        onChange={(e) => update(r.id, { color: e.target.value })}
-                        className="h-8 w-24"
-                      />
+                      <Select value={selectValue(r.color, colorOptions)} onValueChange={(value) => update(r.id, { color: value === CUSTOM_OPTION ? "" : value })}>
+                        <SelectTrigger className="h-8 w-28"><SelectValue placeholder="Color" /></SelectTrigger>
+                        <SelectContent>
+                          {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+                          <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {r.color && !colorOptions.includes(r.color) && <Input value={r.color} onChange={(e) => update(r.id, { color: e.target.value })} className="mt-1 h-8 w-28" />}
                     </td>
                     <td>
                       <Input

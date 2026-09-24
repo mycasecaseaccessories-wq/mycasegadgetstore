@@ -38,7 +38,7 @@ function ProductPage() {
       (
         await (supabase.from("product_variants" as any) as any)
           .select(
-            "id, product_id, variant_code, name, size, color, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
+            "id, product_id, variant_code, name, size, color, image_url, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
           )
           .eq("product_id", id)
           .eq("status", "ACTIVE")
@@ -60,6 +60,8 @@ function ProductPage() {
   });
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
   if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
 
@@ -67,7 +69,13 @@ function ProductPage() {
     product.image_url,
     ...(Array.isArray(product.gallery_images) ? product.gallery_images : []),
   ].filter(Boolean))) as string[];
-  const heroImage = selectedImage ?? galleryImages[0] ?? null;
+  const colorGroups: Array<[string, any]> = Array.from(
+    new Map<string, any>(variants.map((variant: any) => [variant.color || "Default", variant])).entries(),
+  );
+  const activeColor = selectedColor ?? colorGroups[0]?.[0] ?? null;
+  const modelsForColor: any[] = variants.filter((variant: any) => (variant.color || "Default") === activeColor);
+  const activeVariant: any = modelsForColor.find((variant: any) => variant.size === selectedModel) ?? modelsForColor[0] ?? null;
+  const heroImage = selectedImage ?? activeVariant?.image_url ?? galleryImages[0] ?? null;
 
   const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
   const price = Number(product.final_sell_mmk ?? product.price ?? 0);
@@ -222,40 +230,74 @@ function ProductPage() {
                 </Button>
               </div>
             ) : (
-              <div className="mt-2 space-y-2">
-                <p className="text-sm font-medium">Choose variant:</p>
-                {variants.map((v: any) => {
-                  const vPrice = Number(v.final_sell_mmk ?? v.price ?? 0);
-                  const vStock = Number(v.stock_in ?? 0) - Number(v.sold_qty ?? 0) - Number(v.reserved_qty ?? 0);
-                  const vCanPreorder = Boolean(v.preorder_enabled) && (v.selling_mode === "PREORDER" || v.selling_mode === "BOTH");
+              <div className="mt-5 space-y-5">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-base font-semibold">Color family</p>
+                    <span className="text-xs text-muted-foreground">{colorGroups.length} options</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {colorGroups.map(([color, sample]: [string, any]) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => {
+                          setSelectedColor(color);
+                          setSelectedModel(null);
+                          setSelectedImage(null);
+                        }}
+                        className={`overflow-hidden rounded-xl border-2 text-left transition ${activeColor === color ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                      >
+                        <div className="aspect-square bg-muted">
+                          <StorageImage src={sample.image_url ?? product.image_url} alt={`${color} ${product.name}`} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>} />
+                        </div>
+                        <p className={`px-3 py-2 text-sm font-medium ${activeColor === color ? "text-primary" : ""}`}>{color}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-base font-semibold">Compatibility by model</p>
+                  <div className="flex flex-wrap gap-2">
+                    {modelsForColor.map((variant: any) => (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => setSelectedModel(variant.size)}
+                        className={`rounded-lg border px-4 py-2 text-sm ${activeVariant?.id === variant.id ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50"}`}
+                      >
+                        {variant.size || variant.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {activeVariant && (() => {
+                  const vPrice = Number(activeVariant.final_sell_mmk ?? activeVariant.price ?? 0);
+                  const vStock = Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0);
+                  const vCanPreorder = Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH");
                   const vFulfillment = vStock <= 0 && vCanPreorder ? "PREORDER" : "IN_STOCK";
                   return (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between rounded-md border p-3"
-                    >
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/20 p-3">
                       <div>
-                        <p className="text-sm font-medium">{v.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {[v.color, v.size].filter(Boolean).join(" / ")}
-                        </p>
+                        <p className="text-sm font-medium">{activeVariant.name}</p>
+                        <p className="text-xs text-muted-foreground">{activeColor}{activeVariant.size ? ` · ${activeVariant.size}` : ""} · {formatKS(vPrice)}</p>
                         <Badge variant="outline" className={vFulfillment === "PREORDER" ? "mt-1 bg-amber-500/10 text-amber-700" : "mt-1 bg-green-500/10 text-green-600"}>
                           {vFulfillment === "PREORDER" ? "Pre-order" : vStock > 0 ? `${vStock} in stock` : "Out of stock"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">{formatKS(vPrice)}</span>
-                        <Button
-                          size="sm"
-                          disabled={vStock <= 0 && !vCanPreorder}
-                          onClick={() => buy(v, 1)}
-                        >
-                          {vFulfillment === "PREORDER" ? "Pre-order" : "Add"}
+                        <div className="flex h-10 items-center rounded-lg border bg-background">
+                          <Button variant="ghost" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity((value) => Math.max(1, value - 1))}><Minus className="h-4 w-4" /></Button>
+                          <span className="w-8 text-center text-sm font-semibold" aria-live="polite">{quantity}</span>
+                          <Button variant="ghost" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(Math.max(1, vStock), value + 1))} disabled={quantity >= vStock}><Plus className="h-4 w-4" /></Button>
+                        </div>
+                        <Button size="lg" disabled={vStock <= 0 && !vCanPreorder} onClick={() => buy(activeVariant)}>
+                          <ShoppingBag className="mr-2 h-4 w-4" />{vFulfillment === "PREORDER" ? "Pre-order" : "Add to cart"}
                         </Button>
                       </div>
                     </div>
                   );
-                })}
+                })()}
               </div>
             )}
 

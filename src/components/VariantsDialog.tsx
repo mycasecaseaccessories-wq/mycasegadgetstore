@@ -1,11 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StorageImage } from "@/components/StorageImage";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
 import { toast } from "sonner";
+import { CUSTOM_OPTION, DEFAULT_COLORS, DEFAULT_MODELS, selectValue, uniqueOptions } from "@/lib/catalog-options";
 
 type Variant = {
   id: string;
@@ -28,6 +32,7 @@ type Variant = {
   stock_in: number;
   sold_qty: number;
   status: string;
+  image_url: string | null;
 };
 
 const empty = {
@@ -37,6 +42,7 @@ const empty = {
   price: 0,
   stock_in: 0,
   status: "ACTIVE",
+  image_url: null,
 } as Partial<Variant>;
 
 export function VariantsDialog({
@@ -66,6 +72,8 @@ export function VariantsDialog({
     },
     enabled: open,
   });
+  const colorOptions = uniqueOptions(DEFAULT_COLORS, variants.map((variant) => variant.color));
+  const modelOptions = uniqueOptions(DEFAULT_MODELS, variants.map((variant) => variant.size));
 
   const save = async () => {
     if (!form.name) return toast.error("Name required");
@@ -107,7 +115,8 @@ export function VariantsDialog({
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Image</th>
+                <th>Name</th>
                 <th>Size</th>
                 <th>Color</th>
                 <th>Price</th>
@@ -120,13 +129,16 @@ export function VariantsDialog({
             <tbody>
               {variants.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                     No variants
                   </td>
                 </tr>
               )}
               {variants.map((v) => (
                 <tr key={v.id} className="border-t">
+                  <td className="px-3 py-2">
+                    <StorageImage src={v.image_url} alt={`${v.color ?? ""} ${v.name}`.trim()} className="h-10 w-10 rounded object-cover" fallback={<div className="h-10 w-10 rounded bg-muted" />} />
+                  </td>
                   <td className="px-3 py-2 font-medium">{v.name}</td>
                   <td>{v.size ?? "—"}</td>
                   <td>{v.color ?? "—"}</td>
@@ -150,7 +162,11 @@ export function VariantsDialog({
           </table>
         </Card>
 
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-2 border-t">
+        <div className="grid grid-cols-2 gap-2 border-t pt-2 sm:grid-cols-6">
+          <div className="col-span-2 space-y-1 sm:col-span-6">
+            <Label className="text-xs">Variant image (shown for this color)</Label>
+            <ImageUpload value={form.image_url} onChange={(image_url) => setForm({ ...form, image_url })} bucket="product-images" size="sm" />
+          </div>
           <div className="space-y-1 col-span-2">
             <Label className="text-xs">Variant Name</Label>
             <Input
@@ -160,17 +176,25 @@ export function VariantsDialog({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Size</Label>
-            <Input
-              value={form.size ?? ""}
-              onChange={(e) => setForm({ ...form, size: e.target.value })}
-            />
+            <Select value={selectValue(form.size, modelOptions)} onValueChange={(value) => setForm({ ...form, size: value === CUSTOM_OPTION ? "" : value })}>
+              <SelectTrigger><SelectValue placeholder="Model" /></SelectTrigger>
+              <SelectContent>
+                {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+                <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.size && !modelOptions.includes(form.size) && <Input value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} />}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Color</Label>
-            <Input
-              value={form.color ?? ""}
-              onChange={(e) => setForm({ ...form, color: e.target.value })}
-            />
+            <Select value={selectValue(form.color, colorOptions)} onValueChange={(value) => setForm({ ...form, color: value === CUSTOM_OPTION ? "" : value })}>
+              <SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger>
+              <SelectContent>
+                {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+                <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.color && !colorOptions.includes(form.color) && <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Price</Label>

@@ -369,6 +369,7 @@ export type Database = {
           color: string | null
           created_at: string
           final_sell_mmk: number | null
+          image_url: string | null
           id: string
           name: string
           note: string | null
@@ -386,6 +387,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           final_sell_mmk?: number | null
+          image_url?: string | null
           id?: string
           name: string
           note?: string | null
@@ -403,6 +405,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           final_sell_mmk?: number | null
+          image_url?: string | null
           id?: string
           name?: string
           note?: string | null
