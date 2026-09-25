@@ -151,6 +151,8 @@ function BulkVariantsPage() {
     try {
       for (const r of dirty) {
         const { _dirty, _new, id, ...payload } = r;
+        payload.size = payload.size === CUSTOM_OPTION ? null : payload.size;
+        payload.color = payload.color === CUSTOM_OPTION ? null : payload.color;
         if (_new) {
           const { error } = await supabase.from("product_variants").insert(payload);
           if (error) throw error;
@@ -229,26 +231,28 @@ function BulkVariantsPage() {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-4">
                   <div className="flex gap-2">
-                    <Select value={colorInput || ""} onValueChange={(value) => setColorInput(value === CUSTOM_OPTION ? "" : value)}>
+                    <Select value={colorInput || ""} onValueChange={setColorInput}>
                       <SelectTrigger><SelectValue placeholder="Choose color" /></SelectTrigger>
                       <SelectContent>
                         {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
                         <SelectItem value={CUSTOM_OPTION}>Custom color…</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } }}>Add</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = colorInput === CUSTOM_OPTION ? "" : colorInput.trim(); if (value && !colors.includes(value)) { setColors([...colors, value]); setColorInput(""); } }}>Add</Button>
                   </div>
+                  {colorInput === CUSTOM_OPTION && <Input autoFocus value="" onChange={(e) => setColorInput(e.target.value)} placeholder="Type a custom color" />}
                   <div className="flex min-h-6 flex-wrap gap-1">{colors.map((color) => <button type="button" key={color} onClick={() => setColors(colors.filter((item) => item !== color))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{color} ×</button>)}</div>
                   <div className="flex gap-2">
-                    <Select value={modelInput || ""} onValueChange={(value) => setModelInput(value === CUSTOM_OPTION ? "" : value)}>
+                    <Select value={modelInput || ""} onValueChange={setModelInput}>
                       <SelectTrigger><SelectValue placeholder="Choose model" /></SelectTrigger>
                       <SelectContent>
                         {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
                         <SelectItem value={CUSTOM_OPTION}>Custom model…</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } }}>Add</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => { const value = modelInput === CUSTOM_OPTION ? "" : modelInput.trim(); if (value && !models.includes(value)) { setModels([...models, value]); setModelInput(""); } }}>Add</Button>
                   </div>
+                  {modelInput === CUSTOM_OPTION && <Input autoFocus value="" onChange={(e) => setModelInput(e.target.value)} placeholder="Type a custom model" />}
                   <div className="flex min-h-6 flex-wrap gap-1">{models.map((model) => <button type="button" key={model} onClick={() => setModels(models.filter((item) => item !== model))} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{model} ×</button>)}</div>
                   <Input type="number" value={bulkPrice} onChange={(e) => setBulkPrice(Number(e.target.value))} placeholder="Price" />
                   <Input type="number" value={bulkStock} onChange={(e) => setBulkStock(Number(e.target.value))} placeholder="Stock each" />
@@ -332,24 +336,24 @@ function BulkVariantsPage() {
                       />
                     </td>
                     <td>
-                      <Select value={selectValue(r.size, modelOptions)} onValueChange={(value) => update(r.id, { size: value === CUSTOM_OPTION ? "" : value })}>
+                      <Select value={selectValue(r.size, modelOptions)} onValueChange={(value) => update(r.id, { size: value })}>
                         <SelectTrigger className="h-8 w-28"><SelectValue placeholder="Model" /></SelectTrigger>
                         <SelectContent>
                           {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
                           <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
                         </SelectContent>
                       </Select>
-                      {r.size && !modelOptions.includes(r.size) && <Input value={r.size} onChange={(e) => update(r.id, { size: e.target.value })} className="mt-1 h-8 w-28" />}
+                      {(r.size === CUSTOM_OPTION || (r.size && !modelOptions.includes(r.size))) && <Input autoFocus={r.size === CUSTOM_OPTION} value={r.size === CUSTOM_OPTION ? "" : r.size} onChange={(e) => update(r.id, { size: e.target.value })} className="mt-1 h-8 w-28" placeholder="Custom model" />}
                     </td>
                     <td>
-                      <Select value={selectValue(r.color, colorOptions)} onValueChange={(value) => update(r.id, { color: value === CUSTOM_OPTION ? "" : value })}>
+                      <Select value={selectValue(r.color, colorOptions)} onValueChange={(value) => update(r.id, { color: value })}>
                         <SelectTrigger className="h-8 w-28"><SelectValue placeholder="Color" /></SelectTrigger>
                         <SelectContent>
                           {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
                           <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
                         </SelectContent>
                       </Select>
-                      {r.color && !colorOptions.includes(r.color) && <Input value={r.color} onChange={(e) => update(r.id, { color: e.target.value })} className="mt-1 h-8 w-28" />}
+                      {(r.color === CUSTOM_OPTION || (r.color && !colorOptions.includes(r.color))) && <Input autoFocus={r.color === CUSTOM_OPTION} value={r.color === CUSTOM_OPTION ? "" : r.color} onChange={(e) => update(r.id, { color: e.target.value })} className="mt-1 h-8 w-28" placeholder="Custom color" />}
                     </td>
                     <td>
                       <Input

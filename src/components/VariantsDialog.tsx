@@ -80,6 +80,8 @@ export function VariantsDialog({
     const payload = {
       ...form,
       product_id: productId,
+      size: form.size === CUSTOM_OPTION ? null : form.size,
+      color: form.color === CUSTOM_OPTION ? null : form.color,
       price: Number(form.price ?? 0),
       stock_in: Number(form.stock_in ?? 0),
     };
@@ -176,25 +178,25 @@ export function VariantsDialog({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Size</Label>
-            <Select value={selectValue(form.size, modelOptions)} onValueChange={(value) => setForm({ ...form, size: value === CUSTOM_OPTION ? "" : value })}>
+            <Select value={selectValue(form.size, modelOptions)} onValueChange={(value) => setForm({ ...form, size: value })}>
               <SelectTrigger><SelectValue placeholder="Model" /></SelectTrigger>
               <SelectContent>
                 {modelOptions.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
                 <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
               </SelectContent>
             </Select>
-            {form.size && !modelOptions.includes(form.size) && <Input value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} />}
+            {(form.size === CUSTOM_OPTION || (form.size && !modelOptions.includes(form.size))) && <Input autoFocus={form.size === CUSTOM_OPTION} value={form.size === CUSTOM_OPTION ? "" : form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} placeholder="Custom model" />}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Color</Label>
-            <Select value={selectValue(form.color, colorOptions)} onValueChange={(value) => setForm({ ...form, color: value === CUSTOM_OPTION ? "" : value })}>
+            <Select value={selectValue(form.color, colorOptions)} onValueChange={(value) => setForm({ ...form, color: value })}>
               <SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger>
               <SelectContent>
                 {colorOptions.map((color) => <SelectItem key={color} value={color}>{color}</SelectItem>)}
                 <SelectItem value={CUSTOM_OPTION}>Custom…</SelectItem>
               </SelectContent>
             </Select>
-            {form.color && !colorOptions.includes(form.color) && <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />}
+            {(form.color === CUSTOM_OPTION || (form.color && !colorOptions.includes(form.color))) && <Input autoFocus={form.color === CUSTOM_OPTION} value={form.color === CUSTOM_OPTION ? "" : form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="Custom color" />}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Price</Label>

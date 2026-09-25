@@ -138,9 +138,9 @@ function ProductsPage() {
     if (!form.name) return toast.error("Name is required");
     const payload = {
       ...form,
-      size: form.size === CUSTOM_OPTION ? "" : form.size,
-      category: form.category === CUSTOM_OPTION ? "" : form.category,
-      brand: form.brand === CUSTOM_OPTION ? "" : form.brand,
+      size: form.size === CUSTOM_OPTION ? null : form.size,
+      category: form.category === CUSTOM_OPTION ? null : form.category,
+      brand: form.brand === CUSTOM_OPTION ? null : form.brand,
       price: Math.max(0, Number(form.price ?? 0)),
       stock_in: Math.max(0, Number(form.stock_in ?? 0)),
       reserved_qty: Math.max(0, Number(form.reserved_qty ?? 0)),
@@ -276,7 +276,7 @@ function ProductsPage() {
                   <Label>Model / Size</Label>
                   <Select
                     value={selectValue(form.size, modelOptions)}
-                    onValueChange={(value) => setForm({ ...form, size: value === CUSTOM_OPTION ? "" : value })}
+                    onValueChange={(value) => setForm({ ...form, size: value })}
                   >
                     <SelectTrigger><SelectValue placeholder="Choose model / size" /></SelectTrigger>
                     <SelectContent>
@@ -284,8 +284,8 @@ function ProductsPage() {
                       <SelectItem value={CUSTOM_OPTION}>Custom model / size…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {form.size && !modelOptions.includes(form.size) && (
-                    <Input value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} placeholder="Custom model / size" />
+                  {(form.size === CUSTOM_OPTION || (form.size && !modelOptions.includes(form.size))) && (
+                    <Input value={form.size === CUSTOM_OPTION ? "" : form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} placeholder="Type a custom model / size" autoFocus />
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -308,7 +308,7 @@ function ProductsPage() {
                   <Label>Category</Label>
                   <Select
                     value={selectValue(form.category, categoryOptions)}
-                    onValueChange={(value) => setForm({ ...form, category: value === CUSTOM_OPTION ? "" : value })}
+                    onValueChange={(value) => setForm({ ...form, category: value })}
                   >
                     <SelectTrigger><SelectValue placeholder="Choose category" /></SelectTrigger>
                     <SelectContent>
@@ -316,15 +316,15 @@ function ProductsPage() {
                       <SelectItem value={CUSTOM_OPTION}>Custom category…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {form.category && !categoryOptions.includes(form.category) && (
-                    <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Custom category" />
+                  {(form.category === CUSTOM_OPTION || (form.category && !categoryOptions.includes(form.category))) && (
+                    <Input value={form.category === CUSTOM_OPTION ? "" : form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Type a custom category" autoFocus />
                   )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Brand</Label>
                   <Select
                     value={selectValue(form.brand, brandOptions)}
-                    onValueChange={(value) => setForm({ ...form, brand: value === CUSTOM_OPTION ? "" : value })}
+                    onValueChange={(value) => setForm({ ...form, brand: value })}
                   >
                     <SelectTrigger><SelectValue placeholder="Choose brand" /></SelectTrigger>
                     <SelectContent>
@@ -332,8 +332,8 @@ function ProductsPage() {
                       <SelectItem value={CUSTOM_OPTION}>Custom brand…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {form.brand && !brandOptions.includes(form.brand) && (
-                    <Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Custom brand" />
+                  {(form.brand === CUSTOM_OPTION || (form.brand && !brandOptions.includes(form.brand))) && (
+                    <Input value={form.brand === CUSTOM_OPTION ? "" : form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Type a custom brand" autoFocus />
                   )}
                 </div>
                 <div className="space-y-1.5">
