@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,6 +75,10 @@ function ProductPage() {
   const activeColor = selectedColor ?? colorGroups[0]?.[0] ?? null;
   const modelsForColor: any[] = variants.filter((variant: any) => (variant.color || "Default") === activeColor);
   const activeVariant: any = modelsForColor.find((variant: any) => variant.size === selectedModel) ?? modelsForColor[0] ?? null;
+  const variantGalleryImages = Array.from(new Set([
+    activeVariant?.image_url,
+    ...galleryImages,
+  ].filter(Boolean))) as string[];
   const heroImage = selectedImage ?? activeVariant?.image_url ?? galleryImages[0] ?? null;
 
   const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
@@ -85,6 +89,7 @@ function ProductPage() {
     ? Math.min(price, (price * Math.min(100, Math.max(0, Number(product.preorder_deposit ?? 0)))) / 100)
     : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
   const fulfillmentType = stock <= 0 && canPreorder ? "PREORDER" : "IN_STOCK";
+  const activePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? price);
 
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
@@ -110,7 +115,7 @@ function ProductPage() {
       name: variantName ? `${product.name} — ${variantName}` : product.name,
       price: selectedPrice,
       qty,
-      image_url: product.image_url ?? null,
+      image_url: variant?.image_url ?? product.image_url ?? null,
       fulfillment_type: selectedFulfillment,
       estimated_arrival: variant?.waiting_time ?? product.waiting_time,
       deposit_required: variantDeposit,
@@ -142,7 +147,7 @@ function ProductPage() {
             <StorageImage
               src={heroImage}
               alt={product.name}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain p-4 transition-opacity duration-200 sm:p-8"
               fallback={
                 <div className="flex h-full w-full items-center justify-center text-6xl text-muted-foreground/30">
                   📦
@@ -150,10 +155,10 @@ function ProductPage() {
               }
             />
           </div>
-          {galleryImages.length > 1 && (
-            <div className="mt-3 grid grid-cols-6 gap-2">
-              {galleryImages.map((image) => (
-                <button key={image} type="button" onClick={() => setSelectedImage(image)} className={`aspect-square overflow-hidden rounded-lg border-2 ${heroImage === image ? "border-primary" : "border-transparent"}`}>
+          {variantGalleryImages.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {variantGalleryImages.map((image) => (
+                <button key={image} type="button" aria-label="View product image" onClick={() => setSelectedImage(image)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-muted transition ${heroImage === image ? "border-primary shadow-sm" : "border-transparent opacity-75 hover:opacity-100"}`}>
                   <StorageImage src={image} alt="Product thumbnail" className="h-full w-full object-cover" />
                 </button>
               ))}
@@ -167,7 +172,10 @@ function ProductPage() {
               </p>
             )}
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
-            <p className="text-3xl font-bold text-primary">{formatKS(price)}</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <p className="text-3xl font-bold tracking-tight text-primary">{formatKS(activePrice)}</p>
+              {activeVariant && activeVariant.name && <span className="pb-1 text-sm text-muted-foreground">{activeVariant.name}</span>}
+            </div>
             <div className="flex flex-wrap gap-2">
               {stock <= 0 && canPreorder ? (
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-700">
@@ -232,39 +240,56 @@ function ProductPage() {
             ) : (
               <div className="mt-5 space-y-5">
                 <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-base font-semibold">Color family</p>
-                    <span className="text-xs text-muted-foreground">{colorGroups.length} options</span>
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-semibold">Color family</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Choose a finish, then select your model</p>
+                    </div>
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{colorGroups.length} options</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {colorGroups.map(([color, sample]: [string, any]) => (
                       <button
                         key={color}
                         type="button"
+                        aria-pressed={activeColor === color}
                         onClick={() => {
                           setSelectedColor(color);
                           setSelectedModel(null);
                           setSelectedImage(null);
+                          setQuantity(1);
                         }}
-                        className={`overflow-hidden rounded-xl border-2 text-left transition ${activeColor === color ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                        className={`group relative overflow-hidden rounded-2xl border-2 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${activeColor === color ? "border-primary bg-primary/5 ring-2 ring-primary/15" : "border-border/70 bg-card hover:border-primary/50"}`}
                       >
-                        <div className="aspect-square bg-muted">
-                          <StorageImage src={sample.image_url ?? product.image_url} alt={`${color} ${product.name}`} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>} />
+                        <div className="relative aspect-square bg-muted/60">
+                          <StorageImage src={sample.image_url ?? product.image_url} alt={`${color} ${product.name}`} className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105" fallback={<div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>} />
+                          {activeColor === color && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm"><Check className="h-3.5 w-3.5" /></span>}
                         </div>
-                        <p className={`px-3 py-2 text-sm font-medium ${activeColor === color ? "text-primary" : ""}`}>{color}</p>
+                        <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                          <p className={`truncate text-sm font-semibold ${activeColor === color ? "text-primary" : ""}`}>{color}</p>
+                          <span className="h-3 w-3 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: color.toLowerCase() }} aria-hidden="true" />
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="mb-2 text-base font-semibold">Compatibility by model</p>
+                  <div className="mb-2 flex items-center gap-2">
+                    <p className="text-base font-semibold">Compatibility by model</p>
+                    <span className="text-xs text-muted-foreground">{modelsForColor.length} available</span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {modelsForColor.map((variant: any) => (
                       <button
                         key={variant.id}
                         type="button"
-                        onClick={() => setSelectedModel(variant.size)}
-                        className={`rounded-lg border px-4 py-2 text-sm ${activeVariant?.id === variant.id ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50"}`}
+                        aria-pressed={activeVariant?.id === variant.id}
+                        onClick={() => {
+                          setSelectedModel(variant.size);
+                          setSelectedImage(null);
+                          setQuantity(1);
+                        }}
+                        className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${activeVariant?.id === variant.id ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-border bg-card hover:border-primary/50"}`}
                       >
                         {variant.size || variant.name}
                       </button>
@@ -277,10 +302,10 @@ function ProductPage() {
                   const vCanPreorder = Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH");
                   const vFulfillment = vStock <= 0 && vCanPreorder ? "PREORDER" : "IN_STOCK";
                   return (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/20 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 shadow-sm">
                       <div>
-                        <p className="text-sm font-medium">{activeVariant.name}</p>
-                        <p className="text-xs text-muted-foreground">{activeColor}{activeVariant.size ? ` · ${activeVariant.size}` : ""} · {formatKS(vPrice)}</p>
+                        <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">Your selection</p></div>
+                        <p className="mt-1 text-xs text-muted-foreground">{activeColor}{activeVariant.size ? ` · ${activeVariant.size}` : ""} · {formatKS(vPrice)}</p>
                         <Badge variant="outline" className={vFulfillment === "PREORDER" ? "mt-1 bg-amber-500/10 text-amber-700" : "mt-1 bg-green-500/10 text-green-600"}>
                           {vFulfillment === "PREORDER" ? "Pre-order" : vStock > 0 ? `${vStock} in stock` : "Out of stock"}
                         </Badge>
