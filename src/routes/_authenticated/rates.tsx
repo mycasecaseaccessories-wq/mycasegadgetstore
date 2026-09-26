@@ -159,8 +159,9 @@ function RatesPage() {
               <Input
                 type="number"
                 step="0.01"
-                value={buyRate}
-                onChange={(e) => setBuyRate(+e.target.value)}
+                value={buyRate || ""}
+                placeholder="0"
+                onChange={(e) => setBuyRate(e.target.value === "" ? 0 : Number(e.target.value))}
               />
             </div>
             <div className="space-y-1.5">
@@ -168,8 +169,9 @@ function RatesPage() {
               <Input
                 type="number"
                 step="0.01"
-                value={sellGap}
-                onChange={(e) => setSellGap(+e.target.value)}
+                value={sellGap || ""}
+                placeholder="0"
+                onChange={(e) => setSellGap(e.target.value === "" ? 0 : Number(e.target.value))}
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -230,23 +232,23 @@ function RatesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 col-span-2">
               <Label>{source} Price</Label>
-              <Input type="number" value={thb} onChange={(e) => setThb(+e.target.value)} />
+              <Input type="number" value={thb || ""} placeholder="0" onChange={(e) => setThb(e.target.value === "" ? 0 : Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label>Cargo (KS)</Label>
-              <Input type="number" value={cargo} onChange={(e) => setCargo(+e.target.value)} />
+              <Input type="number" value={cargo || ""} placeholder="0" onChange={(e) => setCargo(e.target.value === "" ? 0 : Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label>Delivery (KS)</Label>
-              <Input type="number" value={deli} onChange={(e) => setDeli(+e.target.value)} />
+              <Input type="number" value={deli || ""} placeholder="0" onChange={(e) => setDeli(e.target.value === "" ? 0 : Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label>Other (KS)</Label>
-              <Input type="number" value={other} onChange={(e) => setOther(+e.target.value)} />
+              <Input type="number" value={other || ""} placeholder="0" onChange={(e) => setOther(e.target.value === "" ? 0 : Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label>Buffer (KS)</Label>
-              <Input type="number" value={buffer} onChange={(e) => setBuffer(+e.target.value)} />
+              <Input type="number" value={buffer || ""} placeholder="0" onChange={(e) => setBuffer(e.target.value === "" ? 0 : Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label>Profit Mode</Label>
@@ -279,16 +281,18 @@ function RatesPage() {
               <Label>% Profit</Label>
               <Input
                 type="number"
-                value={percentProfit}
-                onChange={(e) => setPercentProfit(+e.target.value)}
+                value={percentProfit || ""}
+                placeholder="20"
+                onChange={(e) => setPercentProfit(e.target.value === "" ? 0 : Number(e.target.value))}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Fixed Profit</Label>
               <Input
                 type="number"
-                value={fixedProfit}
-                onChange={(e) => setFixedProfit(+e.target.value)}
+                value={fixedProfit || ""}
+                placeholder="0"
+                onChange={(e) => setFixedProfit(e.target.value === "" ? 0 : Number(e.target.value))}
               />
             </div>
             <div className="col-span-2 space-y-1.5">
