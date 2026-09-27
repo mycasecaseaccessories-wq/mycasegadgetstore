@@ -20,7 +20,6 @@ import { Route as ShopLoginRouteImport } from './routes/shop/login'
 import { Route as ShopCartRouteImport } from './routes/shop/cart'
 import { Route as ShopAccountRouteImport } from './routes/shop/account'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
-import { Route as AuthenticatedVariantsRouteImport } from './routes/_authenticated/variants'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -39,6 +38,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated/content'
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
+import { Route as AuthenticatedBulkVariantsRouteImport } from './routes/_authenticated/bulk-variants'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
@@ -100,11 +100,6 @@ const ShopAccountRoute = ShopAccountRouteImport.update({
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
   id: '/vouchers',
   path: '/vouchers',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedVariantsRoute = AuthenticatedVariantsRouteImport.update({
-  id: '/variants',
-  path: '/variants',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
@@ -199,6 +194,12 @@ const AuthenticatedCalculatorRoute = AuthenticatedCalculatorRouteImport.update({
   path: '/calculator',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBulkVariantsRoute =
+  AuthenticatedBulkVariantsRouteImport.update({
+    id: '/bulk-variants',
+    path: '/bulk-variants',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
@@ -248,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AuthenticatedActivityRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/bulk-variants': typeof AuthenticatedBulkVariantsRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/content': typeof AuthenticatedContentRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -266,7 +268,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/variants': typeof AuthenticatedVariantsRoute
   '/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
@@ -287,6 +288,7 @@ export interface FileRoutesByTo {
   '/activity': typeof AuthenticatedActivityRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/backup': typeof AuthenticatedBackupRoute
+  '/bulk-variants': typeof AuthenticatedBulkVariantsRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/content': typeof AuthenticatedContentRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -305,7 +307,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/variants': typeof AuthenticatedVariantsRoute
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/login': typeof ShopLoginRoute
@@ -327,6 +328,7 @@ export interface FileRoutesById {
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
+  '/_authenticated/bulk-variants': typeof AuthenticatedBulkVariantsRoute
   '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
   '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -345,7 +347,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
-  '/_authenticated/variants': typeof AuthenticatedVariantsRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRouteWithChildren
   '/shop/account': typeof ShopAccountRoute
   '/shop/cart': typeof ShopCartRoute
@@ -368,6 +369,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/analytics'
     | '/backup'
+    | '/bulk-variants'
     | '/calculator'
     | '/content'
     | '/customers'
@@ -386,7 +388,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/suppliers'
     | '/team'
-    | '/variants'
     | '/vouchers'
     | '/shop/account'
     | '/shop/cart'
@@ -407,6 +408,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/analytics'
     | '/backup'
+    | '/bulk-variants'
     | '/calculator'
     | '/content'
     | '/customers'
@@ -425,7 +427,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/suppliers'
     | '/team'
-    | '/variants'
     | '/shop/account'
     | '/shop/cart'
     | '/shop/login'
@@ -446,6 +447,7 @@ export interface FileRouteTypes {
     | '/_authenticated/activity'
     | '/_authenticated/analytics'
     | '/_authenticated/backup'
+    | '/_authenticated/bulk-variants'
     | '/_authenticated/calculator'
     | '/_authenticated/content'
     | '/_authenticated/customers'
@@ -464,7 +466,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/suppliers'
     | '/_authenticated/team'
-    | '/_authenticated/variants'
     | '/_authenticated/vouchers'
     | '/shop/account'
     | '/shop/cart'
@@ -572,13 +573,6 @@ declare module '@tanstack/react-router' {
       path: '/vouchers'
       fullPath: '/vouchers'
       preLoaderRoute: typeof AuthenticatedVouchersRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/variants': {
-      id: '/_authenticated/variants'
-      path: '/variants'
-      fullPath: '/variants'
-      preLoaderRoute: typeof AuthenticatedVariantsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/team': {
@@ -707,6 +701,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalculatorRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/bulk-variants': {
+      id: '/_authenticated/bulk-variants'
+      path: '/bulk-variants'
+      fullPath: '/bulk-variants'
+      preLoaderRoute: typeof AuthenticatedBulkVariantsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/backup': {
       id: '/_authenticated/backup'
       path: '/backup'
@@ -799,6 +800,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
+  AuthenticatedBulkVariantsRoute: typeof AuthenticatedBulkVariantsRoute
   AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
   AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
@@ -817,7 +819,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
-  AuthenticatedVariantsRoute: typeof AuthenticatedVariantsRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRouteWithChildren
 }
 
@@ -825,6 +826,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
+  AuthenticatedBulkVariantsRoute: AuthenticatedBulkVariantsRoute,
   AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,
   AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
@@ -843,7 +845,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
-  AuthenticatedVariantsRoute: AuthenticatedVariantsRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRouteWithChildren,
 }
 

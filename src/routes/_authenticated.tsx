@@ -19,7 +19,7 @@ const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/rates": "Rates & Calculator",
   "/products": "Products",
-  "/variants": "Bulk Variants",
+  "/bulk-variants": "Bulk Variants",
   "/calculator": "Product Calculator",
   "/orders": "Orders",
   "/vouchers": "Vouchers",

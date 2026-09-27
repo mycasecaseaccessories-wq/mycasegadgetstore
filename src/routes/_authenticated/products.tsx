@@ -214,7 +214,7 @@ function ProductsPage() {
           }}
         />
         <Button asChild variant="outline">
-          <Link to="/variants">
+          <Link to="/bulk-variants">
             <Layers className="mr-2 h-4 w-4" />
             Bulk Variants
           </Link>

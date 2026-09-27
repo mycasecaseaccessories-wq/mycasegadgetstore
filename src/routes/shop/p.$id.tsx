@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,6 +96,12 @@ function ProductPage() {
     ? Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH")
     : canPreorder;
   const activeFulfillmentType = activeStock <= 0 && activeCanPreorder ? "PREORDER" : "IN_STOCK";
+  const variantPrices = variants
+    .map((variant: any) => Number(variant.final_sell_mmk ?? variant.price ?? 0))
+    .filter((value: number) => Number.isFinite(value) && value >= 0);
+  const variantMinPrice = variantPrices.length ? Math.min(...variantPrices) : price;
+  const variantMaxPrice = variantPrices.length ? Math.max(...variantPrices) : price;
+  const hasPreorderProduct = canPreorder || variants.some((variant: any) => Boolean(variant.preorder_enabled) && (variant.selling_mode === "PREORDER" || variant.selling_mode === "BOTH"));
 
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
@@ -179,7 +185,11 @@ function ProductPage() {
             )}
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
             <div className="flex flex-wrap items-end gap-3">
-              <p className="text-3xl font-bold tracking-tight text-primary">{formatKS(activePrice)}</p>
+              <p className="text-3xl font-bold tracking-tight text-primary">
+                {variants.length > 0 && variantMinPrice !== variantMaxPrice
+                  ? `${formatKS(variantMinPrice)} – ${formatKS(variantMaxPrice)}`
+                  : formatKS(activePrice)}
+              </p>
               {activeVariant && activeVariant.name && <span className="pb-1 text-sm text-muted-foreground">{activeVariant.name}</span>}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -208,6 +218,12 @@ function ProductPage() {
                 </Badge>
               )}
             </div>
+            {hasPreorderProduct && (
+              <div className="flex gap-3 rounded-xl border border-amber-300/70 bg-amber-500/10 p-3 text-sm leading-6 text-amber-900 dark:text-amber-100">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                <p>စျေးနှုန်း အပြောင်းအလဲ ရှိနိုင်ပါသဖြင့် မဝယ်ခင် Admin ကို စျေးနှုန်းနှင့် instock ရမရ ပြန်မေးပေးပါရန်</p>
+              </div>
+            )}
 
             {variants.length === 0 ? (
               <div className="mt-2 flex gap-2">

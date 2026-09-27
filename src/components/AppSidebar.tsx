@@ -63,7 +63,7 @@ export function AppSidebar() {
     { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard, admin: false },
     { title: t("nav.rates"), url: "/rates", icon: TrendingUp, admin: false },
     { title: t("nav.products"), url: "/products", icon: Package, admin: false },
-    { title: t("nav.bulkVariants"), url: "/variants", icon: Layers, admin: false },
+    { title: t("nav.bulkVariants"), url: "/bulk-variants", icon: Layers, admin: false },
     { title: t("nav.calculator"), url: "/calculator", icon: Calculator, admin: false },
     { title: t("nav.orders"), url: "/orders", icon: ShoppingCart, admin: false },
     { title: t("nav.vouchers"), url: "/vouchers", icon: Receipt, admin: true },
