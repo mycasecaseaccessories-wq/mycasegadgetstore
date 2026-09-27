@@ -72,8 +72,17 @@ export function VariantsDialog({
     },
     enabled: open,
   });
-  const colorOptions = uniqueOptions(DEFAULT_COLORS, variants.map((variant) => variant.color));
-  const modelOptions = uniqueOptions(DEFAULT_MODELS, variants.map((variant) => variant.size));
+  const { data: catalogVariants = [] } = useQuery({
+    queryKey: ["catalog-variant-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_variants").select("color, size").limit(5000);
+      if (error) throw error;
+      return data as Array<{ color: string | null; size: string | null }>;
+    },
+    enabled: open,
+  });
+  const colorOptions = uniqueOptions(DEFAULT_COLORS, catalogVariants.map((variant) => variant.color), variants.map((variant) => variant.color));
+  const modelOptions = uniqueOptions(DEFAULT_MODELS, catalogVariants.map((variant) => variant.size), variants.map((variant) => variant.size));
 
   const save = async () => {
     if (!form.name) return toast.error("Name required");

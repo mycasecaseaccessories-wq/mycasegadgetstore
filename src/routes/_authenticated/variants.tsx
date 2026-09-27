@@ -84,6 +84,15 @@ function BulkVariantsPage() {
     enabled: !!productId,
   });
 
+  const { data: catalogVariants = [] } = useQuery({
+    queryKey: ["catalog-variant-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_variants").select("color, size").limit(5000);
+      if (error) throw error;
+      return data as Array<{ color: string | null; size: string | null }>;
+    },
+  });
+
   useEffect(() => {
     setRows(variants);
   }, [variants]);
@@ -101,8 +110,8 @@ function BulkVariantsPage() {
       ),
     [rows, search],
   );
-  const colorOptions = uniqueOptions(DEFAULT_COLORS, rows.map((row) => row.color));
-  const modelOptions = uniqueOptions(DEFAULT_MODELS, rows.map((row) => row.size));
+  const colorOptions = uniqueOptions(DEFAULT_COLORS, catalogVariants.map((row) => row.color), rows.map((row) => row.color));
+  const modelOptions = uniqueOptions(DEFAULT_MODELS, catalogVariants.map((row) => row.size), rows.map((row) => row.size));
 
   const update = (id: string, patch: Partial<Variant>) => {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch, _dirty: true } : r)));
@@ -193,14 +202,23 @@ function BulkVariantsPage() {
     const existing = new Set(rows.map((row) => `${row.color ?? ""}|${row.size ?? ""}`));
     const fresh = payload.filter((row) => !existing.has(`${row.color ?? ""}|${row.size ?? ""}`));
     if (!fresh.length) return toast.info("Those color/model combinations already exist");
-    const { error } = await supabase.from("product_variants").insert(fresh as any);
-    if (error) return toast.error(error.message);
-    toast.success(`${fresh.length} variants created for ${productName}`);
+    setRows((current) => [
+      ...current,
+      ...fresh.map((row) => ({
+        ...row,
+        id: "new-" + Math.random().toString(36).slice(2),
+        name: row.name,
+        variant_code: null,
+        image_url: null,
+        _dirty: true,
+        _new: true,
+      })),
+    ]);
+    toast.success(`${fresh.length} drafts created for ${productName}. Edit each price/stock, then Save.`);
     setColors([]);
     setModels([]);
     setColorInput("");
     setModelInput("");
-    qc.invalidateQueries({ queryKey: ["variants", productId] });
   };
 
   return (
@@ -229,6 +247,9 @@ function BulkVariantsPage() {
                   <WandSparkles className="h-4 w-4 text-primary" />
                   Create color/model combinations
                 </div>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Choose multiple colors and models to create editable drafts. Each combination can have its own price, stock, image, and code before you save.
+                </p>
                 <div className="grid gap-2 sm:grid-cols-4">
                   <div className="flex gap-2">
                     <Select value={colorInput || ""} onValueChange={setColorInput}>

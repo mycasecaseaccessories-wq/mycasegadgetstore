@@ -88,8 +88,14 @@ function ProductPage() {
   const preorderDeposit = product.preorder_deposit_type === "PERCENTAGE"
     ? Math.min(price, (price * Math.min(100, Math.max(0, Number(product.preorder_deposit ?? 0)))) / 100)
     : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
-  const fulfillmentType = stock <= 0 && canPreorder ? "PREORDER" : "IN_STOCK";
   const activePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? price);
+  const activeStock = activeVariant
+    ? Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0)
+    : stock;
+  const activeCanPreorder = activeVariant
+    ? Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH")
+    : canPreorder;
+  const activeFulfillmentType = activeStock <= 0 && activeCanPreorder ? "PREORDER" : "IN_STOCK";
 
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
@@ -177,18 +183,18 @@ function ProductPage() {
               {activeVariant && activeVariant.name && <span className="pb-1 text-sm text-muted-foreground">{activeVariant.name}</span>}
             </div>
             <div className="flex flex-wrap gap-2">
-              {stock <= 0 && canPreorder ? (
+              {activeStock <= 0 && activeCanPreorder ? (
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-700">
                   Pre-order available
                 </Badge>
-              ) : stock <= 0 ? (
+              ) : activeStock <= 0 ? (
                 <Badge variant="outline" className="bg-red-500/10 text-red-600">
                   Out of stock
                 </Badge>
               ) : (
                 <Badge variant="outline" className="bg-green-500/10 text-green-600">
                   <Check className="mr-1 h-3 w-3" />
-                  In stock ({stock})
+                  In stock ({activeStock})
                 </Badge>
               )}
               {product.waiting_time && (
@@ -234,7 +240,7 @@ function ProductPage() {
                   onClick={() => buy()}
                 >
                   <ShoppingBag className="mr-2 h-4 w-4" />
-                  {fulfillmentType === "PREORDER" ? "Pre-order" : "Add to cart"}
+                  {activeFulfillmentType === "PREORDER" ? "Pre-order" : "Add to cart"}
                 </Button>
               </div>
             ) : (
