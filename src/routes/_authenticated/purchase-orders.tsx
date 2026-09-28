@@ -40,6 +40,7 @@ type CargoStatus = "ordered" | "in_transit" | "arrived";
 type PaymentStatus = "unpaid" | "partial" | "paid";
 type Item = {
   product_id?: string | null;
+  variant_id?: string | null;
   product_name: string;
   variant?: string | null;
   quantity: number;
@@ -110,6 +111,17 @@ function POPage() {
     queryKey: ["products-min"],
     queryFn: async () =>
       (await supabase.from("products").select("id, name, final_sell_mmk").order("name")).data ?? [],
+  });
+  const { data: variants = [] } = useQuery({
+    queryKey: ["purchase-variants"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("product_variants" as any) as any)
+        .select("id, product_id, name, color, size, status")
+        .eq("status", "ACTIVE")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: latestRate } = useQuery({
     queryKey: ["latest-rate"],
@@ -279,6 +291,7 @@ function POPage() {
       return {
         po_id: (po as any).id,
         product_id: i.product_id || null,
+        variant_id: i.variant_id || null,
         product_name: i.product_name,
         variant: i.variant || null,
         quantity: i.quantity,
@@ -301,24 +314,27 @@ function POPage() {
   const receive = async (id: string) => {
     if (!confirm("Mark all items as arrived? Stock will be added automatically.")) return;
     // Trigger handles stock-in per row
-    await supabase
+    const { error: itemError } = await supabase
       .from("purchase_order_items")
       .update({ cargo_status: "arrived" } as any)
       .eq("po_id", id);
-    await supabase
+    if (itemError) return toast.error(itemError.message);
+    const { error: orderError } = await supabase
       .from("purchase_orders")
       .update({ status: "received", received_at: new Date().toISOString().slice(0, 10) })
       .eq("id", id);
+    if (orderError) return toast.error(orderError.message);
     toast.success("Stock updated");
     qc.invalidateQueries({ queryKey: ["purchase_orders"] });
     qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
   };
 
   const updateLineStatus = async (lineId: string, status: CargoStatus) => {
-    await supabase
+    const { error } = await supabase
       .from("purchase_order_items")
       .update({ cargo_status: status } as any)
       .eq("id", lineId);
+    if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["purchase_orders"] });
     qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
   };
@@ -484,6 +500,8 @@ function POPage() {
                               next[idx] = {
                                 ...it,
                                 product_id: v,
+                                variant_id: null,
+                                variant: null,
                                 product_name: p?.name ?? it.product_name,
                               };
                               setItems(next);
@@ -500,16 +518,35 @@ function POPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <Input
-                            className="col-span-3"
-                            placeholder="Variant"
-                            value={it.variant ?? ""}
-                            onChange={(e) => {
+                          <Select
+                            value={it.variant_id ?? "none"}
+                            onValueChange={(value) => {
+                              const selected = variants.find((v: any) => v.id === value);
                               const n = [...items];
-                              n[idx] = { ...it, variant: e.target.value };
+                              n[idx] = {
+                                ...it,
+                                variant_id: value === "none" ? null : value,
+                                variant: selected
+                                  ? [selected.color, selected.size, selected.name].filter(Boolean).join(" · ")
+                                  : null,
+                              };
                               setItems(n);
                             }}
-                          />
+                          >
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Variant (optional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No variant</SelectItem>
+                              {variants
+                                .filter((v: any) => !it.product_id || v.product_id === it.product_id)
+                                .map((v: any) => (
+                                  <SelectItem key={v.id} value={v.id}>
+                                    {[v.color, v.size, v.name].filter(Boolean).join(" · ")}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
                           <Input
                             className="col-span-1"
                             type="number"

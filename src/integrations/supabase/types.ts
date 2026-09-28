@@ -590,6 +590,7 @@ export type Database = {
           thb_price: number | null
           tracking_code: string | null
           unit_cost: number
+          variant_id: string | null
           variant: string | null
         }
         Insert: {
@@ -605,6 +606,7 @@ export type Database = {
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
+          variant_id?: string | null
           variant?: string | null
         }
         Update: {
@@ -620,6 +622,7 @@ export type Database = {
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
+          variant_id?: string | null
           variant?: string | null
         }
         Relationships: [
