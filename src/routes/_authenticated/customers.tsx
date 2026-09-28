@@ -25,10 +25,13 @@ type Customer = {
   id: string;
   name: string;
   phone: string | null;
+  phone_2: string | null;
   address: string | null;
+  city: string | null;
+  region: string | null;
   note: string | null;
 };
-const empty: Partial<Customer> = { name: "", phone: "", address: "", note: "" };
+const empty: Partial<Customer> = { name: "", phone: "", phone_2: "", address: "", city: "", region: "", note: "" };
 
 function CustomersPage() {
   const qc = useQueryClient();
@@ -142,6 +145,20 @@ function CustomersPage() {
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Second phone (optional)</Label>
+                  <Input value={form.phone_2 ?? ""} onChange={(e) => setForm({ ...form, phone_2: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>City / Township</Label>
+                  <Input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Region / State</Label>
+                <Input value={form.region ?? ""} onChange={(e) => setForm({ ...form, region: e.target.value })} />
+              </div>
               <div className="space-y-1.5">
                 <Label>Note</Label>
                 <Textarea
@@ -189,8 +206,8 @@ function CustomersPage() {
                       {c.name}
                       {c.note && <p className="text-xs text-muted-foreground">{c.note}</p>}
                     </td>
-                    <td>{c.phone ?? "—"}</td>
-                    <td className="text-muted-foreground">{c.address ?? "—"}</td>
+                    <td>{c.phone ?? "—"}{c.phone_2 && <p className="text-xs text-muted-foreground">{c.phone_2}</p>}</td>
+                    <td className="max-w-xs text-muted-foreground">{[c.address, c.city, c.region].filter(Boolean).join(", ") || "—"}</td>
                     <td>{stat?.count ?? 0}</td>
                     <td className="font-medium">{formatKS(stat?.total ?? 0)}</td>
                     <td className="px-4 text-right">

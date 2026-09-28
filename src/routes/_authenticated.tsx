@@ -22,6 +22,7 @@ const titles: Record<string, string> = {
   "/bulk-variants": "Bulk Variants",
   "/calculator": "Product Calculator",
   "/orders": "Orders",
+  "/sales": "Manual Sales",
   "/vouchers": "Vouchers",
   "/customers": "Customers",
   "/inventory": "Inventory",

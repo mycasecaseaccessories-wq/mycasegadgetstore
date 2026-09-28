@@ -53,29 +53,38 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          city: string | null
           created_at: string
           id: string
           name: string
           note: string | null
           phone: string | null
+          phone_2: string | null
+          region: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          city?: string | null
           created_at?: string
           id?: string
           name: string
           note?: string | null
           phone?: string | null
+          phone_2?: string | null
+          region?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          city?: string | null
           created_at?: string
           id?: string
           name?: string
           note?: string | null
           phone?: string | null
+          phone_2?: string | null
+          region?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -250,16 +259,19 @@ export type Database = {
       }
       orders: {
         Row: {
+          balance_amount: number
           created_at: string
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
           delivery_note: string | null
+          delivery_status: string
           discount: number
           extra_fee: number
           id: string
           order_date: string
           order_no: number
+          order_source: string
           payment_status: string
           points_earned: number
           points_redeemed: number
@@ -267,20 +279,25 @@ export type Database = {
           status: string
           subtotal: number
           total: number
+          deposit_amount: number
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          balance_amount?: number
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_note?: string | null
+          delivery_status?: string
           discount?: number
           extra_fee?: number
           id?: string
           order_date?: string
           order_no?: number
+          order_source?: string
           payment_status?: string
           points_earned?: number
           points_redeemed?: number
@@ -288,20 +305,25 @@ export type Database = {
           status?: string
           subtotal?: number
           total?: number
+          deposit_amount?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          balance_amount?: number
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_note?: string | null
+          delivery_status?: string
           discount?: number
           extra_fee?: number
           id?: string
           order_date?: string
           order_no?: number
+          order_source?: string
           payment_status?: string
           points_earned?: number
           points_redeemed?: number
@@ -309,6 +331,8 @@ export type Database = {
           status?: string
           subtotal?: number
           total?: number
+          deposit_amount?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }

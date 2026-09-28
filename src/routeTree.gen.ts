@@ -23,6 +23,7 @@ import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedRlsTestRouteImport } from './routes/_authenticated/rls-test'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
@@ -115,6 +116,11 @@ const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRlsTestRoute = AuthenticatedRlsTestRouteImport.update({
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/rls-test': typeof AuthenticatedRlsTestRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/rls-test': typeof AuthenticatedRlsTestRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/team': typeof AuthenticatedTeamRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/rls-test': typeof AuthenticatedRlsTestRoute
+  '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/rates'
     | '/reports'
     | '/rls-test'
+    | '/sales'
     | '/settings'
     | '/suppliers'
     | '/team'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
     | '/rates'
     | '/reports'
     | '/rls-test'
+    | '/sales'
     | '/settings'
     | '/suppliers'
     | '/team'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rates'
     | '/_authenticated/reports'
     | '/_authenticated/rls-test'
+    | '/_authenticated/sales'
     | '/_authenticated/settings'
     | '/_authenticated/suppliers'
     | '/_authenticated/team'
@@ -594,6 +606,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sales': {
+      id: '/_authenticated/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof AuthenticatedSalesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/rls-test': {
@@ -816,6 +835,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedRlsTestRoute: typeof AuthenticatedRlsTestRoute
+  AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
@@ -842,6 +862,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedRlsTestRoute: AuthenticatedRlsTestRoute,
+  AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
