@@ -906,6 +906,7 @@ function POPage() {
                                     <div className="col-span-2 flex justify-end">
                                       <Select
                                         value={it.cargo_status}
+                                        disabled={it.cargo_status === "arrived"}
                                         onValueChange={(v) =>
                                           updateLineStatus(it.id, v as CargoStatus)
                                         }
