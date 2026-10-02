@@ -1,6 +1,9 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/shop" });
+  },
   head: () => ({
     meta: [
       { title: "My Case — Phone Cases & Gadgets" },
@@ -21,8 +24,7 @@ export const Route = createFileRoute("/")({
 function IndexRedirect() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Navigate to="/shop" replace />
-      <p className="text-sm text-muted-foreground">Loading shop…</p>
+      <p className="text-sm text-muted-foreground">Opening shop…</p>
     </div>
   );
 }
