@@ -22,6 +22,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedExportsRouteImport } from './routes/_authenticated/exports'
+import { Route as AuthenticatedImportsRouteImport } from './routes/_authenticated/imports'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
@@ -112,6 +113,11 @@ const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
 const AuthenticatedExportsRoute = AuthenticatedExportsRouteImport.update({
   id: '/exports',
   path: '/exports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedImportsRoute = AuthenticatedImportsRouteImport.update({
+  id: '/imports',
+  path: '/imports',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/exports': typeof AuthenticatedExportsRoute
+  '/imports': typeof AuthenticatedImportsRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/exports': typeof AuthenticatedExportsRoute
+  '/imports': typeof AuthenticatedImportsRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/exports': typeof AuthenticatedExportsRoute
+  '/_authenticated/imports': typeof AuthenticatedImportsRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expenses'
     | '/exports'
+    | '/imports'
     | '/inventory'
     | '/ledger'
     | '/orders'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expenses'
     | '/exports'
+    | '/imports'
     | '/inventory'
     | '/ledger'
     | '/orders'
@@ -465,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/expenses'
     | '/_authenticated/exports'
+    | '/_authenticated/imports'
     | '/_authenticated/inventory'
     | '/_authenticated/ledger'
     | '/_authenticated/orders'
@@ -599,6 +611,13 @@ declare module '@tanstack/react-router' {
       path: '/exports'
       fullPath: '/exports'
       preLoaderRoute: typeof AuthenticatedExportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/imports': {
+      id: '/_authenticated/imports'
+      path: '/imports'
+      fullPath: '/imports'
+      preLoaderRoute: typeof AuthenticatedImportsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/inventory': {
@@ -826,6 +845,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedExportsRoute: typeof AuthenticatedExportsRoute
+  AuthenticatedImportsRoute: typeof AuthenticatedImportsRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
@@ -853,6 +873,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedExportsRoute: AuthenticatedExportsRoute,
+  AuthenticatedImportsRoute: AuthenticatedImportsRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,

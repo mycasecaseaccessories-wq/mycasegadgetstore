@@ -36,6 +36,7 @@ const titles: Record<string, string> = {
   "/reports": "Sales Reports",
   "/analytics": "Analytics",
   "/exports": "Exports",
+  "/imports": "Import Records",
   "/content": "Content",
   "/settings": "Settings",
 };
