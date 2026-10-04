@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ function SuppliersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Supplier>>(empty);
+  const [saving, setSaving] = useState(false);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
@@ -47,15 +48,29 @@ function SuppliersPage() {
   });
 
   const save = async () => {
-    if (!form.name) return toast.error("Name required");
-    const { error } = form.id
-      ? await supabase.from("suppliers").update(form).eq("id", form.id)
-      : await supabase.from("suppliers").insert(form as any);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
-    setForm(empty);
-    qc.invalidateQueries({ queryKey: ["suppliers"] });
+    const name = form.name?.trim() ?? "";
+    if (!name) return toast.error("Supplier name is required");
+    const payload = {
+      name,
+      contact: form.contact?.trim() || null,
+      address: form.address?.trim() || null,
+      note: form.note?.trim() || null,
+    };
+    setSaving(true);
+    try {
+      const result = form.id
+        ? await supabase.from("suppliers").update(payload).eq("id", form.id)
+        : await supabase.from("suppliers").insert(payload);
+      if (result.error) throw result.error;
+      toast.success(form.id ? "Supplier updated" : "Supplier saved");
+      setOpen(false);
+      setForm({ ...empty });
+      await qc.invalidateQueries({ queryKey: ["suppliers"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save supplier");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -118,7 +133,10 @@ function SuppliersPage() {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={save}>Save</Button>
+              <Button onClick={save} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {saving ? "Saving…" : "Save"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
