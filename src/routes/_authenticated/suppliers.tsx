@@ -58,16 +58,23 @@ function SuppliersPage() {
     };
     setSaving(true);
     try {
-      const result = form.id
-        ? await supabase.from("suppliers").update(payload).eq("id", form.id)
-        : await supabase.from("suppliers").insert(payload);
+      const request = form.id
+        ? supabase.from("suppliers").update(payload).eq("id", form.id).select("id").single()
+        : supabase.from("suppliers").insert(payload).select("id").single();
+      const result = await Promise.race([
+        request,
+        new Promise<never>((_, reject) =>
+          window.setTimeout(() => reject(new Error("Supplier save timed out. Please refresh and try again.")), 15000),
+        ),
+      ]);
       if (result.error) throw result.error;
       toast.success(form.id ? "Supplier updated" : "Supplier saved");
       setOpen(false);
       setForm({ ...empty });
       await qc.invalidateQueries({ queryKey: ["suppliers"] });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save supplier");
+      const message = error instanceof Error ? error.message : "Could not save supplier";
+      toast.error(message.includes("row-level security") ? "Your account is not authorized to manage suppliers. Ask the admin to assign the Admin role." : message);
     } finally {
       setSaving(false);
     }
