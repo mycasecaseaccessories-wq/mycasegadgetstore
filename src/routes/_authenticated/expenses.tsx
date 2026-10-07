@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ function ExpensesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Expense>>(empty);
+  const [saving, setSaving] = useState(false);
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses"],
@@ -89,16 +90,29 @@ function ExpensesPage() {
   }, {});
 
   const save = async () => {
-    if (!form.amount || form.amount <= 0) return toast.error("Amount required");
-    const payload = { ...form, amount: Number(form.amount) };
-    const { error } = form.id
-      ? await supabase.from("expenses").update(payload).eq("id", form.id)
-      : await supabase.from("expenses").insert(payload as any);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
-    setForm(empty);
-    qc.invalidateQueries({ queryKey: ["expenses"] });
+    const amount = Number(form.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return toast.error("Enter an amount greater than 0");
+    if (!form.spent_at) return toast.error("Date is required");
+    const payload = { category: form.category || "other", amount, note: form.note?.trim() || null, spent_at: form.spent_at };
+    setSaving(true);
+    try {
+      const request = form.id
+        ? supabase.from("expenses").update(payload).eq("id", form.id).select("id").single()
+        : supabase.from("expenses").insert(payload).select("id").single();
+      const { error } = await Promise.race([
+        request,
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Expense save timed out. Please try again.")), 15000)),
+      ]);
+      if (error) throw error;
+      toast.success(form.id ? "Expense updated" : "Expense saved");
+      setOpen(false);
+      setForm({ ...empty });
+      await qc.invalidateQueries({ queryKey: ["expenses"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save expense");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -201,7 +215,10 @@ function ExpensesPage() {
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={save}>Save</Button>
+                <Button onClick={save} disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {saving ? "Saving…" : "Save"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

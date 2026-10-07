@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Plus, Save, Search, Trash2, WandSparkles, X } from "lucide-react";
+import { Check, Loader2, Plus, Save, Search, Trash2, WandSparkles, X } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,7 @@ function BulkVariantsPage() {
   const [customModel, setCustomModel] = useState("");
   const [bulkPrice, setBulkPrice] = useState("");
   const [bulkStock, setBulkStock] = useState("0");
+  const [saving, setSaving] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products-min"],
@@ -168,15 +169,19 @@ function BulkVariantsPage() {
   const saveAll = async () => {
     const dirty = rows.filter((row) => row._dirty);
     if (!dirty.length) return toast.info("Nothing to save");
+    if (dirty.some((row) => !row.name.trim())) return toast.error("Every variant needs a name");
+    setSaving(true);
     try {
       for (const row of dirty) {
         const { _dirty, _new, id, ...payload } = row;
-        if (_new) { const { error } = await supabase.from("product_variants").insert(payload); if (error) throw error; }
-        else { const { error } = await supabase.from("product_variants").update(payload).eq("id", id); if (error) throw error; }
+        const request = _new ? supabase.from("product_variants").insert(payload) : supabase.from("product_variants").update(payload).eq("id", id);
+        const { error } = await Promise.race([request, new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Variant save timed out. Please try again.")), 15000))]);
+        if (error) throw error;
       }
       toast.success(`${dirty.length} variant${dirty.length === 1 ? "" : "s"} saved`);
-      qc.invalidateQueries({ queryKey: ["variants", productId] });
-    } catch (error: any) { toast.error(error?.message ?? "Save failed"); }
+      await qc.invalidateQueries({ queryKey: ["variants", productId] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Save failed"); }
+    finally { setSaving(false); }
   };
 
   const createCombinations = () => {
@@ -213,7 +218,7 @@ function BulkVariantsPage() {
               <div className="space-y-1"><label className="text-xs text-muted-foreground">Stock for each</label><Input type="number" min="0" value={bulkStock} onChange={(e) => setBulkStock(e.target.value)} /></div>
               <Button type="button" onClick={createCombinations}><WandSparkles className="mr-2 h-4 w-4" />Create combinations</Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2"><Search className="h-4 w-4 text-muted-foreground" /><Input className="max-w-sm" placeholder="Filter variants…" value={search} onChange={(e) => setSearch(e.target.value)} /><Button type="button" variant="outline" onClick={addRow}><Plus className="mr-2 h-4 w-4" />Add row</Button><Button type="button" onClick={saveAll} disabled={!dirtyCount}><Save className="mr-2 h-4 w-4" />Save {dirtyCount ? `(${dirtyCount})` : ""}</Button></div>
+            <div className="flex flex-wrap items-center gap-2"><Search className="h-4 w-4 text-muted-foreground" /><Input className="max-w-sm" placeholder="Filter variants…" value={search} onChange={(e) => setSearch(e.target.value)} /><Button type="button" variant="outline" onClick={addRow}><Plus className="mr-2 h-4 w-4" />Add row</Button><Button type="button" onClick={saveAll} disabled={!dirtyCount || saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}{saving ? "Saving…" : `Save ${dirtyCount ? `(${dirtyCount})` : ""}`}</Button></div>
           </>}
         </CardContent>
       </Card>

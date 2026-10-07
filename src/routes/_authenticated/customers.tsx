@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ function CustomersPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Customer>>(empty);
+  const [saving, setSaving] = useState(false);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
@@ -75,15 +76,36 @@ function CustomersPage() {
   );
 
   const save = async () => {
-    if (!form.name) return toast.error("Name is required");
-    const { error } = form.id
-      ? await supabase.from("customers").update(form).eq("id", form.id)
-      : await supabase.from("customers").insert(form as any);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
-    setForm(empty);
-    qc.invalidateQueries({ queryKey: ["customers"] });
+    const name = form.name?.trim() ?? "";
+    if (!name) return toast.error("Customer name is required");
+    const payload = {
+      name,
+      phone: form.phone?.trim() || null,
+      phone_2: form.phone_2?.trim() || null,
+      address: form.address?.trim() || null,
+      city: form.city?.trim() || null,
+      region: form.region?.trim() || null,
+      note: form.note?.trim() || null,
+    };
+    setSaving(true);
+    try {
+      const request = form.id
+        ? supabase.from("customers").update(payload).eq("id", form.id).select("id").single()
+        : supabase.from("customers").insert(payload).select("id").single();
+      const { error } = await Promise.race([
+        request,
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Customer save timed out. Please try again.")), 15000)),
+      ]);
+      if (error) throw error;
+      toast.success(form.id ? "Customer updated" : "Customer saved");
+      setOpen(false);
+      setForm({ ...empty });
+      await qc.invalidateQueries({ queryKey: ["customers"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save customer");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -171,7 +193,10 @@ function CustomersPage() {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={save}>Save</Button>
+              <Button onClick={save} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {saving ? "Saving…" : "Save"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

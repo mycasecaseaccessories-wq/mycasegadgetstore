@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Layers, AlertTriangle, ScanLine } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Search, Layers, AlertTriangle, ScanLine } from "lucide-react";
 import { VariantsDialog } from "@/components/VariantsDialog";
 import { ImageUpload } from "@/components/ImageUpload";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
@@ -110,6 +110,7 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>(empty);
+  const [saving, setSaving] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -135,9 +136,11 @@ function ProductsPage() {
   const modelOptions = uniqueOptions(DEFAULT_MODELS, products.map((product) => product.size));
 
   const save = async () => {
-    if (!form.name) return toast.error("Name is required");
+    const name = form.name?.trim() ?? "";
+    if (!name) return toast.error("Product name is required");
     const payload = {
       ...form,
+      name,
       size: form.size === CUSTOM_OPTION ? null : form.size,
       category: form.category === CUSTOM_OPTION ? null : form.category,
       brand: form.brand === CUSTOM_OPTION ? null : form.brand,
@@ -148,24 +151,26 @@ function ProductsPage() {
       preorder_enabled: form.selling_mode !== "IN_STOCK",
     };
     const isUpdate = !!form.id;
-    const { data, error } = isUpdate
-      ? await supabase.from("products").update(payload as any).eq("id", form.id!).select().maybeSingle()
-      : await supabase
-          .from("products")
-          .insert(payload as any)
-          .select()
-          .maybeSingle();
-    if (error) return toast.error(error.message);
-    await logActivity({
-      action: isUpdate ? "product.update" : "product.create",
-      entityType: "product",
-      entityId: data?.id ?? form.id,
-      summary: `${isUpdate ? "Updated" : "Created"} product: ${form.name}`,
-    });
-    toast.success(isUpdate ? "Updated" : "Created");
-    setOpen(false);
-    setForm(empty);
-    qc.invalidateQueries({ queryKey: ["products"] });
+    setSaving(true);
+    try {
+      const request = isUpdate
+        ? supabase.from("products").update(payload as any).eq("id", form.id!).select().maybeSingle()
+        : supabase.from("products").insert(payload as any).select().maybeSingle();
+      const { data, error } = await Promise.race([
+        request,
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Product save timed out. Please try again.")), 15000)),
+      ]);
+      if (error) throw error;
+      await logActivity({ action: isUpdate ? "product.update" : "product.create", entityType: "product", entityId: data?.id ?? form.id, summary: `${isUpdate ? "Updated" : "Created"} product: ${name}` });
+      toast.success(isUpdate ? "Product updated" : "Product created");
+      setOpen(false);
+      setForm({ ...empty });
+      await qc.invalidateQueries({ queryKey: ["products"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save product");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -500,7 +505,10 @@ function ProductsPage() {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={save}>Save</Button>
+              <Button onClick={save} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {saving ? "Saving…" : "Save"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

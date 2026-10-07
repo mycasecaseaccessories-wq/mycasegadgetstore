@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { RequireAdmin } from "@/components/RequireAdmin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, GripVertical, Check, X } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, GripVertical, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +66,7 @@ function PaymentMethodsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<PM> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const { data: methods = [], isLoading } = useQuery({
     queryKey: ["payment_methods"],
@@ -108,14 +109,25 @@ function PaymentMethodsPage() {
       is_active: editing.is_active ?? true,
       sort_order: editing.sort_order ?? 0,
     };
-    const { error } = editing.id
-      ? await supabase.from("payment_methods").update(payload).eq("id", editing.id)
-      : await supabase.from("payment_methods").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success(editing.id ? "Updated" : "Added");
-    setOpen(false);
-    setEditing(null);
-    qc.invalidateQueries({ queryKey: ["payment_methods"] });
+    setSaving(true);
+    try {
+      const request = editing.id
+        ? supabase.from("payment_methods").update(payload).eq("id", editing.id).select("id").single()
+        : supabase.from("payment_methods").insert(payload).select("id").single();
+      const { error } = await Promise.race([
+        request,
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Payment method save timed out. Please try again.")), 15000)),
+      ]);
+      if (error) throw error;
+      toast.success(editing.id ? "Payment method updated" : "Payment method added");
+      setOpen(false);
+      setEditing(null);
+      await qc.invalidateQueries({ queryKey: ["payment_methods"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save payment method");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggle = async (m: PM) => {
@@ -293,9 +305,9 @@ function PaymentMethodsPage() {
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
-            <Button onClick={save}>
-              <Check className="mr-2 h-4 w-4" />
-              Save
+            <Button onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              {saving ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
+  Loader2,
   Plus,
   Trash2,
   PackageCheck,
@@ -101,6 +102,7 @@ function POPage() {
     null,
   );
   const [payAmount, setPayAmount] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
@@ -266,49 +268,31 @@ function POPage() {
   const save = async () => {
     if (items.length === 0) return toast.error("Add at least one item");
     if (currency === "THB" && rate <= 0) return toast.error("Exchange rate required");
+    if (items.some((item) => !item.product_name.trim() || item.quantity <= 0)) return toast.error("Every item needs a product and quantity");
     const supplier = suppliers.find((s) => s.id === supplierId);
-
-    const { data: po, error } = await supabase
-      .from("purchase_orders")
-      .insert({
-        supplier_id: supplierId || null,
-        supplier_name: supplier?.name ?? null,
-        ordered_at: orderedAt,
-        note,
-        total: totals.ks,
-        thb_total: totals.thb,
-        currency,
-        exchange_rate: currency === "THB" ? rate : null,
-        cargo_fee: cargoFee || 0,
-        status: "pending",
-      } as any)
-      .select()
-      .single();
-    if (error || !po) return toast.error(error?.message ?? "Failed");
-
-    const rows = items.map((i) => {
-      const uc = unitCostKS(i, rate, currency);
-      return {
-        po_id: (po as any).id,
-        product_id: i.product_id || null,
-        variant_id: i.variant_id || null,
-        product_name: i.product_name,
-        variant: i.variant || null,
-        quantity: i.quantity,
-        unit_cost: uc,
-        line_total: i.quantity * uc,
-        thb_price: i.thb_price ?? null,
-        tracking_code: i.tracking_code || null,
-        cargo_status: i.cargo_status,
-      };
-    });
-    const { error: itErr } = await supabase.from("purchase_order_items").insert(rows as any);
-    if (itErr) return toast.error(itErr.message);
-    toast.success("PO created");
-    setOpen(false);
-    reset();
-    qc.invalidateQueries({ queryKey: ["purchase_orders"] });
-    qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
+    setSaving(true);
+    try {
+      const { data: po, error } = await Promise.race([
+        supabase.from("purchase_orders").insert({ supplier_id: supplierId || null, supplier_name: supplier?.name ?? null, ordered_at: orderedAt, note: note.trim() || null, total: totals.ks, thb_total: totals.thb, currency, exchange_rate: currency === "THB" ? rate : null, cargo_fee: cargoFee || 0, status: "pending" } as any).select().single(),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Purchase order save timed out. Please try again.")), 15000)),
+      ]);
+      if (error || !po) throw error ?? new Error("Could not create purchase order");
+      const rows = items.map((i) => { const uc = unitCostKS(i, rate, currency); return { po_id: (po as any).id, product_id: i.product_id || null, variant_id: i.variant_id || null, product_name: i.product_name.trim(), variant: i.variant || null, quantity: i.quantity, unit_cost: uc, line_total: i.quantity * uc, thb_price: i.thb_price ?? null, tracking_code: i.tracking_code || null, cargo_status: i.cargo_status }; });
+      const { error: itErr } = await supabase.from("purchase_order_items").insert(rows as any);
+      if (itErr) {
+        await supabase.from("purchase_orders").delete().eq("id", (po as any).id);
+        throw itErr;
+      }
+      toast.success("Purchase order created");
+      setOpen(false);
+      reset();
+      await qc.invalidateQueries({ queryKey: ["purchase_orders"] });
+      await qc.invalidateQueries({ queryKey: ["cargo-timeline"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save purchase order");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const receive = async (id: string) => {
@@ -658,7 +642,10 @@ function POPage() {
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={save}>Create</Button>
+                <Button onClick={save} disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {saving ? "Saving…" : "Create"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
