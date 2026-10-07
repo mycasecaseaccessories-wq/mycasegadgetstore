@@ -174,16 +174,16 @@ function SettingsPage() {
                   <Label>Tax %</Label>
                   <Input
                     type="number"
-                    value={s.tax_percent ?? 0}
-                    onChange={(e) => setS({ ...s, tax_percent: Number(e.target.value) })}
+                    value={s.tax_percent ?? ""}
+                    onChange={(e) => setS({ ...s, tax_percent: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Service Fee (KS)</Label>
                   <Input
                     type="number"
-                    value={s.service_fee ?? 0}
-                    onChange={(e) => setS({ ...s, service_fee: Number(e.target.value) })}
+                    value={s.service_fee ?? ""}
+                    onChange={(e) => setS({ ...s, service_fee: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
               </div>

@@ -199,8 +199,8 @@ export function RecurringExpenses() {
                   <Label>Amount (KS)</Label>
                   <Input
                     type="number"
-                    value={form.amount ?? 0}
-                    onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                    value={form.amount ?? ""}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
               </div>
@@ -230,8 +230,8 @@ export function RecurringExpenses() {
                     type="number"
                     min={form.frequency === "weekly" ? 0 : 1}
                     max={form.frequency === "weekly" ? 6 : 28}
-                    value={form.day ?? 1}
-                    onChange={(e) => setForm({ ...form, day: Number(e.target.value) })}
+                    value={form.day ?? ""}
+                    onChange={(e) => setForm({ ...form, day: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
               </div>

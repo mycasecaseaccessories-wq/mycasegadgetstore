@@ -49,6 +49,10 @@ export function LoyaltyPanel() {
   }, [qc]);
 
   const save = () => {
+    if (![cfg.earnPerAmount, cfg.redeemValue, cfg.minRedeem].every((value) => Number.isFinite(value) && value >= 0)) {
+      toast.error("Enter valid non-negative numbers for all loyalty rules");
+      return;
+    }
     setConfig(cfg);
     toast.success("Loyalty rules saved");
   };
@@ -74,24 +78,24 @@ export function LoyaltyPanel() {
             <Label className="text-xs">Earn 1 point per</Label>
             <Input
               type="number"
-              value={cfg.earnPerAmount}
-              onChange={(e) => setCfg({ ...cfg, earnPerAmount: Number(e.target.value) })}
+              value={Number.isFinite(cfg.earnPerAmount) ? cfg.earnPerAmount : ""}
+              onChange={(e) => setCfg({ ...cfg, earnPerAmount: e.target.value === "" ? Number.NaN : Number(e.target.value) })}
             />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">1 point = (currency)</Label>
             <Input
               type="number"
-              value={cfg.redeemValue}
-              onChange={(e) => setCfg({ ...cfg, redeemValue: Number(e.target.value) })}
+              value={Number.isFinite(cfg.redeemValue) ? cfg.redeemValue : ""}
+              onChange={(e) => setCfg({ ...cfg, redeemValue: e.target.value === "" ? Number.NaN : Number(e.target.value) })}
             />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Min points to redeem</Label>
             <Input
               type="number"
-              value={cfg.minRedeem}
-              onChange={(e) => setCfg({ ...cfg, minRedeem: Number(e.target.value) })}
+              value={Number.isFinite(cfg.minRedeem) ? cfg.minRedeem : ""}
+              onChange={(e) => setCfg({ ...cfg, minRedeem: e.target.value === "" ? Number.NaN : Number(e.target.value) })}
             />
           </div>
         </div>

@@ -44,7 +44,7 @@ type Item = {
   variant_id?: string | null;
   product_name: string;
   variant?: string | null;
-  quantity: number;
+  quantity: number | undefined;
   thb_price?: number | null;
   unit_cost_ks?: number | null;
   tracking_code?: string | null;
@@ -91,8 +91,8 @@ function POPage() {
   const [orderedAt, setOrderedAt] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [currency, setCurrency] = useState<"THB" | "KS">("THB");
-  const [rate, setRate] = useState<number>(0);
-  const [cargoFee, setCargoFee] = useState<number>(0);
+  const [rate, setRate] = useState<number | undefined>(0);
+  const [cargoFee, setCargoFee] = useState<number | undefined>(0);
   const [items, setItems] = useState<Item[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -101,7 +101,7 @@ function POPage() {
   const [payDialog, setPayDialog] = useState<{ id: string; total: number; paid: number } | null>(
     null,
   );
-  const [payAmount, setPayAmount] = useState<number>(0);
+  const [payAmount, setPayAmount] = useState<number | undefined>(0);
   const [saving, setSaving] = useState(false);
 
   const { data: suppliers = [] } = useQuery({
@@ -208,8 +208,9 @@ function POPage() {
     let ks = 0,
       thb = 0;
     for (const it of items) {
-      ks += it.quantity * unitCostKS(it, rate, currency);
-      thb += it.quantity * Number(it.thb_price ?? 0);
+      const quantity = Number(it.quantity ?? 0);
+      ks += quantity * unitCostKS(it, Number(rate ?? 0), currency);
+      thb += quantity * Number(it.thb_price ?? 0);
     }
     return { ks: ks + Number(cargoFee || 0), thb, baseKs: ks };
   }, [items, rate, currency, cargoFee]);
@@ -267,8 +268,8 @@ function POPage() {
 
   const save = async () => {
     if (items.length === 0) return toast.error("Add at least one item");
-    if (currency === "THB" && rate <= 0) return toast.error("Exchange rate required");
-    if (items.some((item) => !item.product_name.trim() || item.quantity <= 0)) return toast.error("Every item needs a product and quantity");
+    if (currency === "THB" && Number(rate ?? 0) <= 0) return toast.error("Exchange rate required");
+    if (items.some((item) => !item.product_name.trim() || !Number.isInteger(item.quantity) || Number(item.quantity) <= 0)) return toast.error("Every item needs a product and whole-number quantity");
     const supplier = suppliers.find((s) => s.id === supplierId);
     setSaving(true);
     try {
@@ -277,7 +278,7 @@ function POPage() {
         new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Purchase order save timed out. Please try again.")), 15000)),
       ]);
       if (error || !po) throw error ?? new Error("Could not create purchase order");
-      const rows = items.map((i) => { const uc = unitCostKS(i, rate, currency); return { po_id: (po as any).id, product_id: i.product_id || null, variant_id: i.variant_id || null, product_name: i.product_name.trim(), variant: i.variant || null, quantity: i.quantity, unit_cost: uc, line_total: i.quantity * uc, thb_price: i.thb_price ?? null, tracking_code: i.tracking_code || null, cargo_status: i.cargo_status }; });
+      const rows = items.map((i) => { const quantity = Number(i.quantity); const uc = unitCostKS(i, Number(rate ?? 0), currency); return { po_id: (po as any).id, product_id: i.product_id || null, variant_id: i.variant_id || null, product_name: i.product_name.trim(), variant: i.variant || null, quantity, unit_cost: uc, line_total: quantity * uc, thb_price: i.thb_price ?? null, tracking_code: i.tracking_code || null, cargo_status: i.cargo_status }; });
       const { error: itErr } = await supabase.from("purchase_order_items").insert(rows as any);
       if (itErr) {
         await supabase.from("purchase_orders").delete().eq("id", (po as any).id);
@@ -325,7 +326,7 @@ function POPage() {
 
   const recordPayment = async () => {
     if (!payDialog) return;
-    const newPaid = Math.max(0, payDialog.paid + payAmount);
+    const newPaid = Math.max(0, payDialog.paid + Number(payAmount ?? 0));
     const status: PaymentStatus =
       newPaid >= payDialog.total ? "paid" : newPaid > 0 ? "partial" : "unpaid";
     await supabase
@@ -433,8 +434,8 @@ function POPage() {
                       <Label>Rate (1 ฿ = ? KS)</Label>
                       <Input
                         type="number"
-                        value={rate || ""}
-                        onChange={(e) => setRate(Number(e.target.value))}
+                        value={rate ?? ""}
+                        onChange={(e) => setRate(e.target.value === "" ? undefined : Number(e.target.value))}
                         placeholder="e.g. 145"
                       />
                     </div>
@@ -443,8 +444,8 @@ function POPage() {
                     <Label>Cargo Fee (KS)</Label>
                     <Input
                       type="number"
-                      value={cargoFee || ""}
-                      onChange={(e) => setCargoFee(Number(e.target.value))}
+                      value={cargoFee ?? ""}
+                      onChange={(e) => setCargoFee(e.target.value === "" ? undefined : Number(e.target.value))}
                       placeholder="0"
                     />
                   </div>
@@ -471,8 +472,8 @@ function POPage() {
                     </Button>
                   </div>
                   {items.map((it, idx) => {
-                    const uc = unitCostKS(it, rate, currency);
-                    const lineKs = uc * it.quantity;
+                    const uc = unitCostKS(it, Number(rate ?? 0), currency);
+                    const lineKs = uc * Number(it.quantity ?? 0);
                     return (
                       <div key={idx} className="space-y-2 rounded-md border p-2">
                         <div className="grid grid-cols-12 gap-2">
@@ -538,7 +539,7 @@ function POPage() {
                             value={it.quantity}
                             onChange={(e) => {
                               const n = [...items];
-                              n[idx] = { ...it, quantity: Number(e.target.value) };
+                              n[idx] = { ...it, quantity: e.target.value === "" ? undefined : Number(e.target.value) };
                               setItems(n);
                             }}
                           />
@@ -630,7 +631,7 @@ function POPage() {
                       THB total: <b>{fmtTHB(totals.thb)}</b>
                     </span>
                   )}
-                  {cargoFee > 0 && (
+                  {Number(cargoFee ?? 0) > 0 && (
                     <span className="text-muted-foreground">
                       Items: {formatMoney(totals.baseKs)} + Cargo: {formatMoney(cargoFee)}
                     </span>
@@ -996,8 +997,8 @@ function POPage() {
                 <Label>Payment amount (KS)</Label>
                 <Input
                   type="number"
-                  value={payAmount || ""}
-                  onChange={(e) => setPayAmount(Number(e.target.value))}
+                            value={payAmount ?? ""}
+                            onChange={(e) => setPayAmount(e.target.value === "" ? undefined : Number(e.target.value))}
                 />
               </div>
             </div>

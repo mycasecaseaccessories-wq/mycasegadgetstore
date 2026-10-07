@@ -211,16 +211,16 @@ export function VariantsDialog({
             <Label className="text-xs">Price</Label>
             <Input
               type="number"
-              value={form.price ?? 0}
-              onChange={(e) => setForm({ ...form, price: +e.target.value })}
+              value={form.price ?? ""}
+              onChange={(e) => setForm({ ...form, price: e.target.value === "" ? undefined : Number(e.target.value) })}
             />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Stock</Label>
             <Input
               type="number"
-              value={form.stock_in ?? 0}
-              onChange={(e) => setForm({ ...form, stock_in: +e.target.value })}
+              value={form.stock_in ?? ""}
+              onChange={(e) => setForm({ ...form, stock_in: e.target.value === "" ? undefined : Number(e.target.value) })}
             />
           </div>
         </div>

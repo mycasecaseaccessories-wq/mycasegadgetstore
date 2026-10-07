@@ -297,8 +297,8 @@ function ProductsPage() {
                   <Label>Price (KS)</Label>
                   <Input
                     type="number"
-                    value={form.price ?? 0}
-                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    value={form.price ?? ""}
+                    onChange={(e) => setForm({ ...form, price: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -345,17 +345,17 @@ function ProductsPage() {
                   <Label>Stock In</Label>
                   <Input
                     type="number"
-                    value={form.stock_in ?? 0}
-                    onChange={(e) => setForm({ ...form, stock_in: Number(e.target.value) })}
+                    value={form.stock_in ?? ""}
+                    onChange={(e) => setForm({ ...form, stock_in: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Low-stock threshold</Label>
                   <Input
                     type="number"
-                    value={form.low_stock_threshold ?? 5}
+                    value={form.low_stock_threshold ?? ""}
                     onChange={(e) =>
-                      setForm({ ...form, low_stock_threshold: Number(e.target.value) })
+                      setForm({ ...form, low_stock_threshold: e.target.value === "" ? undefined : Number(e.target.value) })
                     }
                   />
                 </div>
@@ -418,11 +418,11 @@ function ProductsPage() {
                         type="number"
                         min={0}
                         max={form.preorder_deposit_type === "PERCENTAGE" ? 100 : undefined}
-                        value={form.preorder_deposit ?? 0}
+                        value={form.preorder_deposit ?? ""}
                         onChange={(e) =>
                           setForm({
                             ...form,
-                            preorder_deposit: Math.max(0, Number(e.target.value) || 0),
+                            preorder_deposit: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value)),
                           })
                         }
                       />
@@ -706,7 +706,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.thb_price ?? ""}
-                onChange={(e) => setForm({ ...form, thb_price: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, thb_price: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -714,7 +714,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_buy_rate ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_buy_rate: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_buy_rate: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -722,7 +722,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_sell_gap ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_sell_gap: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_sell_gap: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -730,7 +730,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_cargo_mmk ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_cargo_mmk: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_cargo_mmk: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -738,7 +738,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_deli_mmk ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_deli_mmk: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_deli_mmk: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -746,7 +746,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_other_mmk ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_other_mmk: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_other_mmk: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -787,7 +787,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
               <Input
                 type="number"
                 value={form.pricing_fixed_profit ?? ""}
-                onChange={(e) => setForm({ ...form, pricing_fixed_profit: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, pricing_fixed_profit: e.target.value === "" ? undefined : Number(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -796,7 +796,7 @@ function PricingHelper({ form, setForm }: { form: any; setForm: (f: any) => void
                 type="number"
                 value={form.pricing_percent_profit ?? ""}
                 onChange={(e) =>
-                  setForm({ ...form, pricing_percent_profit: Number(e.target.value) })
+                  setForm({ ...form, pricing_percent_profit: e.target.value === "" ? undefined : Number(e.target.value) })
                 }
               />
             </div>

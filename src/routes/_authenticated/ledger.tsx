@@ -395,16 +395,17 @@ function LedgerTable<T extends { id: string }>({
 
   const renderCell = (c: Column<T>, r: T) => {
     if (editingId === r.id && c.editable) {
-      const v = (draft as any)[c.key] ?? (r as any)[c.key] ?? "";
+      const hasDraftValue = Object.prototype.hasOwnProperty.call(draft, c.key);
+      const v = hasDraftValue ? (draft as any)[c.key] : ((r as any)[c.key] ?? "");
       return (
         <Input
           type={c.type === "text" ? "text" : "number"}
-          value={v}
-          onChange={(e) =>
-            setDraft({
-              ...draft,
-              [c.key]: c.type === "text" ? e.target.value : Number(e.target.value),
-            } as any)
+              value={v === undefined || Number.isNaN(v) ? "" : v}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  [c.key]: c.type === "text" ? e.target.value : e.target.value === "" ? undefined : Number(e.target.value),
+                } as any)
           }
           className="h-8 w-28"
         />

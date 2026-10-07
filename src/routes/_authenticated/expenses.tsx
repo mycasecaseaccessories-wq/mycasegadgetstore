@@ -191,8 +191,8 @@ function ExpensesPage() {
                   <Label>Amount (KS)</Label>
                   <Input
                     type="number"
-                    value={form.amount ?? 0}
-                    onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                    value={form.amount ?? ""}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value === "" ? undefined : Number(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1.5">

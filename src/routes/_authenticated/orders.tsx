@@ -388,14 +388,14 @@ function OrdersPage() {
                 <Label>Discount</Label>
                 <Input
                   type="number"
-                  value={editing.discount}
+                  value={editing.discount ?? ""}
                   onChange={(e) =>
                     setEditing({
                       ...editing,
-                      discount: Number(e.target.value),
+                      discount: e.target.value === "" ? undefined : Number(e.target.value),
                       total:
                         Number(editing.subtotal) -
-                        Number(e.target.value) +
+                        Number(e.target.value || 0) +
                         Number(editing.extra_fee),
                     })
                   }
@@ -405,15 +405,15 @@ function OrdersPage() {
                 <Label>Extra Fee</Label>
                 <Input
                   type="number"
-                  value={editing.extra_fee}
+                  value={editing.extra_fee ?? ""}
                   onChange={(e) =>
                     setEditing({
                       ...editing,
-                      extra_fee: Number(e.target.value),
+                      extra_fee: e.target.value === "" ? undefined : Number(e.target.value),
                       total:
                         Number(editing.subtotal) -
                         Number(editing.discount) +
-                        Number(e.target.value),
+                        Number(e.target.value || 0),
                     })
                   }
                 />
