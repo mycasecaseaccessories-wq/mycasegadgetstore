@@ -141,7 +141,7 @@ function CustomersPage() {
               Add Customer
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="top-4 max-h-[calc(100dvh-2rem)] translate-y-0 overflow-y-auto sm:top-[50%] sm:max-h-[90vh] sm:translate-y-[-50%]">
             <DialogHeader>
               <DialogTitle>{form.id ? "Edit" : "New"} Customer</DialogTitle>
             </DialogHeader>
@@ -149,6 +149,8 @@ function CustomersPage() {
               <div className="space-y-1.5">
                 <Label>Name</Label>
                 <Input
+                  autoFocus
+                  aria-label="Customer name"
                   value={form.name ?? ""}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />

@@ -354,29 +354,34 @@ function Storefront() {
               </span>
             </div>
           </div>
-          <div className="motion-hero-art relative min-h-[340px] overflow-hidden rounded-[2rem] bg-[#dcece3] lg:min-h-[500px]">
-            {newArrivals[0] ? (
+          {newArrivals[0] ? (
+            <Link
+              to="/shop/p/$id"
+              params={{ id: newArrivals[0].id }}
+              aria-label={`View ${newArrivals[0].name}`}
+              className="motion-hero-art group relative block min-h-[340px] overflow-hidden rounded-[2rem] bg-[#dcece3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#247a62] focus-visible:ring-offset-2 lg:min-h-[500px]"
+            >
               <StorageImage
                 src={newArrivals[0].image_url}
                 alt={newArrivals[0].name}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 fallback={<HeroFallback />}
               />
-            ) : (
-              <HeroFallback />
-            )}
-            <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl bg-[#18211f]/90 p-4 text-white backdrop-blur">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-white/60">
-                  Featured arrival
-                </p>
-                <p className="mt-1 line-clamp-1 text-sm font-semibold">
-                  {newArrivals[0]?.name ?? "Curated essentials"}
-                </p>
+              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl bg-[#18211f]/90 p-4 text-white backdrop-blur">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/60">
+                    Featured arrival
+                  </p>
+                  <p className="mt-1 line-clamp-1 text-sm font-semibold">{newArrivals[0].name}</p>
+                </div>
+                <ArrowRight className="h-5 w-5 shrink-0 text-[#b8e7d0]" />
               </div>
-              <ArrowRight className="h-5 w-5 shrink-0 text-[#b8e7d0]" />
+            </Link>
+          ) : (
+            <div className="motion-hero-art relative min-h-[340px] overflow-hidden rounded-[2rem] bg-[#dcece3] lg:min-h-[500px]">
+              <HeroFallback />
             </div>
-          </div>
+          )}
         </section>
 
         <section className="motion-section mx-auto max-w-7xl px-4 pb-12 lg:px-8">
