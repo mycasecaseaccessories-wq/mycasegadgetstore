@@ -95,11 +95,32 @@ function CartPage() {
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
     if (!name || !phone) return toast.error("Name & phone required");
+    if (items.some((item) => item.fulfillment_type === "PREORDER")) {
+      return toast.error("Pre-order မရပါ။ Instock ပစ္စည်းများကိုသာ ဝယ်ယူနိုင်ပါသည်။");
+    }
     if (hasPreorder && !paymentMethodId) {
       return toast.error("Select a payment method for the pre-order deposit");
     }
     setSubmitting(true);
     try {
+      const stockChecks = await Promise.all(
+        items.map(async (item) => {
+          const table = item.variant_id ? "product_variants" : "products";
+          const id = item.variant_id ?? item.product_id;
+          const { data, error } = await (supabase.from(table as any) as any)
+            .select("stock_in, sold_qty, reserved_qty, status")
+            .eq("id", id)
+            .eq("status", "ACTIVE")
+            .maybeSingle();
+          if (error) throw error;
+          const available = Number(data?.stock_in ?? 0) - Number(data?.sold_qty ?? 0) - Number(data?.reserved_qty ?? 0);
+          return { item, available };
+        }),
+      );
+      const unavailable = stockChecks.find(({ item, available }) => available < item.qty);
+      if (unavailable) {
+        return toast.error(`${unavailable.item.name} အတွက် stock မလုံလောက်တော့ပါ။ Cart ကို ပြန်စစ်ပါ။`);
+      }
       const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
         p_customer_name: name,
         p_customer_phone: phone,

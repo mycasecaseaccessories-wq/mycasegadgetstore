@@ -24,7 +24,7 @@ function ProductPage() {
       (
         await (supabase.from("products" as any) as any)
           .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
+            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, reserved_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
           )
           .eq("id", id)
           .eq("status", "ACTIVE")
@@ -69,11 +69,18 @@ function ProductPage() {
     product.image_url,
     ...(Array.isArray(product.gallery_images) ? product.gallery_images : []),
   ].filter(Boolean))) as string[];
+  const availableVariants = variants.filter(
+    (variant: any) =>
+      Number(variant.stock_in ?? 0) -
+        Number(variant.sold_qty ?? 0) -
+        Number(variant.reserved_qty ?? 0) >
+      0,
+  );
   const colorGroups: Array<[string, any]> = Array.from(
-    new Map<string, any>(variants.map((variant: any) => [variant.color || "Default", variant])).entries(),
+    new Map<string, any>(availableVariants.map((variant: any) => [variant.color || "Default", variant])).entries(),
   );
   const activeColor = selectedColor ?? colorGroups[0]?.[0] ?? null;
-  const modelsForColor: any[] = variants.filter((variant: any) => (variant.color || "Default") === activeColor);
+  const modelsForColor: any[] = availableVariants.filter((variant: any) => (variant.color || "Default") === activeColor);
   const activeVariant: any = modelsForColor.find((variant: any) => variant.size === selectedModel) ?? modelsForColor[0] ?? null;
   const variantGalleryImages = Array.from(new Set([
     activeVariant?.image_url,
@@ -81,7 +88,10 @@ function ProductPage() {
   ].filter(Boolean))) as string[];
   const heroImage = selectedImage ?? activeVariant?.image_url ?? galleryImages[0] ?? null;
 
-  const stock = (product.stock_in ?? 0) - (product.sold_qty ?? 0);
+  const stock =
+    Number(product.stock_in ?? 0) -
+    Number(product.sold_qty ?? 0) -
+    Number((product as any).reserved_qty ?? 0);
   const price = Number(product.final_sell_mmk ?? product.price ?? 0);
   const canPreorder = Boolean(product.preorder_enabled) &&
     (product.selling_mode === "PREORDER" || product.selling_mode === "BOTH");
@@ -101,7 +111,25 @@ function ProductPage() {
     .filter((value: number) => Number.isFinite(value) && value >= 0);
   const variantMinPrice = variantPrices.length ? Math.min(...variantPrices) : price;
   const variantMaxPrice = variantPrices.length ? Math.max(...variantPrices) : price;
-  const hasPreorderProduct = canPreorder || variants.some((variant: any) => Boolean(variant.preorder_enabled) && (variant.selling_mode === "PREORDER" || variant.selling_mode === "BOTH"));
+  const hasSellableStock = variants.length > 0 ? availableVariants.length > 0 : stock > 0;
+  const hasPreorderProduct = false;
+
+  if (!hasSellableStock) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="space-y-4 p-8">
+            <AlertTriangle className="mx-auto h-10 w-10 text-muted-foreground" />
+            <div>
+              <h1 className="text-xl font-bold">ပစ္စည်းကုန်နေပါပြီ</h1>
+              <p className="mt-2 text-sm text-muted-foreground">ဒီပစ္စည်းကို လောလောဆယ် ဝယ်ယူလို့မရသေးပါ။ Instock ပစ္စည်းများကိုသာ ရောင်းချပေးနေပါတယ်။</p>
+            </div>
+            <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
@@ -110,16 +138,17 @@ function ProductPage() {
     const variantStock = variant
       ? Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0)
       : stock;
-    const variantCanPreorder = variant
-      ? Boolean(variant.preorder_enabled) && (variant.selling_mode === "PREORDER" || variant.selling_mode === "BOTH")
-      : canPreorder;
+    if (variantStock < qty) {
+      toast.error("လက်ကျန် stock မလုံလောက်တော့ပါ");
+      return;
+    }
     const selectedPrice = variantPrice ?? price;
     const variantDeposit = variant
       ? variant.preorder_deposit_type === "PERCENTAGE"
         ? Math.min(selectedPrice, (selectedPrice * Math.min(100, Math.max(0, Number(variant.preorder_deposit ?? 0)))) / 100)
         : Math.min(selectedPrice, Math.max(0, Number(variant.preorder_deposit ?? 0)))
       : preorderDeposit;
-    const selectedFulfillment = variantStock <= 0 && variantCanPreorder ? "PREORDER" : "IN_STOCK";
+    const selectedFulfillment = "IN_STOCK";
     addToCart({
       id: variantId ?? product.id,
       product_id: product.id,
@@ -130,7 +159,7 @@ function ProductPage() {
       image_url: variant?.image_url ?? product.image_url ?? null,
       fulfillment_type: selectedFulfillment,
       estimated_arrival: variant?.waiting_time ?? product.waiting_time,
-      deposit_required: variantDeposit,
+      deposit_required: 0,
     });
     toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };

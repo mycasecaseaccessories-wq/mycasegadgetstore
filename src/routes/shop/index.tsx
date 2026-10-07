@@ -50,6 +50,7 @@ type Product = {
   category: string | null;
   stock_in: number | null;
   sold_qty: number | null;
+  reserved_qty: number | null;
   selling_mode: "IN_STOCK" | "PREORDER" | "BOTH" | null;
   availability: "AVAILABLE" | "COMING_SOON" | "OUT_OF_STOCK" | "DISCONTINUED" | null;
   preorder_enabled: boolean | null;
@@ -88,7 +89,7 @@ function Storefront() {
       try {
         const { data } = await (supabase.from("products" as any) as any)
           .select(
-            "id, name, price, image_url, brand, category, stock_in, sold_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
+            "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
           )
           .eq("status", "ACTIVE")
           .order("created_at", { ascending: false });
@@ -100,27 +101,73 @@ function Storefront() {
     },
   });
 
-  const categories = useMemo(() => uniqueValues(products, "category"), [products]);
-  const brands = useMemo(() => uniqueValues(products, "brand"), [products]);
+  const { data: activeVariants = [], isLoading: variantsLoading } = useQuery({
+    queryKey: ["public-variant-stock"],
+    enabled: typeof window !== "undefined",
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("product_variants" as any) as any)
+        .select("product_id, stock_in, sold_qty, reserved_qty, status")
+        .eq("status", "ACTIVE");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        product_id: string;
+        stock_in: number | null;
+        sold_qty: number | null;
+        reserved_qty: number | null;
+        status: string;
+      }>;
+    },
+  });
+
+  const inStockProducts = useMemo(() => {
+    if (variantsLoading) return [];
+    const variantsByProduct = new Map<string, typeof activeVariants>();
+    for (const variant of activeVariants) {
+      const current = variantsByProduct.get(variant.product_id) ?? [];
+      current.push(variant);
+      variantsByProduct.set(variant.product_id, current);
+    }
+    return products.filter((product) => {
+      const productVariants = variantsByProduct.get(product.id) ?? [];
+      if (productVariants.length > 0) {
+        return productVariants.some(
+          (variant) =>
+            Number(variant.stock_in ?? 0) -
+              Number(variant.sold_qty ?? 0) -
+              Number(variant.reserved_qty ?? 0) >
+            0,
+        );
+      }
+      return (
+        Number(product.stock_in ?? 0) -
+          Number(product.sold_qty ?? 0) -
+          Number(product.reserved_qty ?? 0) >
+        0
+      );
+    });
+  }, [activeVariants, products, variantsLoading]);
+
+  const categories = useMemo(() => uniqueValues(inStockProducts, "category"), [inStockProducts]);
+  const brands = useMemo(() => uniqueValues(inStockProducts, "brand"), [inStockProducts]);
   const categoryCards = useMemo(
     () =>
       categories.slice(0, 8).map((name) => ({
         name,
-        product: products.find((product) => product.category === name),
+        product: inStockProducts.find((product) => product.category === name),
       })),
-    [categories, products],
+    [categories, inStockProducts],
   );
-  const newArrivals = useMemo(() => products.slice(0, 8), [products]);
+  const newArrivals = useMemo(() => inStockProducts.slice(0, 8), [inStockProducts]);
   const bestSellers = useMemo(
     () =>
-      [...products]
+      [...inStockProducts]
         .sort((a, b) => stockValue(b) - stockValue(a) + (b.sold_qty ?? 0) - (a.sold_qty ?? 0))
         .slice(0, 8),
-    [products],
+    [inStockProducts],
   );
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const result = products.filter((product) => {
+    const result = inStockProducts.filter((product) => {
       const matchesQuery =
         !query ||
         [product.name, product.brand, product.category]
@@ -139,7 +186,7 @@ function Storefront() {
     if (sort === "newest")
       return [...result].sort((a, b) => b.created_at.localeCompare(a.created_at));
     return result;
-  }, [products, search, activeCategory, activeBrand, sort]);
+  }, [inStockProducts, search, activeCategory, activeBrand, sort]);
   const hasFilters =
     Boolean(search) || activeCategory !== "all" || activeBrand !== "all" || sort !== "featured";
 
@@ -817,7 +864,10 @@ function priceOf(product: Product) {
   return Number(product.final_sell_mmk ?? product.price ?? 0);
 }
 function stockValue(product: Product) {
-  return Math.max(0, (product.stock_in ?? 0) - (product.sold_qty ?? 0));
+  return Math.max(
+    0,
+    (product.stock_in ?? 0) - (product.sold_qty ?? 0) - (product.reserved_qty ?? 0),
+  );
 }
 
 function depositFor(product: Product, price: number) {
