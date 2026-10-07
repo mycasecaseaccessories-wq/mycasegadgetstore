@@ -23,21 +23,29 @@ function LoginPage() {
 
   const onLogin = async (e: FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      toast.error("Email and password are required");
+      return;
+    }
     setBusy(true);
     try {
       const result = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
+        supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
         new Promise<never>((_, reject) =>
           window.setTimeout(() => reject(new Error("Sign in timed out. Please try again.")), 15000),
         ),
       ]);
       if (result.error) {
-        toast.error(result.error.message);
+        const message = result.error.message.toLowerCase().includes("invalid login credentials")
+          ? "Email သို့မဟုတ် password မှားနေပါသည်။ ပြန်စစ်ပြီး ထပ်ဝင်ပါ။"
+          : result.error.message;
+        toast.error(message);
         return;
       }
-      void logActivity({ action: "auth.login", summary: `Signed in as ${email}` });
+      void logActivity({ action: "auth.login", summary: `Signed in as ${normalizedEmail}` });
       toast.success("Welcome back");
-      navigate({ to: "/dashboard" });
+      await navigate({ to: "/dashboard" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
     } finally {
@@ -63,12 +71,15 @@ function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={onLogin} className="space-y-4 pt-4">
+        <form onSubmit={onLogin} autoComplete="on" className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
+              autoComplete="username"
+              inputMode="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -79,7 +90,9 @@ function LoginPage() {
             <div className="relative">
               <Input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
