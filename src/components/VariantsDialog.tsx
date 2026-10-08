@@ -83,6 +83,7 @@ export function VariantsDialog({
   });
   const colorOptions = uniqueOptions(DEFAULT_COLORS, catalogVariants.map((variant) => variant.color), variants.map((variant) => variant.color));
   const modelOptions = uniqueOptions(DEFAULT_MODELS, catalogVariants.map((variant) => variant.size), variants.map((variant) => variant.size));
+  const nameOptions = uniqueOptions([productName], variants.map((variant) => variant.name));
 
   const save = async () => {
     if (!form.name) return toast.error("Name required");
@@ -180,10 +181,16 @@ export function VariantsDialog({
           </div>
           <div className="space-y-1 col-span-2">
             <Label className="text-xs">Variant Name</Label>
-            <Input
-              value={form.name ?? ""}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
+            <Select value={selectValue(form.name, nameOptions)} onValueChange={(value) => setForm({ ...form, name: value })}>
+              <SelectTrigger><SelectValue placeholder="Choose original product name or custom" /></SelectTrigger>
+              <SelectContent>
+                {nameOptions.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                <SelectItem value={CUSTOM_OPTION}>Custom name…</SelectItem>
+              </SelectContent>
+            </Select>
+            {(form.name === CUSTOM_OPTION || (form.name && !nameOptions.includes(form.name))) && (
+              <Input autoFocus={form.name === CUSTOM_OPTION} value={form.name === CUSTOM_OPTION ? "" : form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Type custom variant name" />
+            )}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Size</Label>

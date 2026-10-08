@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatKS } from "@/lib/format";
-import { DEFAULT_COLORS, DEFAULT_MODELS, uniqueOptions } from "@/lib/catalog-options";
+import { CUSTOM_OPTION, DEFAULT_COLORS, DEFAULT_MODELS, selectValue, uniqueOptions } from "@/lib/catalog-options";
 
 export const Route = createFileRoute("/_authenticated/bulk-variants")({ component: BulkVariantsPage });
 
@@ -84,6 +84,23 @@ function MultiOptionPicker({ label, options, selected, customValue, onToggle, on
   );
 }
 
+function VariantNamePicker({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) {
+  return (
+    <div className="min-w-36 space-y-1">
+      <Select value={selectValue(value, options)} onValueChange={onChange}>
+        <SelectTrigger className="h-8"><SelectValue placeholder="Variant name" /></SelectTrigger>
+        <SelectContent>
+          {options.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+          <SelectItem value={CUSTOM_OPTION}>Custom name…</SelectItem>
+        </SelectContent>
+      </Select>
+      {(value === CUSTOM_OPTION || (value && !options.includes(value))) && (
+        <Input value={value === CUSTOM_OPTION ? "" : value} onChange={(e) => onChange(e.target.value)} className="h-8" placeholder="Custom variant name" autoFocus={value === CUSTOM_OPTION} />
+      )}
+    </div>
+  );
+}
+
 function BulkVariantsPage() {
   const qc = useQueryClient();
   const [productId, setProductId] = useState("");
@@ -138,6 +155,7 @@ function BulkVariantsPage() {
   const filtered = useMemo(() => rows.filter((row) => !search || [row.name, row.size, row.color, row.variant_code].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())), [rows, search]);
   const colorOptions = uniqueOptions(DEFAULT_COLORS, catalogVariants.map((row) => row.color), rows.map((row) => row.color));
   const modelOptions = uniqueOptions(DEFAULT_MODELS, catalogVariants.map((row) => row.size), rows.map((row) => row.size));
+  const nameOptions = uniqueOptions(selectedProduct ? [selectedProduct.name] : [], rows.map((row) => row.name));
   const dirtyCount = rows.filter((row) => row._dirty).length;
 
   const update = (id: string, patch: Partial<Variant>) => setRows((current) => current.map((row) => row.id === id ? { ...row, ...patch, _dirty: true } : row));
@@ -152,7 +170,7 @@ function BulkVariantsPage() {
   const addRow = () => {
     if (!productId) return toast.error("Select a product first");
     const id = `new-${Math.random().toString(36).slice(2)}`;
-    setRows((current) => [...current, { id, product_id: productId, name: "New variant", size: "", color: "", price: productBasePrice, stock_in: 0, sold_qty: 0, status: "ACTIVE", variant_code: "", image_url: null, _dirty: true, _new: true }]);
+    setRows((current) => [...current, { id, product_id: productId, name: selectedProduct?.name ?? "New variant", size: "", color: "", price: productBasePrice, stock_in: 0, sold_qty: 0, status: "ACTIVE", variant_code: "", image_url: null, _dirty: true, _new: true }]);
   };
 
   const removeRow = async (id: string) => {
@@ -194,7 +212,7 @@ function BulkVariantsPage() {
     const existing = new Set(rows.map((row) => `${row.color ?? ""}|${row.size ?? ""}`));
     const fresh = colors.flatMap((color) => models.map((size) => ({ color: color || null, size: size || null }))).filter((item) => !existing.has(`${item.color ?? ""}|${item.size ?? ""}`));
     if (!fresh.length) return toast.info("Those color/model combinations already exist");
-    setRows((current) => [...current, ...fresh.map((item) => ({ id: `new-${Math.random().toString(36).slice(2)}`, product_id: productId, name: [item.color, item.size].filter(Boolean).join(" / ") || "Default", ...item, price, stock_in: stock, sold_qty: 0, status: "ACTIVE", variant_code: null, image_url: null, _dirty: true, _new: true }))]);
+    setRows((current) => [...current, ...fresh.map((item) => ({ id: `new-${Math.random().toString(36).slice(2)}`, product_id: productId, name: selectedProduct?.name ?? "New variant", ...item, price, stock_in: stock, sold_qty: 0, status: "ACTIVE", variant_code: null, image_url: null, _dirty: true, _new: true }))]);
     toast.success(`${fresh.length} draft combination${fresh.length === 1 ? "" : "s"} created. Edit prices if needed, then Save.`);
     setSelectedColors([]); setSelectedModels([]);
   };
@@ -223,7 +241,7 @@ function BulkVariantsPage() {
         </CardContent>
       </Card>
 
-      {!productId ? <Card><CardContent className="p-12 text-center text-muted-foreground">Select a product above to manage variants.</CardContent></Card> : <Card><CardHeader><CardTitle className="text-base">Variants ({filtered.length})</CardTitle></CardHeader><CardContent className="overflow-x-auto p-0"><table className="w-full text-sm"><thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="px-2 py-3">Image</th><th>Name</th><th>Model</th><th>Color</th><th>Code</th><th>Price</th><th>Stock</th><th>Sold</th><th>Status</th><th /></tr></thead><tbody>{filtered.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">No variants yet.</td></tr>}{filtered.map((row) => <tr key={row.id} className={`border-t ${row._dirty ? "bg-amber-500/5" : ""}`}><td className="px-2 py-1"><ImageUpload value={row.image_url} onChange={(image_url) => update(row.id, { image_url })} bucket="product-images" size="sm" /></td><td className="px-2 py-1"><Input value={row.name} onChange={(e) => update(row.id, { name: e.target.value })} className="h-8 min-w-36" /></td><td className="px-1 py-1"><Input value={row.size ?? ""} onChange={(e) => update(row.id, { size: e.target.value })} className="h-8 min-w-28" placeholder="Model" /></td><td className="px-1 py-1"><Input value={row.color ?? ""} onChange={(e) => update(row.id, { color: e.target.value })} className="h-8 min-w-24" placeholder="Color" /></td><td className="px-1 py-1"><Input value={row.variant_code ?? ""} onChange={(e) => update(row.id, { variant_code: e.target.value })} className="h-8 min-w-24" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.price) ? row.price : ""} onChange={(e) => update(row.id, { price: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-24" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.stock_in) ? row.stock_in : ""} onChange={(e) => update(row.id, { stock_in: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-20" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.sold_qty) ? row.sold_qty : ""} onChange={(e) => update(row.id, { sold_qty: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-20" /></td><td className="px-1 py-1"><Select value={row.status} onValueChange={(value) => update(row.id, { status: value })}><SelectTrigger className="h-8 min-w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem><SelectItem value="OUT">Out</SelectItem></SelectContent></Select></td><td className="px-2 text-right"><Button size="icon" variant="ghost" onClick={() => removeRow(row.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></td></tr>)}</tbody></table></CardContent></Card>}
+      {!productId ? <Card><CardContent className="p-12 text-center text-muted-foreground">Select a product above to manage variants.</CardContent></Card> : <Card><CardHeader><CardTitle className="text-base">Variants ({filtered.length})</CardTitle></CardHeader><CardContent className="overflow-x-auto p-0"><table className="w-full text-sm"><thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="px-2 py-3">Image</th><th>Name</th><th>Model</th><th>Color</th><th>Code</th><th>Price</th><th>Stock</th><th>Sold</th><th>Status</th><th /></tr></thead><tbody>{filtered.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">No variants yet.</td></tr>}{filtered.map((row) => <tr key={row.id} className={`border-t ${row._dirty ? "bg-amber-500/5" : ""}`}><td className="px-2 py-1"><ImageUpload value={row.image_url} onChange={(image_url) => update(row.id, { image_url })} bucket="product-images" size="sm" /></td><td className="px-2 py-1"><VariantNamePicker value={row.name} options={nameOptions} onChange={(name) => update(row.id, { name })} /></td><td className="px-1 py-1"><Input value={row.size ?? ""} onChange={(e) => update(row.id, { size: e.target.value })} className="h-8 min-w-28" placeholder="Model" /></td><td className="px-1 py-1"><Input value={row.color ?? ""} onChange={(e) => update(row.id, { color: e.target.value })} className="h-8 min-w-24" placeholder="Color" /></td><td className="px-1 py-1"><Input value={row.variant_code ?? ""} onChange={(e) => update(row.id, { variant_code: e.target.value })} className="h-8 min-w-24" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.price) ? row.price : ""} onChange={(e) => update(row.id, { price: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-24" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.stock_in) ? row.stock_in : ""} onChange={(e) => update(row.id, { stock_in: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-20" /></td><td className="px-1 py-1"><Input type="number" min="0" value={Number.isFinite(row.sold_qty) ? row.sold_qty : ""} onChange={(e) => update(row.id, { sold_qty: e.target.value === "" ? Number.NaN : Number(e.target.value) })} className="h-8 min-w-20" /></td><td className="px-1 py-1"><Select value={row.status} onValueChange={(value) => update(row.id, { status: value })}><SelectTrigger className="h-8 min-w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem><SelectItem value="OUT">Out</SelectItem></SelectContent></Select></td><td className="px-2 text-right"><Button size="icon" variant="ghost" onClick={() => removeRow(row.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></td></tr>)}</tbody></table></CardContent></Card>}
     </div>
   );
 }
