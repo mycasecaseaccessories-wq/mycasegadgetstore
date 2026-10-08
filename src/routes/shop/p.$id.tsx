@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Check, Minus, Plus, ShieldCheck, ShoppingBag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,7 @@ function ProductPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
 
@@ -87,6 +88,12 @@ function ProductPage() {
     ...galleryImages,
   ].filter(Boolean))) as string[];
   const heroImage = selectedImage ?? activeVariant?.image_url ?? galleryImages[0] ?? null;
+  const changeImageBy = (offset: number) => {
+    if (variantGalleryImages.length < 2) return;
+    const currentIndex = Math.max(0, variantGalleryImages.indexOf(heroImage ?? ""));
+    const nextIndex = (currentIndex + offset + variantGalleryImages.length) % variantGalleryImages.length;
+    setSelectedImage(variantGalleryImages[nextIndex]);
+  };
 
   const stock =
     Number(product.stock_in ?? 0) -
@@ -184,7 +191,23 @@ function ProductPage() {
       <div className="mx-auto max-w-5xl px-4 py-4">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
-          <div className="motion-hero-art aspect-square overflow-hidden rounded-2xl bg-muted">
+          <div
+            className="motion-hero-art aspect-square touch-pan-y overflow-hidden rounded-2xl bg-muted"
+            role="region"
+            aria-label="Product image gallery. Swipe left or right to view more images."
+            onTouchStart={(event) => {
+              touchStartX.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const startX = touchStartX.current;
+              touchStartX.current = null;
+              if (startX === null) return;
+              const endX = event.changedTouches[0]?.clientX ?? startX;
+              const distance = endX - startX;
+              if (Math.abs(distance) < 45) return;
+              changeImageBy(distance < 0 ? 1 : -1);
+            }}
+          >
             <StorageImage
               src={heroImage}
               alt={product.name}
