@@ -18,9 +18,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     let unsubscribe = () => {};
     try {
-      const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
         if (mounted) {
-          setSession(s);
+          // Keep the last usable session during transient refresh/network failures.
+          // Only an explicit Supabase SIGNED_OUT event should clear it.
+          setSession((currentSession) =>
+            nextSession || event === "SIGNED_OUT" ? nextSession : currentSession,
+          );
           setLoading(false);
         }
       });
@@ -28,15 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       Promise.race([
         supabase.auth.getSession(),
         new Promise<never>((_, reject) =>
-          window.setTimeout(() => reject(new Error("Session restore timed out")), 10000),
+          window.setTimeout(() => reject(new Error("Session restore timed out")), 30000),
         ),
       ])
         .then(({ data }) => {
-          if (mounted) setSession(data.session);
+          if (mounted && data.session) setSession(data.session);
         })
         .catch((error) => {
           console.error("Unable to restore the current session", error);
-          if (mounted) setSession(null);
+          // Do not discard a previously restored session because of a temporary
+          // network timeout. Supabase will retry token refresh automatically.
         })
         .finally(() => {
           if (mounted) setLoading(false);
