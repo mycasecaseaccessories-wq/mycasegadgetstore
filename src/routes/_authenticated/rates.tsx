@@ -42,6 +42,7 @@ function RatesPage() {
   const [buyRate, setBuyRate] = useState<number>(0);
   const [sellGap, setSellGap] = useState<number>(0);
   const [note, setNote] = useState("");
+  const [rateInitialized, setRateInitialized] = useState(false);
 
   const { data: rates = [] } = useQuery({
     queryKey: ["rates"],
@@ -57,13 +58,24 @@ function RatesPage() {
   });
 
   const latest = rates[0];
+  const latestRateBySource = (nextSource: string) =>
+    rates.find((rate) => rate.source === nextSource);
+
   useEffect(() => {
-    if (latest && buyRate === 0) {
+    if (latest && !rateInitialized) {
       setBuyRate(Number(latest.buy_rate));
       setSellGap(Number(latest.sell_gap));
       setSource(latest.source);
+      setRateInitialized(true);
     }
-  }, [latest]); // eslint-disable-line
+  }, [latest, rateInitialized]);
+
+  const handleSourceChange = (nextSource: string) => {
+    setSource(nextSource);
+    const matchingRate = latestRateBySource(nextSource);
+    setBuyRate(matchingRate ? Number(matchingRate.buy_rate) : 0);
+    setSellGap(matchingRate ? Number(matchingRate.sell_gap) : 0);
+  };
 
   const addRate = async () => {
     if (buyRate <= 0) return toast.error("Buy rate required");
@@ -143,7 +155,7 @@ function RatesPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Source</Label>
-              <Select value={source} onValueChange={setSource}>
+              <Select value={source} onValueChange={handleSourceChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -232,23 +244,48 @@ function RatesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 col-span-2">
               <Label>{source} Price</Label>
-              <Input type="number" value={thb || ""} placeholder="0" onChange={(e) => setThb(e.target.value === "" ? 0 : Number(e.target.value))} />
+              <Input
+                type="number"
+                value={thb || ""}
+                placeholder="0"
+                onChange={(e) => setThb(e.target.value === "" ? 0 : Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Cargo (KS)</Label>
-              <Input type="number" value={cargo || ""} placeholder="0" onChange={(e) => setCargo(e.target.value === "" ? 0 : Number(e.target.value))} />
+              <Input
+                type="number"
+                value={cargo || ""}
+                placeholder="0"
+                onChange={(e) => setCargo(e.target.value === "" ? 0 : Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Delivery (KS)</Label>
-              <Input type="number" value={deli || ""} placeholder="0" onChange={(e) => setDeli(e.target.value === "" ? 0 : Number(e.target.value))} />
+              <Input
+                type="number"
+                value={deli || ""}
+                placeholder="0"
+                onChange={(e) => setDeli(e.target.value === "" ? 0 : Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Other (KS)</Label>
-              <Input type="number" value={other || ""} placeholder="0" onChange={(e) => setOther(e.target.value === "" ? 0 : Number(e.target.value))} />
+              <Input
+                type="number"
+                value={other || ""}
+                placeholder="0"
+                onChange={(e) => setOther(e.target.value === "" ? 0 : Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Buffer (KS)</Label>
-              <Input type="number" value={buffer || ""} placeholder="0" onChange={(e) => setBuffer(e.target.value === "" ? 0 : Number(e.target.value))} />
+              <Input
+                type="number"
+                value={buffer || ""}
+                placeholder="0"
+                onChange={(e) => setBuffer(e.target.value === "" ? 0 : Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Profit Mode</Label>
@@ -283,7 +320,9 @@ function RatesPage() {
                 type="number"
                 value={percentProfit || ""}
                 placeholder="20"
-                onChange={(e) => setPercentProfit(e.target.value === "" ? 0 : Number(e.target.value))}
+                onChange={(e) =>
+                  setPercentProfit(e.target.value === "" ? 0 : Number(e.target.value))
+                }
               />
             </div>
             <div className="space-y-1.5">
