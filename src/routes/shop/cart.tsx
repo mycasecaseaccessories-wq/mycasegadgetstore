@@ -95,9 +95,6 @@ function CartPage() {
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
     if (!name || !phone) return toast.error("Name & phone required");
-    if (items.some((item) => item.fulfillment_type === "PREORDER")) {
-      return toast.error("Pre-order မရပါ။ Instock ပစ္စည်းများကိုသာ ဝယ်ယူနိုင်ပါသည်။");
-    }
     if (hasPreorder && !paymentMethodId) {
       return toast.error("Select a payment method for the pre-order deposit");
     }
@@ -105,6 +102,7 @@ function CartPage() {
     try {
       const stockChecks = await Promise.all(
         items.map(async (item) => {
+          if (item.fulfillment_type === "PREORDER") return { item, available: Number.POSITIVE_INFINITY };
           const table = item.variant_id ? "product_variants" : "products";
           const id = item.variant_id ?? item.product_id;
           const { data, error } = await (supabase.from(table as any) as any)
@@ -121,30 +119,51 @@ function CartPage() {
       if (unavailable) {
         return toast.error(`${unavailable.item.name} အတွက် stock မလုံလောက်တော့ပါ။ Cart ကို ပြန်စစ်ပါ။`);
       }
-      const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
-        p_customer_name: name,
-        p_customer_phone: phone,
-        p_delivery_note: address,
-        p_discount: 0,
-        p_extra_fee: 0,
-        p_redeem_points: redeemPts,
-          p_items: items.map((i) => ({
-            product_id: i.product_id,
-            variant_id: i.variant_id ?? null,
-            product_name: i.name,
-            unit_price: i.price,
-            quantity: i.qty,
-            line_total: i.price * i.qty,
-            fulfillment_type: i.fulfillment_type ?? "IN_STOCK",
-            estimated_arrival: i.estimated_arrival ?? null,
-            deposit_required: i.deposit_required ?? 0,
-          })),
-      });
-      if (error || !orderId) throw error ?? new Error("Failed");
+      const orderItems = items.map((i) => ({
+        product_id: i.product_id,
+        variant_id: i.variant_id ?? null,
+        product_name: i.name,
+        unit_price: i.price,
+        quantity: i.qty,
+        line_total: i.price * i.qty,
+        fulfillment_type: i.fulfillment_type ?? "IN_STOCK",
+        estimated_arrival: i.estimated_arrival ?? null,
+        deposit_required: i.deposit_required ?? 0,
+      }));
+      let orderId: string | null = null;
+      let guestCapability: string | null = null;
 
-      const { error: paymentError } = await supabase.rpc("finalize_order_payment_details", {
+      if (user) {
+        const { data, error } = await (supabase as any).rpc("create_order_with_items", {
+          p_customer_name: name,
+          p_customer_phone: phone,
+          p_delivery_note: address,
+          p_discount: 0,
+          p_extra_fee: 0,
+          p_redeem_points: redeemPts,
+          p_items: orderItems,
+        });
+        if (error || !data) throw error ?? new Error("Failed to create order");
+        orderId = data as string;
+      } else {
+        const { data, error } = await (supabase as any).rpc("create_guest_order_with_items", {
+          p_customer_name: name,
+          p_customer_phone: phone,
+          p_delivery_note: address,
+          p_discount: 0,
+          p_extra_fee: 0,
+          p_redeem_points: 0,
+          p_items: orderItems,
+        });
+        if (error || !data?.order_id || !data?.capability) throw error ?? new Error("Failed to create guest order");
+        orderId = data.order_id as string;
+        guestCapability = data.capability as string;
+      }
+
+      const { error: paymentError } = await (supabase as any).rpc("finalize_order_payment_details", {
         p_order_id: orderId,
         p_payment_method_id: paymentMethodId || null,
+        p_guest_capability: guestCapability,
       });
       if (paymentError) throw paymentError;
 
