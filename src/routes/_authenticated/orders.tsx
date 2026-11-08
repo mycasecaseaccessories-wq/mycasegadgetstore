@@ -521,7 +521,7 @@ function OrdersPage() {
                             )}
                             {it.fulfillment_type === "PREORDER" && Number(it.deposit_required ?? 0) > 0 && (
                               <span className="text-[11px] text-muted-foreground">
-                                Deposit: {formatKS(it.deposit_required)}
+                                Deposit: {formatKS(Number(it.deposit_required ?? 0) * Number(it.quantity ?? 1))}
                               </span>
                             )}
                           </div>
