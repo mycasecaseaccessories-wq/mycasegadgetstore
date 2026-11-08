@@ -95,7 +95,7 @@ function CartPage() {
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
     if (!name || !phone) return toast.error("Name & phone required");
-    if (hasPreorder && !paymentMethodId) {
+    if (hasPreorder && depositTotal > 0 && !paymentMethodId) {
       return toast.error("Select a payment method for the pre-order deposit");
     }
     setSubmitting(true);
@@ -420,7 +420,7 @@ function CartPage() {
                   <Label>Delivery address</Label>
                   <Textarea value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
-                {hasPreorder && (
+                {hasPreorder && depositTotal > 0 && (
                   <div className="space-y-1.5">
                     <Label>Deposit payment method *</Label>
                     <select
