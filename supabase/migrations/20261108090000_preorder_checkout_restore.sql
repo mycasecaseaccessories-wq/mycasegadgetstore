@@ -102,6 +102,12 @@ BEGIN
           OR COALESCE(v_variant.selling_mode, 'IN_STOCK') NOT IN ('PREORDER', 'BOTH') THEN
           RAISE EXCEPTION 'Pre-order is not available for this variant';
         END IF;
+        v_available := COALESCE(v_variant.stock_in, 0)
+          - COALESCE(v_variant.sold_qty, 0)
+          - COALESCE(v_variant.reserved_qty, 0);
+        IF COALESCE(v_variant.selling_mode, 'IN_STOCK') = 'BOTH' AND v_available > 0 THEN
+          RAISE EXCEPTION 'In-stock units are still available for this variant';
+        END IF;
       ELSE
         v_available := COALESCE(v_variant.stock_in, 0)
           - COALESCE(v_variant.sold_qty, 0)
@@ -121,6 +127,12 @@ BEGIN
         IF NOT COALESCE(v_product.preorder_enabled, false)
           OR COALESCE(v_product.selling_mode, 'IN_STOCK') NOT IN ('PREORDER', 'BOTH') THEN
           RAISE EXCEPTION 'Pre-order is not available for this product';
+        END IF;
+        v_available := COALESCE(v_product.stock_in, 0)
+          - COALESCE(v_product.sold_qty, 0)
+          - COALESCE(v_product.reserved_qty, 0);
+        IF COALESCE(v_product.selling_mode, 'IN_STOCK') = 'BOTH' AND v_available > 0 THEN
+          RAISE EXCEPTION 'In-stock units are still available for this product';
         END IF;
       ELSE
         v_available := COALESCE(v_product.stock_in, 0)
@@ -240,6 +252,189 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.create_order_with_items(text, text, text, numeric, numeric, jsonb, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_order_with_items(text, text, text, numeric, numeric, jsonb, integer) TO authenticated;
+
+
+-- Keep guest checkout aligned with member checkout: BOTH mode accepts a preorder
+-- only after available inventory reaches zero. Guest capabilities remain hashed.
+CREATE OR REPLACE FUNCTION public.create_guest_order_with_items(
+  p_customer_name text,
+  p_customer_phone text,
+  p_delivery_note text,
+  p_discount numeric,
+  p_extra_fee numeric,
+  p_items jsonb,
+  p_redeem_points integer DEFAULT 0
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private, extensions
+AS $function$
+DECLARE
+  v_order_id uuid;
+  v_capability text := encode(extensions.gen_random_bytes(32), 'hex');
+  v_digest text := encode(extensions.digest(v_capability, 'sha256'), 'hex');
+  v_subtotal numeric := 0;
+  v_discount numeric := COALESCE(p_discount, 0);
+  v_extra_fee numeric := COALESCE(p_extra_fee, 0);
+  v_total numeric;
+  v_product record;
+  v_variant record;
+  v_product_id uuid;
+  v_variant_id uuid;
+  v_quantity integer;
+  v_server_price numeric;
+  v_available integer;
+  v_fulfillment text;
+  v_deposit numeric;
+  v_eta text;
+  item jsonb;
+BEGIN
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'Guest checkout required'; END IF;
+  IF jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'At least one order item is required';
+  END IF;
+  IF NULLIF(btrim(COALESCE(p_customer_name, '')), '') IS NULL
+    OR NULLIF(btrim(COALESCE(p_customer_phone, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'Name and phone are required';
+  END IF;
+  IF v_discount < 0 OR v_extra_fee < 0 OR COALESCE(p_redeem_points, 0) <> 0 THEN
+    RAISE EXCEPTION 'Invalid guest checkout values';
+  END IF;
+
+  FOR item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    BEGIN
+      v_product_id := NULLIF(item ->> 'product_id', '')::uuid;
+      v_variant_id := NULLIF(item ->> 'variant_id', '')::uuid;
+      v_quantity := (item ->> 'quantity')::integer;
+      v_fulfillment := upper(COALESCE(NULLIF(item ->> 'fulfillment_type', ''), 'IN_STOCK'));
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'Malformed order item';
+    END;
+    IF v_product_id IS NULL OR v_quantity IS NULL OR v_quantity <= 0 OR v_quantity > 1000 THEN
+      RAISE EXCEPTION 'Invalid order item values';
+    END IF;
+    IF v_fulfillment NOT IN ('IN_STOCK', 'PREORDER') THEN
+      RAISE EXCEPTION 'Invalid fulfillment type';
+    END IF;
+
+    SELECT * INTO v_product
+    FROM public.products
+    WHERE id = v_product_id AND status = 'ACTIVE'
+    FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Product is unavailable'; END IF;
+
+    IF v_variant_id IS NOT NULL THEN
+      SELECT * INTO v_variant
+      FROM public.product_variants
+      WHERE id = v_variant_id AND product_id = v_product_id AND status = 'ACTIVE'
+      FOR UPDATE;
+      IF NOT FOUND THEN RAISE EXCEPTION 'Selected variant is unavailable'; END IF;
+      v_server_price := COALESCE(v_variant.final_sell_mmk, v_variant.price, 0);
+      IF v_server_price < 0 THEN RAISE EXCEPTION 'Invalid product price'; END IF;
+      IF v_fulfillment = 'PREORDER' THEN
+        IF NOT COALESCE(v_variant.preorder_enabled, false)
+          OR COALESCE(v_variant.selling_mode, 'IN_STOCK') NOT IN ('PREORDER', 'BOTH') THEN
+          RAISE EXCEPTION 'Pre-order is not available for this variant';
+        END IF;
+        v_available := COALESCE(v_variant.stock_in, 0)
+          - COALESCE(v_variant.sold_qty, 0) - COALESCE(v_variant.reserved_qty, 0);
+        IF COALESCE(v_variant.selling_mode, 'IN_STOCK') = 'BOTH' AND v_available > 0 THEN
+          RAISE EXCEPTION 'In-stock units are still available for this variant';
+        END IF;
+      ELSE
+        v_available := COALESCE(v_variant.stock_in, 0)
+          - COALESCE(v_variant.sold_qty, 0) - COALESCE(v_variant.reserved_qty, 0);
+        IF v_available < v_quantity THEN RAISE EXCEPTION 'Insufficient stock for selected variant'; END IF;
+        UPDATE public.product_variants
+        SET reserved_qty = COALESCE(reserved_qty, 0) + v_quantity, updated_at = now()
+        WHERE id = v_variant_id;
+      END IF;
+    ELSE
+      v_server_price := COALESCE(v_product.final_sell_mmk, v_product.price, 0);
+      IF v_server_price < 0 THEN RAISE EXCEPTION 'Invalid product price'; END IF;
+      IF v_fulfillment = 'PREORDER' THEN
+        IF NOT COALESCE(v_product.preorder_enabled, false)
+          OR COALESCE(v_product.selling_mode, 'IN_STOCK') NOT IN ('PREORDER', 'BOTH') THEN
+          RAISE EXCEPTION 'Pre-order is not available for this product';
+        END IF;
+        v_available := COALESCE(v_product.stock_in, 0)
+          - COALESCE(v_product.sold_qty, 0) - COALESCE(v_product.reserved_qty, 0);
+        IF COALESCE(v_product.selling_mode, 'IN_STOCK') = 'BOTH' AND v_available > 0 THEN
+          RAISE EXCEPTION 'In-stock units are still available for this product';
+        END IF;
+      ELSE
+        v_available := COALESCE(v_product.stock_in, 0)
+          - COALESCE(v_product.sold_qty, 0) - COALESCE(v_product.reserved_qty, 0);
+        IF v_available < v_quantity THEN RAISE EXCEPTION 'Insufficient stock for %', v_product.name; END IF;
+        UPDATE public.products
+        SET reserved_qty = COALESCE(reserved_qty, 0) + v_quantity, updated_at = now()
+        WHERE id = v_product_id;
+      END IF;
+    END IF;
+    v_subtotal := v_subtotal + (v_server_price * v_quantity);
+  END LOOP;
+
+  v_total := v_subtotal - v_discount + v_extra_fee;
+  IF v_total < 0 THEN RAISE EXCEPTION 'Invalid order total'; END IF;
+
+  INSERT INTO public.orders (
+    user_id, customer_name, customer_phone, delivery_note, subtotal, discount,
+    extra_fee, total, points_redeemed, points_value, status, payment_status,
+    guest_payment_capability_digest
+  ) VALUES (
+    NULL, NULLIF(btrim(p_customer_name), ''), NULLIF(btrim(p_customer_phone), ''),
+    p_delivery_note, v_subtotal, v_discount, v_extra_fee, v_total, 0, 0,
+    'pending', 'unpaid', v_digest
+  ) RETURNING id INTO v_order_id;
+
+  FOR item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    v_product_id := NULLIF(item ->> 'product_id', '')::uuid;
+    v_variant_id := NULLIF(item ->> 'variant_id', '')::uuid;
+    v_quantity := (item ->> 'quantity')::integer;
+    v_fulfillment := upper(COALESCE(NULLIF(item ->> 'fulfillment_type', ''), 'IN_STOCK'));
+
+    IF v_variant_id IS NOT NULL THEN
+      SELECT COALESCE(final_sell_mmk, price, 0), waiting_time,
+        CASE WHEN preorder_deposit_type = 'PERCENTAGE'
+          THEN LEAST(COALESCE(final_sell_mmk, price, 0),
+            COALESCE(final_sell_mmk, price, 0) * LEAST(100, GREATEST(0, preorder_deposit)) / 100)
+          ELSE LEAST(COALESCE(final_sell_mmk, price, 0), GREATEST(0, preorder_deposit))
+        END
+      INTO v_server_price, v_eta, v_deposit
+      FROM public.product_variants WHERE id = v_variant_id;
+    ELSE
+      SELECT COALESCE(final_sell_mmk, price, 0), waiting_time,
+        CASE WHEN preorder_deposit_type = 'PERCENTAGE'
+          THEN LEAST(COALESCE(final_sell_mmk, price, 0),
+            COALESCE(final_sell_mmk, price, 0) * LEAST(100, GREATEST(0, preorder_deposit)) / 100)
+          ELSE LEAST(COALESCE(final_sell_mmk, price, 0), GREATEST(0, preorder_deposit))
+        END
+      INTO v_server_price, v_eta, v_deposit
+      FROM public.products WHERE id = v_product_id;
+    END IF;
+
+    INSERT INTO public.order_items (
+      order_id, product_id, variant_id, product_name, unit_price, quantity, line_total,
+      fulfillment_type, estimated_arrival, deposit_required
+    ) VALUES (
+      v_order_id, v_product_id, v_variant_id,
+      btrim(COALESCE(item ->> 'product_name', 'Product')),
+      v_server_price, v_quantity, v_server_price * v_quantity,
+      v_fulfillment,
+      CASE WHEN v_fulfillment = 'PREORDER' THEN v_eta ELSE NULL END,
+      CASE WHEN v_fulfillment = 'PREORDER' THEN v_deposit ELSE 0 END
+    );
+  END LOOP;
+
+  RETURN jsonb_build_object('order_id', v_order_id, 'capability', v_capability);
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.create_guest_order_with_items(text, text, text, numeric, numeric, jsonb, integer) FROM PUBLIC, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_guest_order_with_items(text, text, text, numeric, numeric, jsonb, integer) TO anon;
 
 -- The deposit setting is per unit. Multiply by quantity when summarizing the
 -- amount due, while preserving the guest capability check for guest checkout.
