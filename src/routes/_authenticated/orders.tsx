@@ -100,12 +100,14 @@ function OrdersPage() {
     const original = orders.find((o) => o.id === editing.id);
     const { id, order_no, created_at, updated_at, items: _items, ...payload } = editing;
     const depositRequired = Math.max(0, Number(editing.deposit_total ?? 0));
-    const depositPaid = Math.min(depositRequired, Math.max(0, Number(editing.deposit_paid ?? 0)));
+    const depositPaid = editing.payment_status === "paid"
+      ? depositRequired
+      : Math.min(depositRequired, Math.max(0, Number(editing.deposit_paid ?? 0)));
     (payload as any).deposit_paid = depositPaid;
     (payload as any).deposit_status = depositRequired === 0 || depositPaid >= depositRequired
       ? "paid"
       : depositPaid > 0 ? "partial" : "unpaid";
-    (payload as any).balance_amount = Math.max(0, Number(editing.total ?? 0) - depositPaid);
+    (payload as any).balance_amount = editing.payment_status === "paid" ? 0 : Math.max(0, Number(editing.total ?? 0) - depositPaid);
 
     // Award points when transitioning to paid/completed (and not already awarded)
     const becomesPaid =
@@ -278,7 +280,7 @@ function OrdersPage() {
                   <td className="text-xs">
                     {Number(o.deposit_total ?? 0) > 0 ? (
                       <span className={o.deposit_status === "paid" ? "text-emerald-600" : "text-amber-600"}>
-                        {o.deposit_status ?? "unpaid"} · {formatKS(o.deposit_total)}
+                        {o.deposit_status ?? "unpaid"} · {formatKS(o.deposit_paid ?? 0)} / {formatKS(o.deposit_total)}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -440,7 +442,7 @@ function OrdersPage() {
                 />
               </div>
               <div className="sm:col-span-2 rounded-md border bg-amber-500/5 p-3 text-sm">
-                Remaining balance: <span className="font-semibold">{formatKS(Math.max(0, Number(editing.total ?? 0) - Number(editing.deposit_paid ?? 0)))}</span>
+                Remaining balance: <span className="font-semibold">{formatKS(editing.payment_status === "paid" ? 0 : Math.max(0, Number(editing.total ?? 0) - Number(editing.deposit_paid ?? 0)))}</span>
                 <p className="mt-1 text-xs text-muted-foreground">Deposit status: {Number(editing.deposit_total ?? 0) <= 0 || Number(editing.deposit_paid ?? 0) >= Number(editing.deposit_total ?? 0) ? "Paid" : Number(editing.deposit_paid ?? 0) > 0 ? "Partial" : "Unpaid"}</p>
               </div>
               <div className="sm:col-span-2 space-y-1.5">
@@ -561,7 +563,7 @@ function OrdersPage() {
                     </div>
                     <div className="flex justify-between font-semibold">
                       <span>Remaining balance</span>
-                      <span>{formatKS(Math.max(0, Number(viewing.total ?? 0) - Number(viewing.deposit_paid ?? 0)))}</span>
+                      <span>{formatKS(viewing.payment_status === "paid" ? 0 : Math.max(0, Number(viewing.total ?? 0) - Number(viewing.deposit_paid ?? 0)))}</span>
                     </div>
                   </>
                 )}
