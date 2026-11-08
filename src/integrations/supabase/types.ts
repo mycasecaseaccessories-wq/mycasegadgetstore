@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -212,33 +212,57 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          deposit_paid: number
+          deposit_required: number
+          discount_amount: number
+          estimated_arrival: string | null
+          fulfillment_type: string
           id: string
           line_total: number
           order_id: string
+          original_unit_price: number
           product_id: string | null
           product_name: string
           quantity: number
+          sale_campaign_id: string | null
           unit_price: number
+          variant_id: string | null
         }
         Insert: {
           created_at?: string
+          deposit_paid?: number
+          deposit_required?: number
+          discount_amount?: number
+          estimated_arrival?: string | null
+          fulfillment_type?: string
           id?: string
           line_total?: number
           order_id: string
+          original_unit_price?: number
           product_id?: string | null
           product_name: string
           quantity?: number
+          sale_campaign_id?: string | null
           unit_price?: number
+          variant_id?: string | null
         }
         Update: {
           created_at?: string
+          deposit_paid?: number
+          deposit_required?: number
+          discount_amount?: number
+          estimated_arrival?: string | null
+          fulfillment_type?: string
           id?: string
           line_total?: number
           order_id?: string
+          original_unit_price?: number
           product_id?: string | null
           product_name?: string
           quantity?: number
+          sale_campaign_id?: string | null
           unit_price?: number
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -255,6 +279,20 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_sale_campaign_id_fkey"
+            columns: ["sale_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sale_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
@@ -266,20 +304,27 @@ export type Database = {
           customer_phone: string | null
           delivery_note: string | null
           delivery_status: string
+          deposit_amount: number
+          deposit_paid: number
+          deposit_status: string
+          deposit_total: number
           discount: number
           extra_fee: number
+          guest_payment_capability_digest: string | null
           id: string
           order_date: string
           order_no: number
           order_source: string
+          payment_method_id: string | null
           payment_status: string
           points_earned: number
           points_redeemed: number
           points_value: number
+          reservation_expires_at: string | null
+          reservation_released_at: string | null
           status: string
           subtotal: number
           total: number
-          deposit_amount: number
           tracking_number: string | null
           updated_at: string
           user_id: string | null
@@ -292,20 +337,27 @@ export type Database = {
           customer_phone?: string | null
           delivery_note?: string | null
           delivery_status?: string
+          deposit_amount?: number
+          deposit_paid?: number
+          deposit_status?: string
+          deposit_total?: number
           discount?: number
           extra_fee?: number
+          guest_payment_capability_digest?: string | null
           id?: string
           order_date?: string
           order_no?: number
           order_source?: string
+          payment_method_id?: string | null
           payment_status?: string
           points_earned?: number
           points_redeemed?: number
           points_value?: number
+          reservation_expires_at?: string | null
+          reservation_released_at?: string | null
           status?: string
           subtotal?: number
           total?: number
-          deposit_amount?: number
           tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -318,20 +370,27 @@ export type Database = {
           customer_phone?: string | null
           delivery_note?: string | null
           delivery_status?: string
+          deposit_amount?: number
+          deposit_paid?: number
+          deposit_status?: string
+          deposit_total?: number
           discount?: number
           extra_fee?: number
+          guest_payment_capability_digest?: string | null
           id?: string
           order_date?: string
           order_no?: number
           order_source?: string
+          payment_method_id?: string | null
           payment_status?: string
           points_earned?: number
           points_redeemed?: number
           points_value?: number
+          reservation_expires_at?: string | null
+          reservation_released_at?: string | null
           status?: string
           subtotal?: number
           total?: number
-          deposit_amount?: number
           tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -342,6 +401,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -393,12 +459,17 @@ export type Database = {
           color: string | null
           created_at: string
           final_sell_mmk: number | null
-          image_url: string | null
           id: string
+          image_url: string | null
           name: string
           note: string | null
+          preorder_deposit: number
+          preorder_deposit_type: string
+          preorder_enabled: boolean
           price: number
           product_id: string
+          reserved_qty: number
+          selling_mode: string
           size: string | null
           sold_qty: number
           status: string
@@ -406,17 +477,23 @@ export type Database = {
           thb_price: number | null
           updated_at: string
           variant_code: string | null
+          waiting_time: string | null
         }
         Insert: {
           color?: string | null
           created_at?: string
           final_sell_mmk?: number | null
-          image_url?: string | null
           id?: string
+          image_url?: string | null
           name: string
           note?: string | null
+          preorder_deposit?: number
+          preorder_deposit_type?: string
+          preorder_enabled?: boolean
           price?: number
           product_id: string
+          reserved_qty?: number
+          selling_mode?: string
           size?: string | null
           sold_qty?: number
           status?: string
@@ -424,17 +501,23 @@ export type Database = {
           thb_price?: number | null
           updated_at?: string
           variant_code?: string | null
+          waiting_time?: string | null
         }
         Update: {
           color?: string | null
           created_at?: string
           final_sell_mmk?: number | null
-          image_url?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           note?: string | null
+          preorder_deposit?: number
+          preorder_deposit_type?: string
+          preorder_enabled?: boolean
           price?: number
           product_id?: string
+          reserved_qty?: number
+          selling_mode?: string
           size?: string | null
           sold_qty?: number
           status?: string
@@ -442,6 +525,7 @@ export type Database = {
           thb_price?: number | null
           updated_at?: string
           variant_code?: string | null
+          waiting_time?: string | null
         }
         Relationships: [
           {
@@ -455,16 +539,24 @@ export type Database = {
       }
       products: {
         Row: {
+          availability: string
           brand: string | null
           category: string | null
           created_at: string
+          description: string | null
+          description_images: string[]
           final_sell_mmk: number | null
+          gallery_images: string[]
+          highlights: string | null
           id: string
           image_url: string | null
           low_stock_threshold: number
           margin_percent: number | null
           name: string
           note: string | null
+          preorder_deposit: number
+          preorder_deposit_type: string
+          preorder_enabled: boolean
           price: number
           pricing_buy_rate: number | null
           pricing_cargo_mmk: number | null
@@ -477,26 +569,40 @@ export type Database = {
           pricing_rounding_rule: string | null
           pricing_sell_gap: number | null
           product_code: string | null
+          published: boolean
+          reserved_qty: number
+          selling_mode: string
+          shipping_info: string | null
           size: string | null
           sold_qty: number
+          specifications: string | null
           status: string
           stock_in: number
           stock_status: string
           thb_price: number | null
           updated_at: string
           waiting_time: string | null
+          warranty_info: string | null
         }
         Insert: {
+          availability?: string
           brand?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
+          description_images?: string[]
           final_sell_mmk?: number | null
+          gallery_images?: string[]
+          highlights?: string | null
           id?: string
           image_url?: string | null
           low_stock_threshold?: number
           margin_percent?: number | null
           name: string
           note?: string | null
+          preorder_deposit?: number
+          preorder_deposit_type?: string
+          preorder_enabled?: boolean
           price?: number
           pricing_buy_rate?: number | null
           pricing_cargo_mmk?: number | null
@@ -509,26 +615,40 @@ export type Database = {
           pricing_rounding_rule?: string | null
           pricing_sell_gap?: number | null
           product_code?: string | null
+          published?: boolean
+          reserved_qty?: number
+          selling_mode?: string
+          shipping_info?: string | null
           size?: string | null
           sold_qty?: number
+          specifications?: string | null
           status?: string
           stock_in?: number
           stock_status?: string
           thb_price?: number | null
           updated_at?: string
           waiting_time?: string | null
+          warranty_info?: string | null
         }
         Update: {
+          availability?: string
           brand?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
+          description_images?: string[]
           final_sell_mmk?: number | null
+          gallery_images?: string[]
+          highlights?: string | null
           id?: string
           image_url?: string | null
           low_stock_threshold?: number
           margin_percent?: number | null
           name?: string
           note?: string | null
+          preorder_deposit?: number
+          preorder_deposit_type?: string
+          preorder_enabled?: boolean
           price?: number
           pricing_buy_rate?: number | null
           pricing_cargo_mmk?: number | null
@@ -541,14 +661,20 @@ export type Database = {
           pricing_rounding_rule?: string | null
           pricing_sell_gap?: number | null
           product_code?: string | null
+          published?: boolean
+          reserved_qty?: number
+          selling_mode?: string
+          shipping_info?: string | null
           size?: string | null
           sold_qty?: number
+          specifications?: string | null
           status?: string
           stock_in?: number
           stock_status?: string
           thb_price?: number | null
           updated_at?: string
           waiting_time?: string | null
+          warranty_info?: string | null
         }
         Relationships: []
       }
@@ -590,8 +716,8 @@ export type Database = {
           thb_price: number | null
           tracking_code: string | null
           unit_cost: number
-          variant_id: string | null
           variant: string | null
+          variant_id: string | null
         }
         Insert: {
           cargo_status?: string
@@ -606,8 +732,8 @@ export type Database = {
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
-          variant_id?: string | null
           variant?: string | null
+          variant_id?: string | null
         }
         Update: {
           cargo_status?: string
@@ -622,8 +748,8 @@ export type Database = {
           thb_price?: number | null
           tracking_code?: string | null
           unit_cost?: number
-          variant_id?: string | null
           variant?: string | null
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -638,6 +764,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -740,6 +873,87 @@ export type Database = {
         }
         Relationships: []
       }
+      sale_campaign_products: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          product_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          product_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_campaign_products_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sale_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_campaign_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_campaigns: {
+        Row: {
+          badge_text: string
+          created_at: string
+          created_by: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string
+          id: string
+          name: string
+          priority: number
+          scope: string
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          badge_text?: string
+          created_at?: string
+          created_by?: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string
+          id?: string
+          name: string
+          priority?: number
+          scope?: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          badge_text?: string
+          created_at?: string
+          created_by?: string | null
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string
+          id?: string
+          name?: string
+          priority?: number
+          scope?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           business_name: string | null
@@ -748,10 +962,6 @@ export type Database = {
           id: string
           language: string
           logo_url: string | null
-          loyalty_earn_per_amount: number
-          loyalty_enabled: boolean
-          loyalty_min_redeem: number
-          loyalty_redeem_value: number
           minimum_price_buffer: number | null
           service_fee: number | null
           tax_percent: number | null
@@ -764,10 +974,6 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
-          loyalty_earn_per_amount?: number
-          loyalty_enabled?: boolean
-          loyalty_min_redeem?: number
-          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -780,10 +986,6 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
-          loyalty_earn_per_amount?: number
-          loyalty_enabled?: boolean
-          loyalty_min_redeem?: number
-          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -909,6 +1111,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_guest_order_with_items: {
+        Args: {
+          p_customer_name: string
+          p_customer_phone: string
+          p_delivery_note: string
+          p_discount: number
+          p_extra_fee: number
+          p_items: Json
+          p_redeem_points?: number
+        }
+        Returns: Json
+      }
       create_order_with_items: {
         Args: {
           p_customer_name: string
@@ -917,22 +1131,41 @@ export type Database = {
           p_discount: number
           p_extra_fee: number
           p_items: Json
-          p_redeem_points: number
+          p_redeem_points?: number
         }
         Returns: string
       }
-      finalize_order_payment_details: {
-        Args: {
-          p_order_id: string
-          p_payment_method_id?: string | null
-        }
-        Returns: undefined
-      }
       expire_pending_order_reservations: {
-        Args: {
-          p_limit?: number
-        }
+        Args: { p_limit?: number }
         Returns: number
+      }
+      finalize_order_payment_details:
+        | {
+            Args: { p_order_id: string; p_payment_method_id?: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_guest_capability?: string
+              p_order_id: string
+              p_payment_method_id?: string
+            }
+            Returns: undefined
+          }
+      fulfill_preorder_order: { Args: { p_order_id: string }; Returns: number }
+      get_active_sale_for_item: {
+        Args: {
+          p_base_price: number
+          p_product_id: string
+          p_variant_id: string
+        }
+        Returns: {
+          badge_text: string
+          campaign_id: string
+          discount_amount: number
+          original_price: number
+          sale_price: number
+        }[]
       }
     }
     Enums: {
