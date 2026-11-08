@@ -284,7 +284,7 @@ function CartPage() {
                   </div>
                   {i.fulfillment_type === "PREORDER" && (i.deposit_required ?? 0) > 0 && (
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Deposit: {formatKS(i.deposit_required ?? 0)}
+                      Deposit: {formatKS(Number(i.deposit_required ?? 0) * i.qty)}
                     </p>
                   )}
                 </div>
