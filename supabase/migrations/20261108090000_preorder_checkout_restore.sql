@@ -275,7 +275,8 @@ DECLARE
   v_capability text := encode(extensions.gen_random_bytes(32), 'hex');
   v_digest text := encode(extensions.digest(v_capability, 'sha256'), 'hex');
   v_subtotal numeric := 0;
-  v_discount numeric := COALESCE(p_discount, 0);
+  -- Guest callers are untrusted; never accept a client-supplied discount.
+  v_discount numeric := 0;
   v_extra_fee numeric := COALESCE(p_extra_fee, 0);
   v_total numeric;
   v_product record;
