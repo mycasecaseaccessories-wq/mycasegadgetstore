@@ -275,6 +275,10 @@ DECLARE
   v_capability text := encode(extensions.gen_random_bytes(32), 'hex');
   v_digest text := encode(extensions.digest(v_capability, 'sha256'), 'hex');
   v_subtotal numeric := 0;
+  v_sale_discount_total numeric := 0;
+  v_sale_discount numeric := 0;
+  v_sale_campaign_id uuid;
+  v_original_price numeric;
   -- Guest callers are untrusted; never accept a client-supplied discount.
   v_discount numeric := 0;
   v_extra_fee numeric := COALESCE(p_extra_fee, 0);
@@ -288,6 +292,8 @@ DECLARE
   v_available integer;
   v_fulfillment text;
   v_deposit numeric;
+  v_deposit_setting numeric;
+  v_deposit_type text;
   v_eta text;
   item jsonb;
 BEGIN
@@ -374,10 +380,21 @@ BEGIN
         WHERE id = v_product_id;
       END IF;
     END IF;
-    v_subtotal := v_subtotal + (v_server_price * v_quantity);
+    v_original_price := v_server_price;
+    v_sale_discount := 0;
+    v_sale_campaign_id := NULL;
+    SELECT campaign_id, original_price, sale_price, discount_amount
+    INTO v_sale_campaign_id, v_original_price, v_server_price, v_sale_discount
+    FROM public.get_active_sale_for_item(v_product_id, v_variant_id, v_original_price);
+    IF v_sale_campaign_id IS NULL THEN
+      v_server_price := v_original_price;
+      v_sale_discount := 0;
+    END IF;
+    v_subtotal := v_subtotal + (v_original_price * v_quantity);
+    v_sale_discount_total := v_sale_discount_total + (v_sale_discount * v_quantity);
   END LOOP;
 
-  v_total := v_subtotal - v_discount + v_extra_fee;
+  v_total := v_subtotal - v_sale_discount_total - v_discount + v_extra_fee;
   IF v_total < 0 THEN RAISE EXCEPTION 'Invalid order total'; END IF;
 
   INSERT INTO public.orders (
@@ -386,7 +403,7 @@ BEGIN
     guest_payment_capability_digest
   ) VALUES (
     NULL, NULLIF(btrim(p_customer_name), ''), NULLIF(btrim(p_customer_phone), ''),
-    p_delivery_note, v_subtotal, v_discount, v_extra_fee, v_total, 0, 0,
+    p_delivery_note, v_subtotal, v_discount + v_sale_discount_total, v_extra_fee, v_total, 0, 0,
     'pending', 'unpaid', v_digest
   ) RETURNING id INTO v_order_id;
 
@@ -399,34 +416,43 @@ BEGIN
 
     IF v_variant_id IS NOT NULL THEN
       SELECT COALESCE(final_sell_mmk, price, 0), waiting_time,
-        CASE WHEN preorder_deposit_type = 'PERCENTAGE'
-          THEN LEAST(COALESCE(final_sell_mmk, price, 0),
-            COALESCE(final_sell_mmk, price, 0) * LEAST(100, GREATEST(0, preorder_deposit)) / 100)
-          ELSE LEAST(COALESCE(final_sell_mmk, price, 0), GREATEST(0, preorder_deposit))
-        END
-      INTO v_server_price, v_eta, v_deposit
+        preorder_deposit, preorder_deposit_type
+      INTO v_original_price, v_eta, v_deposit_setting, v_deposit_type
       FROM public.product_variants WHERE id = v_variant_id;
     ELSE
       SELECT COALESCE(final_sell_mmk, price, 0), waiting_time,
-        CASE WHEN preorder_deposit_type = 'PERCENTAGE'
-          THEN LEAST(COALESCE(final_sell_mmk, price, 0),
-            COALESCE(final_sell_mmk, price, 0) * LEAST(100, GREATEST(0, preorder_deposit)) / 100)
-          ELSE LEAST(COALESCE(final_sell_mmk, price, 0), GREATEST(0, preorder_deposit))
-        END
-      INTO v_server_price, v_eta, v_deposit
+        preorder_deposit, preorder_deposit_type
+      INTO v_original_price, v_eta, v_deposit_setting, v_deposit_type
       FROM public.products WHERE id = v_product_id;
     END IF;
 
+    v_sale_discount := 0;
+    v_sale_campaign_id := NULL;
+    SELECT campaign_id, sale_price, discount_amount
+    INTO v_sale_campaign_id, v_server_price, v_sale_discount
+    FROM public.get_active_sale_for_item(v_product_id, v_variant_id, v_original_price);
+    IF v_sale_campaign_id IS NULL THEN
+      v_server_price := v_original_price;
+      v_sale_discount := 0;
+    END IF;
+    v_deposit := CASE
+      WHEN upper(COALESCE(v_deposit_type, 'FIXED')) = 'PERCENTAGE'
+        THEN LEAST(v_server_price, v_server_price * LEAST(100, GREATEST(0, COALESCE(v_deposit_setting, 0))) / 100)
+      ELSE LEAST(v_server_price, GREATEST(0, COALESCE(v_deposit_setting, 0)))
+    END;
+
     INSERT INTO public.order_items (
       order_id, product_id, variant_id, product_name, unit_price, quantity, line_total,
-      fulfillment_type, estimated_arrival, deposit_required
+      fulfillment_type, estimated_arrival, deposit_required,
+      original_unit_price, discount_amount, sale_campaign_id
     ) VALUES (
       v_order_id, v_product_id, v_variant_id,
       btrim(COALESCE(item ->> 'product_name', 'Product')),
       v_server_price, v_quantity, v_server_price * v_quantity,
       v_fulfillment,
       CASE WHEN v_fulfillment = 'PREORDER' THEN v_eta ELSE NULL END,
-      CASE WHEN v_fulfillment = 'PREORDER' THEN v_deposit ELSE 0 END
+      CASE WHEN v_fulfillment = 'PREORDER' THEN v_deposit ELSE 0 END,
+      v_original_price, COALESCE(v_sale_discount, 0), v_sale_campaign_id
     );
   END LOOP;
 
