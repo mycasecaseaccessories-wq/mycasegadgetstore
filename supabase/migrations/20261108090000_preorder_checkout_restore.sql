@@ -467,8 +467,8 @@ GRANT EXECUTE ON FUNCTION public.create_guest_order_with_items(text, text, text,
 -- amount due, while preserving the guest capability check for guest checkout.
 CREATE OR REPLACE FUNCTION public.finalize_order_payment_details(
   p_order_id uuid,
-  p_payment_method_id uuid DEFAULT NULL,
-  p_guest_capability text DEFAULT NULL
+  p_payment_method_id uuid,
+  p_guest_capability text
 )
 RETURNS void
 LANGUAGE plpgsql
