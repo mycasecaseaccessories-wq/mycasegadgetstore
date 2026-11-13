@@ -57,6 +57,7 @@ type Product = {
   preorder_deposit: number | null;
   preorder_deposit_type: "FIXED" | "PERCENTAGE" | null;
   waiting_time: string | null;
+  has_variants?: boolean;
   created_at: string;
 };
 
@@ -106,7 +107,7 @@ function Storefront() {
     enabled: typeof window !== "undefined",
     queryFn: async () => {
       const { data, error } = await (supabase.from("product_variants" as any) as any)
-        .select("product_id, stock_in, sold_qty, reserved_qty, status")
+        .select("product_id, stock_in, sold_qty, reserved_qty, status, selling_mode, preorder_enabled, waiting_time, preorder_deposit, preorder_deposit_type")
         .eq("status", "ACTIVE");
       if (error) throw error;
       return (data ?? []) as Array<{
@@ -115,11 +116,16 @@ function Storefront() {
         sold_qty: number | null;
         reserved_qty: number | null;
         status: string;
+        selling_mode: "IN_STOCK" | "PREORDER" | "BOTH" | null;
+        preorder_enabled: boolean | null;
+        waiting_time: string | null;
+        preorder_deposit: number | null;
+        preorder_deposit_type: "FIXED" | "PERCENTAGE" | null;
       }>;
     },
   });
 
-  const inStockProducts = useMemo(() => {
+  const sellableProducts = useMemo(() => {
     if (variantsLoading) return [];
     const variantsByProduct = new Map<string, typeof activeVariants>();
     for (const variant of activeVariants) {
@@ -127,47 +133,56 @@ function Storefront() {
       current.push(variant);
       variantsByProduct.set(variant.product_id, current);
     }
-    return products.filter((product) => {
+    return products.map((product) => {
       const productVariants = variantsByProduct.get(product.id) ?? [];
-      if (productVariants.length > 0) {
-        return productVariants.some(
-          (variant) =>
-            Number(variant.stock_in ?? 0) -
-              Number(variant.sold_qty ?? 0) -
-              Number(variant.reserved_qty ?? 0) >
-            0,
-        );
-      }
-      return (
-        Number(product.stock_in ?? 0) -
-          Number(product.sold_qty ?? 0) -
-          Number(product.reserved_qty ?? 0) >
-        0
+      if (productVariants.length === 0) return product;
+      const availableStock = productVariants.reduce((sum, variant) => sum + Math.max(
+        0,
+        Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0),
+      ), 0);
+      const preorderVariants = productVariants.filter((variant) =>
+        Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode ?? "IN_STOCK"),
       );
+      return {
+        ...product,
+        stock_in: availableStock,
+        sold_qty: 0,
+        reserved_qty: 0,
+        has_variants: true,
+        preorder_enabled: preorderVariants.length > 0,
+        selling_mode: preorderVariants.length > 0
+          ? availableStock > 0 ? "BOTH" as const : "PREORDER" as const
+          : "IN_STOCK" as const,
+        waiting_time: preorderVariants.find((variant) => variant.waiting_time)?.waiting_time ?? product.waiting_time,
+      };
+    }).filter((product) => {
+      const stock = stockValue(product);
+      const canPreorder = Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode ?? "IN_STOCK");
+      return stock > 0 || canPreorder;
     });
   }, [activeVariants, products, variantsLoading]);
 
-  const categories = useMemo(() => uniqueValues(inStockProducts, "category"), [inStockProducts]);
-  const brands = useMemo(() => uniqueValues(inStockProducts, "brand"), [inStockProducts]);
+  const categories = useMemo(() => uniqueValues(sellableProducts, "category"), [sellableProducts]);
+  const brands = useMemo(() => uniqueValues(sellableProducts, "brand"), [sellableProducts]);
   const categoryCards = useMemo(
     () =>
       categories.slice(0, 8).map((name) => ({
         name,
-        product: inStockProducts.find((product) => product.category === name),
+        product: sellableProducts.find((product) => product.category === name),
       })),
-    [categories, inStockProducts],
+    [categories, sellableProducts],
   );
-  const newArrivals = useMemo(() => inStockProducts.slice(0, 8), [inStockProducts]);
+  const newArrivals = useMemo(() => sellableProducts.slice(0, 8), [sellableProducts]);
   const bestSellers = useMemo(
     () =>
-      [...inStockProducts]
+      [...sellableProducts]
         .sort((a, b) => stockValue(b) - stockValue(a) + (b.sold_qty ?? 0) - (a.sold_qty ?? 0))
         .slice(0, 8),
-    [inStockProducts],
+    [sellableProducts],
   );
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const result = inStockProducts.filter((product) => {
+    const result = sellableProducts.filter((product) => {
       const matchesQuery =
         !query ||
         [product.name, product.brand, product.category]
@@ -186,7 +201,7 @@ function Storefront() {
     if (sort === "newest")
       return [...result].sort((a, b) => b.created_at.localeCompare(a.created_at));
     return result;
-  }, [inStockProducts, search, activeCategory, activeBrand, sort]);
+  }, [sellableProducts, search, activeCategory, activeBrand, sort]);
   const hasFilters =
     Boolean(search) || activeCategory !== "all" || activeBrand !== "all" || sort !== "featured";
 
@@ -610,36 +625,39 @@ function ProductCard({ product }: { product: Product }) {
         ) : product.selling_mode === "BOTH" ? (
           <Badge className="absolute left-3 top-3 bg-[#247a62] text-white">In stock + Pre-order</Badge>
         ) : null}
-        <Button
-          size="sm"
-          disabled={stock <= 0 && !canPreorder}
-          onClick={() => {
-            addToCart({
-              id: product.id,
-              product_id: product.id,
-              name: product.name,
-              price,
-              qty: 1,
-              image_url: product.image_url,
-              fulfillment_type: isPreorder ? "PREORDER" : "IN_STOCK",
-              estimated_arrival: product.waiting_time,
-              deposit_required: depositFor(product, price),
-            });
-            toast.success(isPreorder ? "Pre-order added to cart" : "Added to cart");
-          }}
-          className="absolute bottom-3 left-3 right-3 hidden rounded-full bg-white text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
-        >
-          {stock > 0 ? (
-            <>
-              <ShoppingBag className="mr-2 h-3.5 w-3.5" />
-              Add to cart
-            </>
-          ) : canPreorder ? (
-            "Pre-order"
-          ) : (
-            "Out of stock"
-          )}
-        </Button>
+        {product.has_variants ? (
+          <Link
+            to="/shop/p/$id"
+            params={{ id: product.id }}
+            className="absolute bottom-3 left-3 right-3 hidden items-center justify-center rounded-full bg-white px-3 py-2 text-sm font-medium text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
+          >
+            Choose options
+          </Link>
+        ) : (
+          <Button
+            size="sm"
+            disabled={stock <= 0 && !canPreorder}
+            onClick={() => {
+              addToCart({
+                id: product.id,
+                product_id: product.id,
+                name: product.name,
+                price,
+                qty: 1,
+                image_url: product.image_url,
+                fulfillment_type: isPreorder ? "PREORDER" : "IN_STOCK",
+                estimated_arrival: product.waiting_time,
+                deposit_required: depositFor(product, price),
+              });
+              toast.success(isPreorder ? "Pre-order added to cart" : "Added to cart");
+            }}
+            className="absolute bottom-3 left-3 right-3 hidden rounded-full bg-white text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
+          >
+            {stock > 0 ? (
+              <><ShoppingBag className="mr-2 h-3.5 w-3.5" />Add to cart</>
+            ) : canPreorder ? "Pre-order" : "Out of stock"}
+          </Button>
+        )}
       </div>
       <Link to="/shop/p/$id" params={{ id: product.id }} className="block pt-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7a72]">
