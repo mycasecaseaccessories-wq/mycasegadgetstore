@@ -165,7 +165,7 @@ function CartPage() {
       // Award points after successful order creation. Redemption is committed atomically by the RPC.
       if (phone) {
         try {
-          await awardFn({ data: { orderId, phone } });
+          await awardFn({ data: { orderId } });
         } catch {
           /* non-fatal */
         }
