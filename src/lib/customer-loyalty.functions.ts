@@ -31,7 +31,7 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
   .inputValidator((input: { phone?: string | null }) =>
     z.object({ phone: z.string().trim().min(1).max(64).nullable().optional() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
     const cfg = await loadLoyaltyConfig();
     // Never accept a client-selected loyalty key. Resolve it from this
     // authenticated user's own order history instead.
