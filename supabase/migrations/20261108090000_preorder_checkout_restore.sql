@@ -2,6 +2,13 @@
 -- In-stock items reserve inventory immediately. Pre-order items reserve no stock
 -- until fulfill_preorder_order is run after stock arrives.
 
+-- Product-level preorder deposit settings are referenced by the storefront and
+-- checkout RPCs. Older live schemas may have the enable/mode fields but not the
+-- deposit columns, so add them idempotently before defining the RPCs.
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS preorder_deposit numeric NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS preorder_deposit_type text NOT NULL DEFAULT 'FIXED';
+
 CREATE OR REPLACE FUNCTION public.create_order_with_items(
   p_customer_name text,
   p_customer_phone text,
