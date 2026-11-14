@@ -31,9 +31,12 @@ export const getCart = () => read();
 
 export function addToCart(item: CartItem) {
   const items = read();
-  const existing = items.find((i) => i.id === item.id);
+  // Keep in-stock and pre-order quantities as separate cart lines so a later
+  // stock change cannot silently convert an existing line into a preorder.
+  const cartId = item.id + ":" + (item.fulfillment_type ?? "IN_STOCK");
+  const existing = items.find((i) => i.id === cartId);
   if (existing) existing.qty += item.qty;
-  else items.push(item);
+  else items.push({ ...item, id: cartId });
   write(items);
 }
 

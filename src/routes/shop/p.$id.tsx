@@ -70,18 +70,16 @@ function ProductPage() {
     product.image_url,
     ...(Array.isArray(product.gallery_images) ? product.gallery_images : []),
   ].filter(Boolean))) as string[];
-  const availableVariants = variants.filter(
-    (variant: any) =>
-      Number(variant.stock_in ?? 0) -
-        Number(variant.sold_qty ?? 0) -
-        Number(variant.reserved_qty ?? 0) >
-      0,
-  );
+  const sellableVariants = variants.filter((variant: any) => {
+    const available = Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0);
+    const preorderEnabled = Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode);
+    return available > 0 || preorderEnabled;
+  });
   const colorGroups: Array<[string, any]> = Array.from(
-    new Map<string, any>(availableVariants.map((variant: any) => [variant.color || "Default", variant])).entries(),
+    new Map<string, any>(sellableVariants.map((variant: any) => [variant.color || "Default", variant])).entries(),
   );
   const activeColor = selectedColor ?? colorGroups[0]?.[0] ?? null;
-  const modelsForColor: any[] = availableVariants.filter((variant: any) => (variant.color || "Default") === activeColor);
+  const modelsForColor: any[] = sellableVariants.filter((variant: any) => (variant.color || "Default") === activeColor);
   const activeVariant: any = modelsForColor.find((variant: any) => variant.size === selectedModel) ?? modelsForColor[0] ?? null;
   const variantGalleryImages = Array.from(new Set([
     activeVariant?.image_url,
@@ -112,14 +110,15 @@ function ProductPage() {
   const activeCanPreorder = activeVariant
     ? Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH")
     : canPreorder;
-  const activeFulfillmentType = activeStock <= 0 && activeCanPreorder ? "PREORDER" : "IN_STOCK";
+  const activeSellingMode = activeVariant?.selling_mode ?? product.selling_mode;
+  const activeFulfillmentType = activeCanPreorder && (activeStock <= 0 || activeSellingMode === "PREORDER") ? "PREORDER" : "IN_STOCK";
   const variantPrices = variants
     .map((variant: any) => Number(variant.final_sell_mmk ?? variant.price ?? 0))
     .filter((value: number) => Number.isFinite(value) && value >= 0);
   const variantMinPrice = variantPrices.length ? Math.min(...variantPrices) : price;
   const variantMaxPrice = variantPrices.length ? Math.max(...variantPrices) : price;
-  const hasSellableStock = variants.length > 0 ? availableVariants.length > 0 : stock > 0;
-  const hasPreorderProduct = false;
+  const hasSellableStock = variants.length > 0 ? sellableVariants.length > 0 : stock > 0 || canPreorder;
+  const hasPreorderProduct = activeFulfillmentType === "PREORDER";
 
   if (!hasSellableStock) {
     return (
@@ -129,7 +128,7 @@ function ProductPage() {
             <AlertTriangle className="mx-auto h-10 w-10 text-muted-foreground" />
             <div>
               <h1 className="text-xl font-bold">ပစ္စည်းကုန်နေပါပြီ</h1>
-              <p className="mt-2 text-sm text-muted-foreground">ဒီပစ္စည်းကို လောလောဆယ် ဝယ်ယူလို့မရသေးပါ။ Instock ပစ္စည်းများကိုသာ ရောင်းချပေးနေပါတယ်။</p>
+              <p className="mt-2 text-sm text-muted-foreground">ဒီပစ္စည်းကို လောလောဆယ် ဝယ်ယူလို့မရသေးပါ။</p>
             </div>
             <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
           </CardContent>
@@ -145,8 +144,17 @@ function ProductPage() {
     const variantStock = variant
       ? Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0)
       : stock;
-    if (variantStock < qty) {
+    const canPreorder = variant
+      ? Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode)
+      : Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode);
+    const selectedSellingMode = variant?.selling_mode ?? product.selling_mode;
+    const selectedFulfillment = canPreorder && (variantStock <= 0 || selectedSellingMode === "PREORDER") ? "PREORDER" : "IN_STOCK";
+    if (selectedFulfillment === "IN_STOCK" && variantStock < qty) {
       toast.error("လက်ကျန် stock မလုံလောက်တော့ပါ");
+      return;
+    }
+    if (qty < 1 || qty > 1000) {
+      toast.error("Quantity သည် 1 မှ 1000 အတွင်း ဖြစ်ရပါမယ်");
       return;
     }
     const selectedPrice = variantPrice ?? price;
@@ -155,7 +163,6 @@ function ProductPage() {
         ? Math.min(selectedPrice, (selectedPrice * Math.min(100, Math.max(0, Number(variant.preorder_deposit ?? 0)))) / 100)
         : Math.min(selectedPrice, Math.max(0, Number(variant.preorder_deposit ?? 0)))
       : preorderDeposit;
-    const selectedFulfillment = "IN_STOCK";
     addToCart({
       id: variantId ?? product.id,
       product_id: product.id,
@@ -166,7 +173,7 @@ function ProductPage() {
       image_url: variant?.image_url ?? product.image_url ?? null,
       fulfillment_type: selectedFulfillment,
       estimated_arrival: variant?.waiting_time ?? product.waiting_time,
-      deposit_required: 0,
+      deposit_required: selectedFulfillment === "PREORDER" ? variantDeposit : 0,
     });
     toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };
@@ -295,8 +302,8 @@ function ProductPage() {
                     variant="ghost"
                     size="icon"
                     aria-label="Increase quantity"
-                    onClick={() => setQuantity((value) => Math.min(Math.max(1, stock), value + 1))}
-                    disabled={quantity >= stock}
+                    onClick={() => setQuantity((value) => Math.min(canPreorder && (stock <= 0 || product.selling_mode === "PREORDER") ? 1000 : Math.max(1, stock), value + 1))}
+                    disabled={quantity >= (canPreorder && (stock <= 0 || product.selling_mode === "PREORDER") ? 1000 : stock)}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -388,7 +395,7 @@ function ProductPage() {
                         <div className="flex h-10 items-center rounded-lg border bg-background">
                           <Button variant="ghost" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity((value) => Math.max(1, value - 1))}><Minus className="h-4 w-4" /></Button>
                           <span className="w-8 text-center text-sm font-semibold" aria-live="polite">{quantity}</span>
-                          <Button variant="ghost" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(Math.max(1, vStock), value + 1))} disabled={quantity >= vStock}><Plus className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? 1000 : Math.max(1, vStock), value + 1))} disabled={quantity >= (vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? 1000 : vStock)}><Plus className="h-4 w-4" /></Button>
                         </div>
                         <Button size="lg" disabled={vStock <= 0 && !vCanPreorder} onClick={() => buy(activeVariant)}>
                           <ShoppingBag className="mr-2 h-4 w-4" />{vFulfillment === "PREORDER" ? "Pre-order" : "Add to cart"}

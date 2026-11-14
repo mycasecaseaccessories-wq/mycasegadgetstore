@@ -99,6 +99,15 @@ function OrdersPage() {
     if (!editing) return;
     const original = orders.find((o) => o.id === editing.id);
     const { id, order_no, created_at, updated_at, items: _items, ...payload } = editing;
+    const depositRequired = Math.max(0, Number(editing.deposit_total ?? 0));
+    const depositPaid = editing.payment_status === "paid"
+      ? depositRequired
+      : Math.min(depositRequired, Math.max(0, Number(editing.deposit_paid ?? 0)));
+    (payload as any).deposit_paid = depositPaid;
+    (payload as any).deposit_status = depositRequired === 0 || depositPaid >= depositRequired
+      ? "paid"
+      : depositPaid > 0 ? "partial" : "unpaid";
+    (payload as any).balance_amount = editing.payment_status === "paid" ? 0 : Math.max(0, Number(editing.total ?? 0) - depositPaid);
 
     // Award points when transitioning to paid/completed (and not already awarded)
     const becomesPaid =
@@ -271,7 +280,7 @@ function OrdersPage() {
                   <td className="text-xs">
                     {Number(o.deposit_total ?? 0) > 0 ? (
                       <span className={o.deposit_status === "paid" ? "text-emerald-600" : "text-amber-600"}>
-                        {o.deposit_status ?? "unpaid"} · {formatKS(o.deposit_total)}
+                        {o.deposit_status ?? "unpaid"} · {formatKS(o.deposit_paid ?? 0)} / {formatKS(o.deposit_total)}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -418,6 +427,24 @@ function OrdersPage() {
                   }
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label>Pre-order deposit required</Label>
+                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">{formatKS(editing.deposit_total ?? 0)}</div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Deposit received (KS)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={Number(editing.deposit_total ?? 0)}
+                  value={editing.deposit_paid ?? 0}
+                  onChange={(e) => setEditing({ ...editing, deposit_paid: Math.min(Number(editing.deposit_total ?? 0), Math.max(0, Number(e.target.value) || 0)) })}
+                />
+              </div>
+              <div className="sm:col-span-2 rounded-md border bg-amber-500/5 p-3 text-sm">
+                Remaining balance: <span className="font-semibold">{formatKS(editing.payment_status === "paid" ? 0 : Math.max(0, Number(editing.total ?? 0) - Number(editing.deposit_paid ?? 0)))}</span>
+                <p className="mt-1 text-xs text-muted-foreground">Deposit status: {Number(editing.deposit_total ?? 0) <= 0 || Number(editing.deposit_paid ?? 0) >= Number(editing.deposit_total ?? 0) ? "Paid" : Number(editing.deposit_paid ?? 0) > 0 ? "Partial" : "Unpaid"}</p>
+              </div>
               <div className="sm:col-span-2 space-y-1.5">
                 <Label>Delivery Note</Label>
                 <Textarea
@@ -494,7 +521,7 @@ function OrdersPage() {
                             )}
                             {it.fulfillment_type === "PREORDER" && Number(it.deposit_required ?? 0) > 0 && (
                               <span className="text-[11px] text-muted-foreground">
-                                Deposit: {formatKS(it.deposit_required)}
+                                Deposit: {formatKS(Number(it.deposit_required ?? 0) * Number(it.quantity ?? 1))}
                               </span>
                             )}
                           </div>
@@ -528,6 +555,18 @@ function OrdersPage() {
                   <span>Total</span>
                   <span>{formatKS(viewing.total)}</span>
                 </div>
+                {Number(viewing.deposit_total ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between text-amber-700">
+                      <span>Deposit required / received</span>
+                      <span>{formatKS(viewing.deposit_total)} / {formatKS(viewing.deposit_paid ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Remaining balance</span>
+                      <span>{formatKS(viewing.payment_status === "paid" ? 0 : Math.max(0, Number(viewing.total ?? 0) - Number(viewing.deposit_paid ?? 0)))}</span>
+                    </div>
+                  </>
+                )}
                 {Number(viewing.points_earned ?? 0) > 0 && (
                   <div className="flex justify-between text-emerald-600 text-xs pt-1">
                     <span>Points earned</span>

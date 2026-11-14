@@ -33,6 +33,11 @@ type Variant = {
   sold_qty: number;
   status: string;
   image_url: string | null;
+  selling_mode: "IN_STOCK" | "PREORDER" | "BOTH";
+  preorder_enabled: boolean;
+  preorder_deposit: number;
+  preorder_deposit_type: "FIXED" | "PERCENTAGE";
+  waiting_time: string | null;
 };
 
 const empty = {
@@ -43,6 +48,11 @@ const empty = {
   stock_in: 0,
   status: "ACTIVE",
   image_url: null,
+  selling_mode: "IN_STOCK",
+  preorder_enabled: false,
+  preorder_deposit: 0,
+  preorder_deposit_type: "FIXED",
+  waiting_time: "",
 } as Partial<Variant>;
 
 export function VariantsDialog({
@@ -94,6 +104,8 @@ export function VariantsDialog({
       color: form.color === CUSTOM_OPTION ? null : form.color,
       price: Number(form.price ?? 0),
       stock_in: Number(form.stock_in ?? 0),
+      preorder_enabled: form.selling_mode !== "IN_STOCK",
+      preorder_deposit: Math.max(0, Number(form.preorder_deposit ?? 0)),
     };
     const { error } = form.id
       ? await supabase.from("product_variants").update(payload).eq("id", form.id)
@@ -230,6 +242,39 @@ export function VariantsDialog({
               onChange={(e) => setForm({ ...form, stock_in: e.target.value === "" ? undefined : Number(e.target.value) })}
             />
           </div>
+          <div className="col-span-2 space-y-1">
+            <Label className="text-xs">Selling method</Label>
+            <Select value={form.selling_mode ?? "IN_STOCK"} onValueChange={(value: Variant["selling_mode"]) => setForm({ ...form, selling_mode: value, preorder_enabled: value !== "IN_STOCK" })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="IN_STOCK">In stock only</SelectItem>
+                <SelectItem value="PREORDER">Pre-order only</SelectItem>
+                <SelectItem value="BOTH">In stock + Pre-order after stockout</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {form.selling_mode !== "IN_STOCK" && (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs">Arrival estimate</Label>
+                <Input value={form.waiting_time ?? ""} onChange={(e) => setForm({ ...form, waiting_time: e.target.value })} placeholder="e.g. 7–14 days" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Deposit type</Label>
+                <Select value={form.preorder_deposit_type ?? "FIXED"} onValueChange={(value: Variant["preorder_deposit_type"]) => setForm({ ...form, preorder_deposit_type: value })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIXED">Fixed (KS)</SelectItem>
+                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Deposit {form.preorder_deposit_type === "PERCENTAGE" ? "(%)" : "(KS)"}</Label>
+                <Input type="number" min={0} max={form.preorder_deposit_type === "PERCENTAGE" ? 100 : undefined} value={form.preorder_deposit ?? 0} onChange={(e) => setForm({ ...form, preorder_deposit: Math.max(0, Number(e.target.value) || 0) })} />
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           {form.id && (
