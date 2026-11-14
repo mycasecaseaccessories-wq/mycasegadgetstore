@@ -169,9 +169,22 @@ BEGIN
   END LOOP;
 
   IF v_redeem_points > 0 THEN
-    SELECT COALESCE(loyalty_min_redeem, 0), COALESCE(loyalty_redeem_value, 0)
-    INTO v_min_redeem, v_redeem_rate
-    FROM public.settings ORDER BY updated_at DESC LIMIT 1;
+    -- Loyalty conversion settings are not part of every deployed settings schema.
+    -- Fail closed with a clear message rather than referencing missing columns.
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'settings'
+        AND column_name = 'loyalty_min_redeem'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'settings'
+        AND column_name = 'loyalty_redeem_value'
+    ) THEN
+      RAISE EXCEPTION 'Loyalty redemption is temporarily unavailable because server-side conversion settings are not configured';
+    END IF;
+    EXECUTE 'SELECT COALESCE(loyalty_min_redeem, 0), COALESCE(loyalty_redeem_value, 0)
+      FROM public.settings ORDER BY updated_at DESC LIMIT 1'
+      INTO v_min_redeem, v_redeem_rate;
     IF v_redeem_points < v_min_redeem OR v_redeem_rate <= 0 THEN
       RAISE EXCEPTION 'Invalid loyalty redemption';
     END IF;
