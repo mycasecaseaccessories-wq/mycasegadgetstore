@@ -461,7 +461,7 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.create_guest_order_with_items(text, text, text, numeric, numeric, jsonb, integer) FROM PUBLIC, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_guest_order_with_items(text, text, text, numeric, numeric, jsonb, integer) TO anon;
+GRANT EXECUTE ON FUNCTION public.create_guest_order_with_items(text, text, text, numeric, numeric, jsonb, integer) TO anon, service_role;
 
 -- The deposit setting is per unit. Multiply by quantity when summarizing the
 -- amount due, while preserving the guest capability check for guest checkout.
@@ -527,4 +527,4 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.finalize_order_payment_details(uuid, uuid, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.finalize_order_payment_details(uuid, uuid, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.finalize_order_payment_details(uuid, uuid, text) TO anon, authenticated, service_role;
