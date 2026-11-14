@@ -1123,6 +1123,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_order_loyalty_points: {
+        Args: { p_order_id: string; p_user_id: string }
+        Returns: number
+      }
       create_guest_order_with_items: {
         Args: {
           p_customer_name: string
