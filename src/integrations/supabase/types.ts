@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -962,6 +962,10 @@ export type Database = {
           id: string
           language: string
           logo_url: string | null
+          loyalty_earn_per_amount: number
+          loyalty_enabled: boolean
+          loyalty_min_redeem: number
+          loyalty_redeem_value: number
           minimum_price_buffer: number | null
           service_fee: number | null
           tax_percent: number | null
@@ -974,6 +978,10 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
+          loyalty_earn_per_amount?: number
+          loyalty_enabled?: boolean
+          loyalty_min_redeem?: number
+          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -986,6 +994,10 @@ export type Database = {
           id?: string
           language?: string
           logo_url?: string | null
+          loyalty_earn_per_amount?: number
+          loyalty_enabled?: boolean
+          loyalty_min_redeem?: number
+          loyalty_redeem_value?: number
           minimum_price_buffer?: number | null
           service_fee?: number | null
           tax_percent?: number | null
@@ -1139,19 +1151,14 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: number
       }
-      finalize_order_payment_details:
-        | {
-            Args: { p_order_id: string; p_payment_method_id?: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_guest_capability?: string
-              p_order_id: string
-              p_payment_method_id?: string
-            }
-            Returns: undefined
-          }
+      finalize_order_payment_details: {
+        Args: {
+          p_guest_capability: string
+          p_order_id: string
+          p_payment_method_id: string
+        }
+        Returns: undefined
+      }
       fulfill_preorder_order: { Args: { p_order_id: string }; Returns: number }
       get_active_sale_for_item: {
         Args: {
@@ -1165,6 +1172,14 @@ export type Database = {
           discount_amount: number
           original_price: number
           sale_price: number
+        }[]
+      }
+      get_public_store_settings: {
+        Args: never
+        Returns: {
+          business_name: string
+          currency: string
+          logo_url: string
         }[]
       }
     }
