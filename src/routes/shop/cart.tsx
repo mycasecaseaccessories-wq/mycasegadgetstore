@@ -38,7 +38,6 @@ function CartPage() {
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [points, setPoints] = useState(0);
-  const [redeemPts, setRedeemPts] = useState(0);
 
   const fetchLoyalty = useServerFn(getMyLoyalty);
   const awardFn = useServerFn(awardMyPoints);
@@ -71,10 +70,6 @@ function CartPage() {
   }, [user, phone, fetchLoyalty]);
 
   const subtotal = cartTotal(items);
-  const discount = redeemPts >= loyaltyCfg.minRedeem ? redeemPts * loyaltyCfg.redeemValue : 0;
-  const total = Math.max(0, subtotal - discount);
-  const canRedeem = !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
-  const maxRedeem = Math.min(points, Math.floor(subtotal / Math.max(loyaltyCfg.redeemValue, 1)));
   const hasPreorder = items.some((item) => item.fulfillment_type === "PREORDER");
   const depositTotal = items.reduce(
     (sum, item) => sum + Number(item.deposit_required ?? 0) * item.qty,
@@ -140,7 +135,7 @@ function CartPage() {
           p_delivery_note: address,
           p_discount: 0,
           p_extra_fee: 0,
-          p_redeem_points: redeemPts,
+          p_redeem_points: 0,
           p_items: orderItems,
         });
         if (error || !data) throw error ?? new Error("Failed to create order");
@@ -175,7 +170,7 @@ function CartPage() {
             .select("total")
             .eq("id", orderId)
             .maybeSingle();
-          await awardFn({ data: { orderId, phone, amount: Number(savedOrder?.total ?? total) } });
+          await awardFn({ data: { orderId, phone, amount: Number(savedOrder?.total ?? subtotal) } });
         } catch {
           /* non-fatal */
         }
@@ -339,48 +334,13 @@ function CartPage() {
                 </div>
               )}
 
-              {user && canRedeem && (
-                <div className="space-y-2 rounded-lg border bg-primary/5 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span className="font-medium">Redeem points</span>
-                      <Badge variant="outline">{points} available</Badge>
-                    </div>
-                    {redeemPts > 0 && (
-                      <Button size="sm" variant="ghost" onClick={() => setRedeemPts(0)}>
-                        Clear
-                      </Button>
-                    )}
+              {user && loyaltyCfg.enabled && (
+                <div className="flex items-start gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Loyalty points: {points}</p>
+                    <p>Points redemption is temporarily unavailable until secure server-side conversion settings are configured. You can still place your order and earn points.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={maxRedeem}
-                      value={redeemPts || ""}
-                      onChange={(e) => {
-                        const v = Math.max(0, Math.min(maxRedeem, Number(e.target.value) || 0));
-                        setRedeemPts(v);
-                      }}
-                      placeholder={`Min ${loyaltyCfg.minRedeem}`}
-                      className="h-9"
-                    />
-                    <Button size="sm" variant="outline" onClick={() => setRedeemPts(maxRedeem)}>
-                      Max
-                    </Button>
-                  </div>
-                  {redeemPts > 0 && redeemPts < loyaltyCfg.minRedeem && (
-                    <p className="text-xs text-destructive">
-                      Minimum {loyaltyCfg.minRedeem} points
-                    </p>
-                  )}
-                  {redeemPts >= loyaltyCfg.minRedeem && (
-                    <p className="text-xs text-muted-foreground">
-                      Discount:{" "}
-                      <span className="font-semibold text-primary">{formatKS(discount)}</span>
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -389,15 +349,9 @@ function CartPage() {
                   <span>Subtotal</span>
                   <span>{formatKS(subtotal)}</span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-orange-600">
-                    <span>Points discount</span>
-                    <span>−{formatKS(discount)}</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between border-t pt-2 text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">{formatKS(total)}</span>
+                  <span className="text-primary">{formatKS(subtotal)}</span>
                 </div>
                 {hasPreorder && depositTotal > 0 && (
                   <div className="flex justify-between text-amber-700">
