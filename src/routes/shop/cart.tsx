@@ -165,12 +165,7 @@ function CartPage() {
       // Award points after successful order creation. Redemption is committed atomically by the RPC.
       if (phone) {
         try {
-          const { data: savedOrder } = await supabase
-            .from("orders")
-            .select("total")
-            .eq("id", orderId)
-            .maybeSingle();
-          await awardFn({ data: { orderId, phone, amount: Number(savedOrder?.total ?? subtotal) } });
+          await awardFn({ data: { orderId, phone } });
         } catch {
           /* non-fatal */
         }
