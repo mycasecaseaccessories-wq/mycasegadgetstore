@@ -33,7 +33,17 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const cfg = await loadLoyaltyConfig();
-    const phone = (data.phone ?? "").trim();
+    // Never accept a client-selected loyalty key. Resolve it from this
+    // authenticated user's own order history instead.
+    const { data: ownOrder } = await supabaseAdmin
+      .from("orders")
+      .select("customer_phone")
+      .eq("user_id", context.userId)
+      .not("customer_phone", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const phone = String(ownOrder?.customer_phone ?? "").trim();
     if (!phone) return { points: 0, history: [] as any[], config: cfg };
 
     const { data: bal } = await supabaseAdmin
@@ -57,56 +67,17 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
     };
   });
 
-/** Award points after an order is placed. Server reads earnPerAmount from settings. */
+/** Award points from the persisted order total using an atomic, idempotent DB RPC. */
 export const awardMyPoints = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { orderId: string; phone: string }) =>
-    z
-      .object({
-        orderId: z.string().uuid(),
-        phone: z.string().trim().min(1).max(64),
-      })
-      .parse(input),
+  .inputValidator((input: { orderId: string }) =>
+    z.object({ orderId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const cfg = await loadLoyaltyConfig();
-    if (!cfg.enabled || cfg.earnPerAmount <= 0) return { earned: 0 };
-
-    const { data: order } = await supabaseAdmin
-      .from("orders")
-      .select("id, user_id, total")
-      .eq("id", data.orderId)
-      .maybeSingle();
-    if (!order || (order as any).user_id !== context.userId) throw new Error("Order not found");
-
-    const pts = Math.floor(Number((order as any).total ?? 0) / cfg.earnPerAmount);
-    if (pts <= 0) return { earned: 0 };
-
-    const key = data.phone.trim();
-    const { data: bal } = await supabaseAdmin
-      .from("loyalty_balances")
-      .select("points")
-      .eq("customer_key", key)
-      .maybeSingle();
-    const next = Number((bal as any)?.points ?? 0) + pts;
-
-    await supabaseAdmin.from("loyalty_balances").upsert(
-      {
-        customer_key: key,
-        points: next,
-        customer_phone: key,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "customer_key" },
-    );
-    await supabaseAdmin.from("loyalty_transactions").insert({
-      customer_key: key,
-      order_id: data.orderId,
-      kind: "earn",
-      delta: pts,
-      value: 0,
-      note: "Earned from checkout",
+    const { data: earned, error } = await supabaseAdmin.rpc("award_order_loyalty_points", {
+      p_order_id: data.orderId,
+      p_user_id: context.userId,
     });
-    await supabaseAdmin.from("orders").update({ points_earned: pts }).eq("id", data.orderId);
-    return { earned: pts };
+    if (error) throw new Error(error.message);
+    return { earned: Number(earned ?? 0) };
   });
