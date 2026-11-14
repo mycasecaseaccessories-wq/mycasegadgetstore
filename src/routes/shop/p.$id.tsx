@@ -381,7 +381,7 @@ function ProductPage() {
                   const vPrice = Number(activeVariant.final_sell_mmk ?? activeVariant.price ?? 0);
                   const vStock = Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0);
                   const vCanPreorder = Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH");
-                  const vFulfillment = vStock <= 0 && vCanPreorder ? "PREORDER" : "IN_STOCK";
+                  const vFulfillment = vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? "PREORDER" : "IN_STOCK";
                   return (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 shadow-sm">
                       <div>
