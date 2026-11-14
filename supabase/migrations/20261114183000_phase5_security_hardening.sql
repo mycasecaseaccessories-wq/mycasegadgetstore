@@ -44,23 +44,23 @@ REVOKE ALL ON FUNCTION public.prevent_received_line_reversal()
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 
 GRANT SELECT (
-  id, name, size, price, waiting_time, stock_status, category, note,
-  created_at, updated_at, product_code, brand, status, stock_in, sold_qty,
-  thb_price, final_sell_mmk, image_url, low_stock_threshold,
+  id, name, size, price, waiting_time, stock_status, category,
+  created_at, product_code, brand, status, stock_in, sold_qty,
+  final_sell_mmk, image_url,
   selling_mode, availability, preorder_enabled, preorder_deposit,
-  preorder_deposit_type, reserved_qty, published,
+  preorder_deposit_type, reserved_qty,
   description, highlights, specifications, warranty_info, shipping_info,
   gallery_images, description_images
 ) ON public.products TO anon;
 
 GRANT SELECT (
-  id, product_id, variant_code, name, size, color, price, thb_price,
-  final_sell_mmk, stock_in, sold_qty, status, note, created_at, updated_at,
+  id, product_id, variant_code, name, size, color, price,
+  final_sell_mmk, stock_in, sold_qty, status,
   selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type,
   waiting_time, reserved_qty, image_url
 ) ON public.product_variants TO anon;
 
-GRANT SELECT (business_name, logo_url)
+GRANT SELECT (business_name, logo_url, currency)
   ON public.settings TO anon;
 
 GRANT SELECT (
@@ -68,7 +68,10 @@ GRANT SELECT (
   is_active, sort_order
 ) ON public.payment_methods TO anon;
 
-GRANT SELECT ON public.sale_campaigns TO anon;
+GRANT SELECT (
+  id, badge_text, discount_type, discount_value, scope,
+  starts_at, ends_at, priority, status, created_at
+) ON public.sale_campaigns TO anon;
 GRANT SELECT ON public.sale_campaign_products TO anon;
 
 -- Signed-in customers use the authenticated Postgres role even when browsing
