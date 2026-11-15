@@ -33,6 +33,7 @@ function ProductPage() {
         )
         .eq("id", id)
         .eq("status", "ACTIVE")
+        .eq("published", true)
         .maybeSingle();
       if (error) throw error;
       return data;
