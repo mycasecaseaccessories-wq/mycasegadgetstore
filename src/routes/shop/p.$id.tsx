@@ -18,7 +18,12 @@ export const Route = createFileRoute("/shop/p/$id")({ component: ProductPage });
 function ProductPage() {
   const { id } = Route.useParams();
 
-  const { data: product } = useQuery({
+  const {
+    data: product,
+    isLoading: productLoading,
+    isError: productError,
+    refetch: refetchProduct,
+  } = useQuery({
     queryKey: ["public-product", id],
     queryFn: async () =>
       (
@@ -32,7 +37,12 @@ function ProductPage() {
       ).data,
   });
 
-  const { data: variants = [] } = useQuery({
+  const {
+    data: variants = [],
+    isLoading: variantsLoading,
+    isError: variantsError,
+    refetch: refetchVariants,
+  } = useQuery({
     queryKey: ["public-variants", id],
     queryFn: async () =>
       (
@@ -64,7 +74,50 @@ function ProductPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
 
-  if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
+  if (productLoading || variantsLoading) {
+    return <div className="p-8 text-center text-muted-foreground">ပစ္စည်းအချက်အလက် ဖွင့်နေပါသည်…</div>;
+  }
+
+  if (productError || variantsError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="space-y-4 p-8">
+            <AlertTriangle className="mx-auto h-10 w-10 text-amber-600" />
+            <h1 className="text-xl font-bold">ပစ္စည်းအချက်အလက် ဖွင့်မရသေးပါ</h1>
+            <p className="text-sm text-muted-foreground">
+              အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပြီး ထပ်မံကြိုးစားပေးပါ။
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => void refetchProduct()}>
+                ပြန်ကြိုးစားရန်
+              </Button>
+              <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
+            </div>
+            {variantsError && (
+              <Button variant="ghost" size="sm" onClick={() => void refetchVariants()}>
+                Variant အချက်အလက် ပြန်စစ်ရန်
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="space-y-4 p-8">
+            <h1 className="text-xl font-bold">ပစ္စည်းကို ရှာမတွေ့ပါ</h1>
+            <p className="text-sm text-muted-foreground">ဤပစ္စည်းကို ဖျက်ထားခြင်း သို့မဟုတ် မရရှိနိုင်တော့ခြင်း ဖြစ်နိုင်ပါသည်။</p>
+            <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const galleryImages = Array.from(new Set([
     product.image_url,
