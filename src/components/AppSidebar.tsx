@@ -101,7 +101,7 @@ export function AppSidebar() {
           <StorageImage
             src={settings?.logo_url}
             alt=""
-            className="h-9 w-9 rounded-lg object-cover shadow-sm"
+            className="h-9 w-9 rounded-lg object-contain shadow-sm"
             fallback={
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
                 <Sparkles className="h-4 w-4" />
