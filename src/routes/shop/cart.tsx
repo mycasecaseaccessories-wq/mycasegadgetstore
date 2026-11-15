@@ -369,6 +369,9 @@ function CartPage() {
                   <span>Total</span>
                   <span className="text-primary">{formatKS(subtotal)}</span>
                 </div>
+                <p className="pt-1 text-xs leading-5 text-muted-foreground">
+                  Sale prices and discounts are recalculated securely when your order is placed.
+                </p>
                 {hasPreorder && depositTotal > 0 && (
                   <div className="flex justify-between text-amber-700">
                     <span>Pre-order deposit due</span>
