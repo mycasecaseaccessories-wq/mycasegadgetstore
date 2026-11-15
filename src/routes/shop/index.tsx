@@ -132,7 +132,7 @@ function Storefront() {
   });
 
   const sellableProducts = useMemo(() => {
-    if (variantsLoading) return [];
+    if (variantsPending) return [];
     const variantsByProduct = new Map<string, typeof activeVariants>();
     for (const variant of activeVariants) {
       const current = variantsByProduct.get(variant.product_id) ?? [];
@@ -166,7 +166,7 @@ function Storefront() {
       const canPreorder = Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode ?? "IN_STOCK");
       return stock > 0 || canPreorder;
     });
-  }, [activeVariants, products, variantsLoading]);
+  }, [activeVariants, products, variantsPending]);
 
   const categories = useMemo(() => uniqueValues(sellableProducts, "category"), [sellableProducts]);
   const brands = useMemo(() => uniqueValues(sellableProducts, "brand"), [sellableProducts]);
