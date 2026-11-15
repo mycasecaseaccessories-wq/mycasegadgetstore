@@ -11,13 +11,13 @@ BEGIN
   v_definition := pg_get_functiondef(v_signature);
   v_updated := replace(v_definition,
     '  v_server_price numeric;',
-    '  v_server_price numeric;\n  v_base_price numeric;');
+    E'  v_server_price numeric;\n  v_base_price numeric;');
   v_updated := replace(v_updated,
     '    SELECT campaign_id, original_price, sale_price, discount_amount',
-    '    v_base_price := v_server_price;\n    SELECT campaign_id, original_price, sale_price, discount_amount');
+    E'    v_base_price := v_server_price;\n    SELECT campaign_id, original_price, sale_price, discount_amount');
   v_updated := replace(v_updated,
-    '      v_server_price := v_original_price;\n      v_sale_discount := 0;',
-    '      v_original_price := v_base_price;\n      v_server_price := v_base_price;\n      v_sale_discount := 0;');
+    E'      v_server_price := v_original_price;\n      v_sale_discount := 0;',
+    E'      v_original_price := v_base_price;\n      v_server_price := v_base_price;\n      v_sale_discount := 0;');
   IF v_updated = v_definition OR position('v_base_price := v_server_price;' in v_updated) = 0 THEN
     RAISE EXCEPTION 'Could not safely patch create_guest_order_with_items';
   END IF;
@@ -27,13 +27,13 @@ BEGIN
   v_definition := pg_get_functiondef(v_signature);
   v_updated := replace(v_definition,
     '  v_server_price numeric;',
-    '  v_server_price numeric;\n  v_base_price numeric;');
+    E'  v_server_price numeric;\n  v_base_price numeric;');
   v_updated := replace(v_updated,
     '    SELECT campaign_id, original_price, sale_price, discount_amount',
-    '    v_base_price := v_server_price;\n    SELECT campaign_id, original_price, sale_price, discount_amount');
+    E'    v_base_price := v_server_price;\n    SELECT campaign_id, original_price, sale_price, discount_amount');
   v_updated := replace(v_updated,
-    '      v_server_price := v_original_price;\n      v_sale_discount := 0;',
-    '      v_original_price := v_base_price;\n      v_server_price := v_base_price;\n      v_sale_discount := 0;');
+    E'      v_server_price := v_original_price;\n      v_sale_discount := 0;',
+    E'      v_original_price := v_base_price;\n      v_server_price := v_base_price;\n      v_sale_discount := 0;');
   IF v_updated = v_definition OR position('v_base_price := v_server_price;' in v_updated) = 0 THEN
     RAISE EXCEPTION 'Could not safely patch create_order_with_items';
   END IF;
