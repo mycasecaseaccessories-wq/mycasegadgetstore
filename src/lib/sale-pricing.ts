@@ -49,7 +49,9 @@ export function getSalePrice(
   const discountAmount = campaign.discount_type === "PERCENTAGE"
     ? Math.min(basePrice, Math.round(basePrice * discountValue / 100))
     : Math.min(basePrice, Math.round(discountValue));
-  const salePrice = Math.max(0, Math.round(basePrice - discountAmount));
+  const salePrice = campaign.discount_type === "PERCENTAGE"
+    ? Math.max(0, Math.round(basePrice * (1 - discountValue / 100)))
+    : Math.max(0, Math.round(basePrice - discountValue));
 
   if (discountAmount <= 0 || salePrice >= basePrice) return null;
 
