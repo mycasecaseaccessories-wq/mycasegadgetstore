@@ -45,7 +45,7 @@ function TrackPage() {
   }, []);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["guest-order-track", submitted?.orderId],
+    queryKey: ["guest-order-track", submitted?.orderId, submitted?.capability],
     enabled: !!submitted,
     queryFn: () => trackFn({ data: submitted! }),
     retry: false,
@@ -90,7 +90,10 @@ function TrackPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 value={trackingCode}
-                onChange={(event) => setTrackingCode(event.target.value)}
+                onChange={(event) => {
+                  setTrackingCode(event.target.value);
+                  setSubmitted(null);
+                }}
                 placeholder="Order tracking code"
                 aria-label="Order tracking code"
                 autoComplete="off"
