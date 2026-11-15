@@ -4,6 +4,10 @@ export type CartItem = {
   variant_id?: string | null;
   name: string;
   price: number;
+  original_price?: number;
+  discount_amount?: number;
+  sale_campaign_id?: string | null;
+  sale_badge_text?: string | null;
   qty: number;
   image_url: string | null;
   fulfillment_type?: "IN_STOCK" | "PREORDER";
