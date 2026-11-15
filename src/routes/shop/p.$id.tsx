@@ -25,16 +25,17 @@ function ProductPage() {
     refetch: refetchProduct,
   } = useQuery({
     queryKey: ["public-product", id],
-    queryFn: async () =>
-      (
-        await (supabase.from("products" as any) as any)
-          .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, reserved_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
-          )
-          .eq("id", id)
-          .eq("status", "ACTIVE")
-          .maybeSingle()
-      ).data,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("products" as any) as any)
+        .select(
+          "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, reserved_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
+        )
+        .eq("id", id)
+        .eq("status", "ACTIVE")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
   });
 
   const {
@@ -44,15 +45,16 @@ function ProductPage() {
     refetch: refetchVariants,
   } = useQuery({
     queryKey: ["public-variants", id],
-    queryFn: async () =>
-      (
-        await (supabase.from("product_variants" as any) as any)
-          .select(
-            "id, product_id, variant_code, name, size, color, image_url, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
-          )
-          .eq("product_id", id)
-          .eq("status", "ACTIVE")
-      ).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("product_variants" as any) as any)
+        .select(
+          "id, product_id, variant_code, name, size, color, image_url, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
+        )
+        .eq("product_id", id)
+        .eq("status", "ACTIVE");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: related = [] } = useQuery({
