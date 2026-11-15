@@ -267,7 +267,15 @@ function CartPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{i.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatKS(i.price)}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span className={i.discount_amount ? "font-semibold text-red-600" : "text-muted-foreground"}>{formatKS(i.price)}</span>
+                    {Number(i.discount_amount ?? 0) > 0 && Number(i.original_price ?? 0) > i.price && (
+                      <>
+                        <span className="text-muted-foreground line-through">{formatKS(i.original_price)}</span>
+                        <Badge className="bg-red-600 text-white">{i.sale_badge_text ?? "SALE"}</Badge>
+                      </>
+                    )}
+                  </div>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <Badge
                       variant="outline"
