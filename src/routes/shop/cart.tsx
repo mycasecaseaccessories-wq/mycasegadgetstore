@@ -171,9 +171,22 @@ function CartPage() {
         }
       }
 
+      if (!user && guestCapability && orderId) {
+        try {
+          // The capability is a bearer secret; keep it only in this browser for
+          // secure guest tracking. The server verifies its SHA-256 digest.
+          localStorage.setItem(
+            "mycase-guest-order-tracking",
+            `${orderId}.${guestCapability}`,
+          );
+        } catch (storageError) {
+          console.warn("Guest order tracking could not be saved in this browser", storageError);
+        }
+      }
+
       clearCart();
       toast.success("Order placed successfully!");
-      nav({ to: user ? "/shop/account" : "/shop" });
+      nav({ to: user ? "/shop/account" : "/shop/track" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
