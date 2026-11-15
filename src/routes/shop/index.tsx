@@ -83,26 +83,32 @@ function Storefront() {
     },
   });
 
-  const { data: products = [], isLoading } = useQuery({
+  const {
+    data: products = [],
+    isLoading,
+    isError: productsError,
+    refetch: refetchProducts,
+  } = useQuery({
     queryKey: ["public-products"],
     enabled: typeof window !== "undefined",
     queryFn: async () => {
-      try {
-        const { data } = await (supabase.from("products" as any) as any)
-          .select(
-            "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
-          )
-          .eq("status", "ACTIVE")
-          .order("created_at", { ascending: false });
-        return (data ?? []) as Product[];
-      } catch (error) {
-        console.error("Unable to load storefront products", error);
-        return [];
-      }
+      const { data, error } = await (supabase.from("products" as any) as any)
+        .select(
+          "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
+        )
+        .eq("status", "ACTIVE")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Product[];
     },
   });
 
-  const { data: activeVariants = [], isLoading: variantsLoading } = useQuery({
+  const {
+    data: activeVariants = [],
+    isLoading: variantsLoading,
+    isError: variantsError,
+    refetch: refetchVariants,
+  } = useQuery({
     queryKey: ["public-variant-stock"],
     enabled: typeof window !== "undefined",
     queryFn: async () => {
@@ -261,7 +267,7 @@ function Storefront() {
               <StorageImage
                 src={settings.logo_url}
                 alt="MY CASE"
-                className="h-9 w-9 rounded-md object-cover"
+                className="h-9 w-auto max-w-[150px] object-contain"
               />
             ) : (
               <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#b8e7d0] text-sm font-black text-[#18211f]">
@@ -510,8 +516,25 @@ function Storefront() {
               </label>
             </div>
           </div>
-          {isLoading ? (
+          {isLoading || variantsLoading ? (
             <ProductSkeleton />
+          ) : productsError || variantsError ? (
+            <EmptyState
+              title="ပစ္စည်းစာရင်း ဖွင့်မရသေးပါ"
+              description="အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပြီး ထပ်မံကြိုးစားပေးပါ။"
+              action={
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => {
+                    void refetchProducts();
+                    void refetchVariants();
+                  }}
+                >
+                  ပြန်ကြိုးစားရန်
+                </Button>
+              }
+            />
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 pt-7 sm:grid-cols-3 lg:grid-cols-4">
               {filtered.map((product) => (
