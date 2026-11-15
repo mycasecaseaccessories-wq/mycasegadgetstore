@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { getSalePrice, type SaleCampaign, type SaleProductLink } from "@/lib/sale-pricing";
 import { addToCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
@@ -54,6 +55,33 @@ function ProductPage() {
         .eq("status", "ACTIVE");
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const { data: saleData = { campaigns: [] as SaleCampaign[], productLinks: [] as SaleProductLink[] } } = useQuery({
+    queryKey: ["active-sale-for-product", id],
+    enabled: typeof window !== "undefined",
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: campaigns, error: campaignError } = await (supabase.from("sale_campaigns" as any) as any)
+        .select("id, badge_text, discount_type, discount_value, scope, priority, created_at")
+        .eq("status", "ACTIVE")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (campaignError) throw campaignError;
+      const selectedIds = (campaigns ?? [])
+        .filter((campaign: SaleCampaign) => campaign.scope === "SELECTED_PRODUCTS")
+        .map((campaign: SaleCampaign) => campaign.id);
+      if (selectedIds.length === 0) return { campaigns: (campaigns ?? []) as SaleCampaign[], productLinks: [] as SaleProductLink[] };
+      const { data: productLinks, error: linksError } = await (supabase.from("sale_campaign_products" as any) as any)
+        .select("campaign_id, product_id")
+        .eq("product_id", id)
+        .in("campaign_id", selectedIds);
+      if (linksError) throw linksError;
+      return {
+        campaigns: (campaigns ?? []) as SaleCampaign[],
+        productLinks: (productLinks ?? []) as SaleProductLink[],
+      };
     },
   });
 
@@ -152,13 +180,19 @@ function ProductPage() {
     Number(product.stock_in ?? 0) -
     Number(product.sold_qty ?? 0) -
     Number((product as any).reserved_qty ?? 0);
-  const price = Number(product.final_sell_mmk ?? product.price ?? 0);
+  const basePrice = Number(product.final_sell_mmk ?? product.price ?? 0);
+  const productSale = getSalePrice(product.id, basePrice, saleData.campaigns, saleData.productLinks);
+  const price = productSale?.sale_price ?? basePrice;
   const canPreorder = Boolean(product.preorder_enabled) &&
     (product.selling_mode === "PREORDER" || product.selling_mode === "BOTH");
   const preorderDeposit = product.preorder_deposit_type === "PERCENTAGE"
     ? Math.min(price, (price * Math.min(100, Math.max(0, Number(product.preorder_deposit ?? 0)))) / 100)
     : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
-  const activePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? price);
+  const activeBasePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? basePrice);
+  const activeSale = activeVariant
+    ? getSalePrice(product.id, activeBasePrice, saleData.campaigns, saleData.productLinks)
+    : productSale;
+  const activePrice = activeSale?.sale_price ?? activeBasePrice;
   const activeStock = activeVariant
     ? Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0)
     : stock;
@@ -168,7 +202,10 @@ function ProductPage() {
   const activeSellingMode = activeVariant?.selling_mode ?? product.selling_mode;
   const activeFulfillmentType = activeCanPreorder && (activeStock <= 0 || activeSellingMode === "PREORDER") ? "PREORDER" : "IN_STOCK";
   const variantPrices = variants
-    .map((variant: any) => Number(variant.final_sell_mmk ?? variant.price ?? 0))
+    .map((variant: any) => {
+      const base = Number(variant.final_sell_mmk ?? variant.price ?? 0);
+      return getSalePrice(product.id, base, saleData.campaigns, saleData.productLinks)?.sale_price ?? base;
+    })
     .filter((value: number) => Number.isFinite(value) && value >= 0);
   const variantMinPrice = variantPrices.length ? Math.min(...variantPrices) : price;
   const variantMaxPrice = variantPrices.length ? Math.max(...variantPrices) : price;
@@ -195,7 +232,11 @@ function ProductPage() {
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
     const variantName = variant?.name;
-    const variantPrice = variant ? Number(variant.final_sell_mmk ?? variant.price ?? 0) : undefined;
+    const variantBasePrice = variant ? Number(variant.final_sell_mmk ?? variant.price ?? 0) : basePrice;
+    const itemSale = variant
+      ? getSalePrice(product.id, variantBasePrice, saleData.campaigns, saleData.productLinks)
+      : productSale;
+    const variantPrice = variant ? (itemSale?.sale_price ?? variantBasePrice) : undefined;
     const variantStock = variant
       ? Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0)
       : stock;
@@ -224,6 +265,10 @@ function ProductPage() {
       variant_id: variantId ?? null,
       name: variantName ? `${product.name} — ${variantName}` : product.name,
       price: selectedPrice,
+      original_price: itemSale?.original_price ?? selectedPrice,
+      discount_amount: itemSale?.discount_amount ?? 0,
+      sale_campaign_id: itemSale?.sale_campaign_id ?? null,
+      sale_badge_text: itemSale?.sale_badge_text ?? null,
       qty,
       image_url: variant?.image_url ?? product.image_url ?? null,
       fulfillment_type: selectedFulfillment,
@@ -299,11 +344,20 @@ function ProductPage() {
             )}
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
             <div className="flex flex-wrap items-end gap-3">
-              <p className="text-3xl font-bold tracking-tight text-primary">
-                {variants.length > 0 && variantMinPrice !== variantMaxPrice
-                  ? `${formatKS(variantMinPrice)} – ${formatKS(variantMaxPrice)}`
-                  : formatKS(activePrice)}
-              </p>
+              <div>
+                <p className="text-3xl font-bold tracking-tight text-primary">
+                  {variants.length > 0 && variantMinPrice !== variantMaxPrice
+                    ? `${formatKS(variantMinPrice)} – ${formatKS(variantMaxPrice)}`
+                    : formatKS(activePrice)}
+                </p>
+                {activeSale && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-semibold text-red-600">{activeSale.sale_badge_text}</span>
+                    <span className="text-muted-foreground line-through">{formatKS(activeSale.original_price)}</span>
+                    <span className="text-xs font-medium text-red-600">Save {formatKS(activeSale.discount_amount)}</span>
+                  </div>
+                )}
+              </div>
               {activeVariant && activeVariant.name && <span className="pb-1 text-sm text-muted-foreground">{activeVariant.name}</span>}
             </div>
             <div className="flex flex-wrap gap-2">
