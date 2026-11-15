@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Sparkles,
   Receipt,
   TrendingUp,
   PieChart,
