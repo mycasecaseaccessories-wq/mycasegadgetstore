@@ -461,6 +461,20 @@ function Storefront() {
                 </button>
               ))}
             </div>
+          ) : isPending || variantsPending ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Loading categories">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="aspect-[1.2] animate-pulse rounded-2xl bg-[#e4ece7] dark:bg-muted"
+                />
+              ))}
+            </div>
+          ) : productsError || variantsError ? (
+            <EmptyState
+              title="Categories could not be loaded"
+              description="Retry the product list below to load categories."
+            />
           ) : (
             <EmptyState
               title="Categories are coming soon"
@@ -503,7 +517,9 @@ function Storefront() {
                 Find your next essential.
               </h2>
             </div>
-            <p className="text-sm text-muted-foreground">{filtered.length} products</p>
+            <p className="text-sm text-muted-foreground">
+              {isPending || variantsPending ? "Loading products…" : `${filtered.length} products`}
+            </p>
           </div>
           <div className="flex items-center justify-between gap-3 border-b border-[#dfe6e1] pb-4">
             <div className="hidden items-center gap-2 lg:flex">
