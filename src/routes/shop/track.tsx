@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Copy, Package, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatKS, formatDate } from "@/lib/format";
-import { trackGuestOrder } from "@/lib/track.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/shop/track")({ component: TrackPage });
 
@@ -29,7 +28,6 @@ function statusBadge(status: string) {
 function TrackPage() {
   const [trackingCode, setTrackingCode] = useState("");
   const [submitted, setSubmitted] = useState<{ orderId: string; capability: string } | null>(null);
-  const trackFn = useServerFn(trackGuestOrder);
 
   useEffect(() => {
     try {
@@ -47,7 +45,19 @@ function TrackPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["guest-order-track", submitted?.orderId, submitted?.capability],
     enabled: !!submitted,
-    queryFn: () => trackFn({ data: submitted! }),
+    queryFn: async () => {
+      const { data: orderData, error: lookupError } = await (supabase as any).rpc(
+        "get_guest_order_status",
+        {
+          p_order_id: submitted!.orderId,
+          p_guest_capability: submitted!.capability,
+        },
+      );
+      if (lookupError || !orderData) {
+        throw new Error("Order not found or tracking code is invalid");
+      }
+      return { order: orderData };
+    },
     retry: false,
   });
 
