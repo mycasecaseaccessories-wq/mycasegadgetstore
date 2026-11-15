@@ -85,7 +85,7 @@ function Storefront() {
 
   const {
     data: products = [],
-    isLoading,
+    isPending,
     isError: productsError,
     refetch: refetchProducts,
   } = useQuery({
@@ -105,7 +105,7 @@ function Storefront() {
 
   const {
     data: activeVariants = [],
-    isLoading: variantsLoading,
+    isPending: variantsPending,
     isError: variantsError,
     refetch: refetchVariants,
   } = useQuery({
@@ -516,7 +516,7 @@ function Storefront() {
               </label>
             </div>
           </div>
-          {isLoading || variantsLoading ? (
+          {isPending || variantsPending ? (
             <ProductSkeleton />
           ) : productsError || variantsError ? (
             <EmptyState
