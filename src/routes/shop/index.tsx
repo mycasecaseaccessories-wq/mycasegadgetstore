@@ -103,6 +103,7 @@ function Storefront() {
           "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
         )
         .eq("status", "ACTIVE")
+        .eq("published", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Product[];
