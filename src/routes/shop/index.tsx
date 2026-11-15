@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { getSalePrice, type SaleCampaign, type SaleProductLink } from "@/lib/sale-pricing";
 import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
 import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
@@ -59,6 +60,11 @@ type Product = {
   waiting_time: string | null;
   has_variants?: boolean;
   created_at: string;
+  sale_campaign_id?: string;
+  sale_badge_text?: string;
+  original_price?: number;
+  sale_price?: number;
+  discount_amount?: number;
 };
 
 function Storefront() {
@@ -131,6 +137,32 @@ function Storefront() {
     },
   });
 
+  const { data: saleData = { campaigns: [] as SaleCampaign[], productLinks: [] as SaleProductLink[] } } = useQuery({
+    queryKey: ["active-sale-campaigns"],
+    enabled: typeof window !== "undefined",
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: campaigns, error: campaignError } = await (supabase.from("sale_campaigns" as any) as any)
+        .select("id, badge_text, discount_type, discount_value, scope, priority, created_at")
+        .eq("status", "ACTIVE")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (campaignError) throw campaignError;
+      const selectedIds = (campaigns ?? [])
+        .filter((campaign: SaleCampaign) => campaign.scope === "SELECTED_PRODUCTS")
+        .map((campaign: SaleCampaign) => campaign.id);
+      if (selectedIds.length === 0) return { campaigns: (campaigns ?? []) as SaleCampaign[], productLinks: [] as SaleProductLink[] };
+      const { data: productLinks, error: linksError } = await (supabase.from("sale_campaign_products" as any) as any)
+        .select("campaign_id, product_id")
+        .in("campaign_id", selectedIds);
+      if (linksError) throw linksError;
+      return {
+        campaigns: (campaigns ?? []) as SaleCampaign[],
+        productLinks: (productLinks ?? []) as SaleProductLink[],
+      };
+    },
+  });
+
   const sellableProducts = useMemo(() => {
     if (variantsPending) return [];
     const variantsByProduct = new Map<string, typeof activeVariants>();
@@ -165,8 +197,12 @@ function Storefront() {
       const stock = stockValue(product);
       const canPreorder = Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode ?? "IN_STOCK");
       return stock > 0 || canPreorder;
+    }).map((product) => {
+      const basePrice = Number(product.final_sell_mmk ?? product.price ?? 0);
+      const sale = getSalePrice(product.id, basePrice, saleData.campaigns, saleData.productLinks);
+      return sale ? { ...product, ...sale } : product;
     });
-  }, [activeVariants, products, variantsPending]);
+  }, [activeVariants, products, variantsPending, saleData]);
 
   const categories = useMemo(() => uniqueValues(sellableProducts, "category"), [sellableProducts]);
   const brands = useMemo(() => uniqueValues(sellableProducts, "brand"), [sellableProducts]);
@@ -641,8 +677,11 @@ function ProductCard({ product }: { product: Product }) {
         >
           <Heart className={wished ? "h-4 w-4 fill-current" : "h-4 w-4"} />
         </button>
+        {product.sale_badge_text && (
+          <Badge className="absolute left-3 top-3 bg-red-600 text-white">{product.sale_badge_text}</Badge>
+        )}
         {isPreorder ? (
-          <Badge className="absolute left-3 top-3 bg-[#7c5a25] text-white">Pre-order</Badge>
+          <Badge className={product.sale_badge_text ? "absolute left-3 top-12 bg-[#7c5a25] text-white" : "absolute left-3 top-3 bg-[#7c5a25] text-white"}>Pre-order</Badge>
         ) : stock <= 0 ? (
           <Badge className="absolute left-3 top-3 bg-[#18211f] text-white">Out of stock</Badge>
         ) : product.selling_mode === "BOTH" ? (
@@ -689,8 +728,13 @@ function ProductCard({ product }: { product: Product }) {
         <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold leading-5">
           {product.name}
         </h3>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="font-bold">{formatKS(price)}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className={product.sale_price != null ? "font-bold text-red-600" : "font-bold"}>{formatKS(price)}</p>
+            {product.sale_price != null && product.original_price != null && (
+              <span className="text-xs text-muted-foreground line-through">{formatKS(product.original_price)}</span>
+            )}
+          </div>
           <span className="text-[10px] text-muted-foreground">
             {stock > 0 ? "In stock" : canPreorder ? "Pre-order" : "Unavailable"}
           </span>
@@ -907,7 +951,7 @@ function uniqueValues(products: Product[], key: "category" | "brand") {
   ).sort();
 }
 function priceOf(product: Product) {
-  return Number(product.final_sell_mmk ?? product.price ?? 0);
+  return Number(product.sale_price ?? product.final_sell_mmk ?? product.price ?? 0);
 }
 function stockValue(product: Product) {
   return Math.max(
