@@ -303,14 +303,11 @@ function Storefront() {
               <StorageImage
                 src={settings.logo_url}
                 alt="MY CASE"
-                className="h-9 w-auto max-w-[150px] object-contain"
+                className="h-9 w-auto max-w-[180px] object-contain"
               />
             ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#b8e7d0] text-sm font-black text-[#18211f]">
-                MC
-              </span>
+              <span className="text-base font-black tracking-[0.22em]">MY CASE</span>
             )}
-            <span className="text-base font-black tracking-[0.22em]">MY CASE</span>
           </Link>
           <nav
             className="hidden items-center gap-5 pl-8 text-sm font-medium lg:flex"
