@@ -194,10 +194,6 @@ function Storefront() {
           : "IN_STOCK" as const,
         waiting_time: preorderVariants.find((variant) => variant.waiting_time)?.waiting_time ?? product.waiting_time,
       };
-    }).filter((product) => {
-      const stock = stockValue(product);
-      const canPreorder = Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode ?? "IN_STOCK");
-      return stock > 0 || canPreorder;
     }).map((product) => {
       const basePrice = Number(product.final_sell_mmk ?? product.price ?? 0);
       const sale = getSalePrice(product.id, basePrice, saleData.campaigns, saleData.productLinks);
