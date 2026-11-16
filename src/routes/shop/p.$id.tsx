@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { getSalePrice, type SaleCampaign, type SaleProductLink } from "@/lib/sale-pricing";
 import { addToCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { StorageImage } from "@/components/StorageImage";
@@ -18,31 +19,71 @@ export const Route = createFileRoute("/shop/p/$id")({ component: ProductPage });
 function ProductPage() {
   const { id } = Route.useParams();
 
-  const { data: product } = useQuery({
+  const {
+    data: product,
+    isLoading: productLoading,
+    isError: productError,
+    refetch: refetchProduct,
+  } = useQuery({
     queryKey: ["public-product", id],
-    queryFn: async () =>
-      (
-        await (supabase.from("products" as any) as any)
-          .select(
-            "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, reserved_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
-          )
-          .eq("id", id)
-          .eq("status", "ACTIVE")
-          .maybeSingle()
-      ).data,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("products" as any) as any)
+        .select(
+          "id, name, size, price, waiting_time, stock_status, category, product_code, brand, status, stock_in, sold_qty, reserved_qty, final_sell_mmk, image_url, gallery_images, description_images, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, description, highlights, specifications, warranty_info, shipping_info",
+        )
+        .eq("id", id)
+        .eq("status", "ACTIVE")
+        .eq("published", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
   });
 
-  const { data: variants = [] } = useQuery({
+  const {
+    data: variants = [],
+    isLoading: variantsLoading,
+    isError: variantsError,
+    refetch: refetchVariants,
+  } = useQuery({
     queryKey: ["public-variants", id],
-    queryFn: async () =>
-      (
-        await (supabase.from("product_variants" as any) as any)
-          .select(
-            "id, product_id, variant_code, name, size, color, image_url, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
-          )
-          .eq("product_id", id)
-          .eq("status", "ACTIVE")
-      ).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("product_variants" as any) as any)
+        .select(
+          "id, product_id, variant_code, name, size, color, image_url, price, final_sell_mmk, stock_in, sold_qty, status, selling_mode, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time, reserved_qty",
+        )
+        .eq("product_id", id)
+        .eq("status", "ACTIVE");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: saleData = { campaigns: [] as SaleCampaign[], productLinks: [] as SaleProductLink[] } } = useQuery({
+    queryKey: ["active-sale-for-product", id],
+    enabled: typeof window !== "undefined",
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: campaigns, error: campaignError } = await (supabase.from("sale_campaigns" as any) as any)
+        .select("id, badge_text, discount_type, discount_value, scope, priority, created_at")
+        .eq("status", "ACTIVE")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (campaignError) throw campaignError;
+      const selectedIds = (campaigns ?? [])
+        .filter((campaign: SaleCampaign) => campaign.scope === "SELECTED_PRODUCTS")
+        .map((campaign: SaleCampaign) => campaign.id);
+      if (selectedIds.length === 0) return { campaigns: (campaigns ?? []) as SaleCampaign[], productLinks: [] as SaleProductLink[] };
+      const { data: productLinks, error: linksError } = await (supabase.from("sale_campaign_products" as any) as any)
+        .select("campaign_id, product_id")
+        .eq("product_id", id)
+        .in("campaign_id", selectedIds);
+      if (linksError) throw linksError;
+      return {
+        campaigns: (campaigns ?? []) as SaleCampaign[],
+        productLinks: (productLinks ?? []) as SaleProductLink[],
+      };
+    },
   });
 
   const { data: related = [] } = useQuery({
@@ -64,24 +105,65 @@ function ProductPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
 
-  if (!product) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
+  if (productLoading || variantsLoading) {
+    return <div className="p-8 text-center text-muted-foreground">ပစ္စည်းအချက်အလက် ဖွင့်နေပါသည်…</div>;
+  }
+
+  if (productError || variantsError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="space-y-4 p-8">
+            <AlertTriangle className="mx-auto h-10 w-10 text-amber-600" />
+            <h1 className="text-xl font-bold">ပစ္စည်းအချက်အလက် ဖွင့်မရသေးပါ</h1>
+            <p className="text-sm text-muted-foreground">
+              အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပြီး ထပ်မံကြိုးစားပေးပါ။
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => void refetchProduct()}>
+                ပြန်ကြိုးစားရန်
+              </Button>
+              <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
+            </div>
+            {variantsError && (
+              <Button variant="ghost" size="sm" onClick={() => void refetchVariants()}>
+                Variant အချက်အလက် ပြန်စစ်ရန်
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="space-y-4 p-8">
+            <h1 className="text-xl font-bold">ပစ္စည်းကို ရှာမတွေ့ပါ</h1>
+            <p className="text-sm text-muted-foreground">ဤပစ္စည်းကို ဖျက်ထားခြင်း သို့မဟုတ် မရရှိနိုင်တော့ခြင်း ဖြစ်နိုင်ပါသည်။</p>
+            <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const galleryImages = Array.from(new Set([
     product.image_url,
     ...(Array.isArray(product.gallery_images) ? product.gallery_images : []),
   ].filter(Boolean))) as string[];
-  const availableVariants = variants.filter(
-    (variant: any) =>
-      Number(variant.stock_in ?? 0) -
-        Number(variant.sold_qty ?? 0) -
-        Number(variant.reserved_qty ?? 0) >
-      0,
-  );
+  const sellableVariants = variants.filter((variant: any) => {
+    const available = Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0);
+    const preorderEnabled = Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode);
+    return available > 0 || preorderEnabled;
+  });
   const colorGroups: Array<[string, any]> = Array.from(
-    new Map<string, any>(availableVariants.map((variant: any) => [variant.color || "Default", variant])).entries(),
+    new Map<string, any>(sellableVariants.map((variant: any) => [variant.color || "Default", variant])).entries(),
   );
   const activeColor = selectedColor ?? colorGroups[0]?.[0] ?? null;
-  const modelsForColor: any[] = availableVariants.filter((variant: any) => (variant.color || "Default") === activeColor);
+  const modelsForColor: any[] = sellableVariants.filter((variant: any) => (variant.color || "Default") === activeColor);
   const activeVariant: any = modelsForColor.find((variant: any) => variant.size === selectedModel) ?? modelsForColor[0] ?? null;
   const variantGalleryImages = Array.from(new Set([
     activeVariant?.image_url,
@@ -99,27 +181,37 @@ function ProductPage() {
     Number(product.stock_in ?? 0) -
     Number(product.sold_qty ?? 0) -
     Number((product as any).reserved_qty ?? 0);
-  const price = Number(product.final_sell_mmk ?? product.price ?? 0);
+  const basePrice = Number(product.final_sell_mmk ?? product.price ?? 0);
+  const productSale = getSalePrice(product.id, basePrice, saleData.campaigns, saleData.productLinks);
+  const price = productSale?.sale_price ?? basePrice;
   const canPreorder = Boolean(product.preorder_enabled) &&
     (product.selling_mode === "PREORDER" || product.selling_mode === "BOTH");
   const preorderDeposit = product.preorder_deposit_type === "PERCENTAGE"
     ? Math.min(price, (price * Math.min(100, Math.max(0, Number(product.preorder_deposit ?? 0)))) / 100)
     : Math.min(price, Math.max(0, Number(product.preorder_deposit ?? 0)));
-  const activePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? price);
+  const activeBasePrice = Number(activeVariant?.final_sell_mmk ?? activeVariant?.price ?? basePrice);
+  const activeSale = activeVariant
+    ? getSalePrice(product.id, activeBasePrice, saleData.campaigns, saleData.productLinks)
+    : productSale;
+  const activePrice = activeSale?.sale_price ?? activeBasePrice;
   const activeStock = activeVariant
     ? Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0)
     : stock;
   const activeCanPreorder = activeVariant
     ? Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH")
     : canPreorder;
-  const activeFulfillmentType = activeStock <= 0 && activeCanPreorder ? "PREORDER" : "IN_STOCK";
+  const activeSellingMode = activeVariant?.selling_mode ?? product.selling_mode;
+  const activeFulfillmentType = activeCanPreorder && (activeStock <= 0 || activeSellingMode === "PREORDER") ? "PREORDER" : "IN_STOCK";
   const variantPrices = variants
-    .map((variant: any) => Number(variant.final_sell_mmk ?? variant.price ?? 0))
+    .map((variant: any) => {
+      const base = Number(variant.final_sell_mmk ?? variant.price ?? 0);
+      return getSalePrice(product.id, base, saleData.campaigns, saleData.productLinks)?.sale_price ?? base;
+    })
     .filter((value: number) => Number.isFinite(value) && value >= 0);
   const variantMinPrice = variantPrices.length ? Math.min(...variantPrices) : price;
   const variantMaxPrice = variantPrices.length ? Math.max(...variantPrices) : price;
-  const hasSellableStock = variants.length > 0 ? availableVariants.length > 0 : stock > 0;
-  const hasPreorderProduct = false;
+  const hasSellableStock = variants.length > 0 ? sellableVariants.length > 0 : stock > 0 || canPreorder;
+  const hasPreorderProduct = activeFulfillmentType === "PREORDER";
 
   if (!hasSellableStock) {
     return (
@@ -129,7 +221,7 @@ function ProductPage() {
             <AlertTriangle className="mx-auto h-10 w-10 text-muted-foreground" />
             <div>
               <h1 className="text-xl font-bold">ပစ္စည်းကုန်နေပါပြီ</h1>
-              <p className="mt-2 text-sm text-muted-foreground">ဒီပစ္စည်းကို လောလောဆယ် ဝယ်ယူလို့မရသေးပါ။ Instock ပစ္စည်းများကိုသာ ရောင်းချပေးနေပါတယ်။</p>
+              <p className="mt-2 text-sm text-muted-foreground">ဒီပစ္စည်းကို လောလောဆယ် ဝယ်ယူလို့မရသေးပါ။</p>
             </div>
             <Button asChild><Link to="/shop">Shop သို့ ပြန်သွားရန်</Link></Button>
           </CardContent>
@@ -141,12 +233,25 @@ function ProductPage() {
   const buy = (variant?: any, qty = quantity) => {
     const variantId = variant?.id;
     const variantName = variant?.name;
-    const variantPrice = variant ? Number(variant.final_sell_mmk ?? variant.price ?? 0) : undefined;
+    const variantBasePrice = variant ? Number(variant.final_sell_mmk ?? variant.price ?? 0) : basePrice;
+    const itemSale = variant
+      ? getSalePrice(product.id, variantBasePrice, saleData.campaigns, saleData.productLinks)
+      : productSale;
+    const variantPrice = variant ? (itemSale?.sale_price ?? variantBasePrice) : undefined;
     const variantStock = variant
       ? Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0)
       : stock;
-    if (variantStock < qty) {
+    const canPreorder = variant
+      ? Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode)
+      : Boolean(product.preorder_enabled) && ["PREORDER", "BOTH"].includes(product.selling_mode);
+    const selectedSellingMode = variant?.selling_mode ?? product.selling_mode;
+    const selectedFulfillment = canPreorder && (variantStock <= 0 || selectedSellingMode === "PREORDER") ? "PREORDER" : "IN_STOCK";
+    if (selectedFulfillment === "IN_STOCK" && variantStock < qty) {
       toast.error("လက်ကျန် stock မလုံလောက်တော့ပါ");
+      return;
+    }
+    if (qty < 1 || qty > 1000) {
+      toast.error("Quantity သည် 1 မှ 1000 အတွင်း ဖြစ်ရပါမယ်");
       return;
     }
     const selectedPrice = variantPrice ?? price;
@@ -155,18 +260,21 @@ function ProductPage() {
         ? Math.min(selectedPrice, (selectedPrice * Math.min(100, Math.max(0, Number(variant.preorder_deposit ?? 0)))) / 100)
         : Math.min(selectedPrice, Math.max(0, Number(variant.preorder_deposit ?? 0)))
       : preorderDeposit;
-    const selectedFulfillment = "IN_STOCK";
     addToCart({
       id: variantId ?? product.id,
       product_id: product.id,
       variant_id: variantId ?? null,
       name: variantName ? `${product.name} — ${variantName}` : product.name,
       price: selectedPrice,
+      original_price: itemSale?.original_price ?? selectedPrice,
+      discount_amount: itemSale?.discount_amount ?? 0,
+      sale_campaign_id: itemSale?.sale_campaign_id ?? null,
+      sale_badge_text: itemSale?.sale_badge_text ?? null,
       qty,
       image_url: variant?.image_url ?? product.image_url ?? null,
       fulfillment_type: selectedFulfillment,
       estimated_arrival: variant?.waiting_time ?? product.waiting_time,
-      deposit_required: 0,
+      deposit_required: selectedFulfillment === "PREORDER" ? variantDeposit : 0,
     });
     toast.success(`${qty} item${qty === 1 ? "" : "s"} added to cart`);
   };
@@ -237,11 +345,20 @@ function ProductPage() {
             )}
             <h1 className="text-2xl font-bold leading-tight md:text-3xl">{product.name}</h1>
             <div className="flex flex-wrap items-end gap-3">
-              <p className="text-3xl font-bold tracking-tight text-primary">
-                {variants.length > 0 && variantMinPrice !== variantMaxPrice
-                  ? `${formatKS(variantMinPrice)} – ${formatKS(variantMaxPrice)}`
-                  : formatKS(activePrice)}
-              </p>
+              <div>
+                <p className="text-3xl font-bold tracking-tight text-primary">
+                  {variants.length > 0 && variantMinPrice !== variantMaxPrice
+                    ? `${formatKS(variantMinPrice)} – ${formatKS(variantMaxPrice)}`
+                    : formatKS(activePrice)}
+                </p>
+                {activeSale && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-semibold text-red-600">{activeSale.sale_badge_text}</span>
+                    <span className="text-muted-foreground line-through">{formatKS(activeSale.original_price)}</span>
+                    <span className="text-xs font-medium text-red-600">Save {formatKS(activeSale.discount_amount)}</span>
+                  </div>
+                )}
+              </div>
               {activeVariant && activeVariant.name && <span className="pb-1 text-sm text-muted-foreground">{activeVariant.name}</span>}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -295,8 +412,8 @@ function ProductPage() {
                     variant="ghost"
                     size="icon"
                     aria-label="Increase quantity"
-                    onClick={() => setQuantity((value) => Math.min(Math.max(1, stock), value + 1))}
-                    disabled={quantity >= stock}
+                    onClick={() => setQuantity((value) => Math.min(canPreorder && (stock <= 0 || product.selling_mode === "PREORDER") ? 1000 : Math.max(1, stock), value + 1))}
+                    disabled={quantity >= (canPreorder && (stock <= 0 || product.selling_mode === "PREORDER") ? 1000 : stock)}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -374,7 +491,7 @@ function ProductPage() {
                   const vPrice = Number(activeVariant.final_sell_mmk ?? activeVariant.price ?? 0);
                   const vStock = Number(activeVariant.stock_in ?? 0) - Number(activeVariant.sold_qty ?? 0) - Number(activeVariant.reserved_qty ?? 0);
                   const vCanPreorder = Boolean(activeVariant.preorder_enabled) && (activeVariant.selling_mode === "PREORDER" || activeVariant.selling_mode === "BOTH");
-                  const vFulfillment = vStock <= 0 && vCanPreorder ? "PREORDER" : "IN_STOCK";
+                  const vFulfillment = vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? "PREORDER" : "IN_STOCK";
                   return (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 shadow-sm">
                       <div>
@@ -388,7 +505,7 @@ function ProductPage() {
                         <div className="flex h-10 items-center rounded-lg border bg-background">
                           <Button variant="ghost" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity((value) => Math.max(1, value - 1))}><Minus className="h-4 w-4" /></Button>
                           <span className="w-8 text-center text-sm font-semibold" aria-live="polite">{quantity}</span>
-                          <Button variant="ghost" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(Math.max(1, vStock), value + 1))} disabled={quantity >= vStock}><Plus className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? 1000 : Math.max(1, vStock), value + 1))} disabled={quantity >= (vCanPreorder && (vStock <= 0 || activeVariant.selling_mode === "PREORDER") ? 1000 : vStock)}><Plus className="h-4 w-4" /></Button>
                         </div>
                         <Button size="lg" disabled={vStock <= 0 && !vCanPreorder} onClick={() => buy(activeVariant)}>
                           <ShoppingBag className="mr-2 h-4 w-4" />{vFulfillment === "PREORDER" ? "Pre-order" : "Add to cart"}

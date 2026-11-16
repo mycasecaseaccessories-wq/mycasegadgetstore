@@ -38,7 +38,6 @@ function CartPage() {
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [points, setPoints] = useState(0);
-  const [redeemPts, setRedeemPts] = useState(0);
 
   const fetchLoyalty = useServerFn(getMyLoyalty);
   const awardFn = useServerFn(awardMyPoints);
@@ -71,10 +70,6 @@ function CartPage() {
   }, [user, phone, fetchLoyalty]);
 
   const subtotal = cartTotal(items);
-  const discount = redeemPts >= loyaltyCfg.minRedeem ? redeemPts * loyaltyCfg.redeemValue : 0;
-  const total = Math.max(0, subtotal - discount);
-  const canRedeem = !!user && loyaltyCfg.enabled && points >= loyaltyCfg.minRedeem && points > 0;
-  const maxRedeem = Math.min(points, Math.floor(subtotal / Math.max(loyaltyCfg.redeemValue, 1)));
   const hasPreorder = items.some((item) => item.fulfillment_type === "PREORDER");
   const depositTotal = items.reduce(
     (sum, item) => sum + Number(item.deposit_required ?? 0) * item.qty,
@@ -95,16 +90,14 @@ function CartPage() {
   const checkout = async () => {
     if (items.length === 0) return toast.error("Cart is empty");
     if (!name || !phone) return toast.error("Name & phone required");
-    if (items.some((item) => item.fulfillment_type === "PREORDER")) {
-      return toast.error("Pre-order မရပါ။ Instock ပစ္စည်းများကိုသာ ဝယ်ယူနိုင်ပါသည်။");
-    }
-    if (hasPreorder && !paymentMethodId) {
+    if (hasPreorder && depositTotal > 0 && !paymentMethodId) {
       return toast.error("Select a payment method for the pre-order deposit");
     }
     setSubmitting(true);
     try {
       const stockChecks = await Promise.all(
         items.map(async (item) => {
+          if (item.fulfillment_type === "PREORDER") return { item, available: Number.POSITIVE_INFINITY };
           const table = item.variant_id ? "product_variants" : "products";
           const id = item.variant_id ?? item.product_id;
           const { data, error } = await (supabase.from(table as any) as any)
@@ -121,50 +114,79 @@ function CartPage() {
       if (unavailable) {
         return toast.error(`${unavailable.item.name} အတွက် stock မလုံလောက်တော့ပါ။ Cart ကို ပြန်စစ်ပါ။`);
       }
-      const { data: orderId, error } = await supabase.rpc("create_order_with_items", {
-        p_customer_name: name,
-        p_customer_phone: phone,
-        p_delivery_note: address,
-        p_discount: 0,
-        p_extra_fee: 0,
-        p_redeem_points: redeemPts,
-          p_items: items.map((i) => ({
-            product_id: i.product_id,
-            variant_id: i.variant_id ?? null,
-            product_name: i.name,
-            unit_price: i.price,
-            quantity: i.qty,
-            line_total: i.price * i.qty,
-            fulfillment_type: i.fulfillment_type ?? "IN_STOCK",
-            estimated_arrival: i.estimated_arrival ?? null,
-            deposit_required: i.deposit_required ?? 0,
-          })),
-      });
-      if (error || !orderId) throw error ?? new Error("Failed");
+      const orderItems = items.map((i) => ({
+        product_id: i.product_id,
+        variant_id: i.variant_id ?? null,
+        product_name: i.name,
+        unit_price: i.price,
+        quantity: i.qty,
+        line_total: i.price * i.qty,
+        fulfillment_type: i.fulfillment_type ?? "IN_STOCK",
+        estimated_arrival: i.estimated_arrival ?? null,
+        deposit_required: i.deposit_required ?? 0,
+      }));
+      let orderId: string | null = null;
+      let guestCapability: string | null = null;
 
-      const { error: paymentError } = await supabase.rpc("finalize_order_payment_details", {
+      if (user) {
+        const { data, error } = await (supabase as any).rpc("create_order_with_items", {
+          p_customer_name: name,
+          p_customer_phone: phone,
+          p_delivery_note: address,
+          p_discount: 0,
+          p_extra_fee: 0,
+          p_redeem_points: 0,
+          p_items: orderItems,
+        });
+        if (error || !data) throw error ?? new Error("Failed to create order");
+        orderId = data as string;
+      } else {
+        const { data, error } = await (supabase as any).rpc("create_guest_order_with_items", {
+          p_customer_name: name,
+          p_customer_phone: phone,
+          p_delivery_note: address,
+          p_discount: 0,
+          p_extra_fee: 0,
+          p_redeem_points: 0,
+          p_items: orderItems,
+        });
+        if (error || !data?.order_id || !data?.capability) throw error ?? new Error("Failed to create guest order");
+        orderId = data.order_id as string;
+        guestCapability = data.capability as string;
+      }
+
+      const { error: paymentError } = await (supabase as any).rpc("finalize_order_payment_details", {
         p_order_id: orderId,
         p_payment_method_id: paymentMethodId || null,
+        p_guest_capability: guestCapability,
       });
       if (paymentError) throw paymentError;
 
       // Award points after successful order creation. Redemption is committed atomically by the RPC.
       if (phone) {
         try {
-          const { data: savedOrder } = await supabase
-            .from("orders")
-            .select("total")
-            .eq("id", orderId)
-            .maybeSingle();
-          await awardFn({ data: { orderId, phone, amount: Number(savedOrder?.total ?? total) } });
+          await awardFn({ data: { orderId } });
         } catch {
           /* non-fatal */
         }
       }
 
+      if (!user && guestCapability && orderId) {
+        try {
+          // The capability is a bearer secret; keep it only in this browser for
+          // secure guest tracking. The server verifies its SHA-256 digest.
+          localStorage.setItem(
+            "mycase-guest-order-tracking",
+            `${orderId}.${guestCapability}`,
+          );
+        } catch (storageError) {
+          console.warn("Guest order tracking could not be saved in this browser", storageError);
+        }
+      }
+
       clearCart();
       toast.success("Order placed successfully!");
-      nav({ to: user ? "/shop/account" : "/shop" });
+      nav({ to: user ? "/shop/account" : "/shop/track" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
@@ -245,7 +267,15 @@ function CartPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{i.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatKS(i.price)}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span className={i.discount_amount ? "font-semibold text-red-600" : "text-muted-foreground"}>{formatKS(i.price)}</span>
+                    {Number(i.discount_amount ?? 0) > 0 && Number(i.original_price ?? 0) > i.price && (
+                      <>
+                        <span className="text-muted-foreground line-through">{formatKS(i.original_price)}</span>
+                        <Badge className="bg-red-600 text-white">{i.sale_badge_text ?? "SALE"}</Badge>
+                      </>
+                    )}
+                  </div>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <Badge
                       variant="outline"
@@ -265,7 +295,7 @@ function CartPage() {
                   </div>
                   {i.fulfillment_type === "PREORDER" && (i.deposit_required ?? 0) > 0 && (
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Deposit: {formatKS(i.deposit_required ?? 0)}
+                      Deposit: {formatKS(Number(i.deposit_required ?? 0) * i.qty)}
                     </p>
                   )}
                 </div>
@@ -320,48 +350,13 @@ function CartPage() {
                 </div>
               )}
 
-              {user && canRedeem && (
-                <div className="space-y-2 rounded-lg border bg-primary/5 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span className="font-medium">Redeem points</span>
-                      <Badge variant="outline">{points} available</Badge>
-                    </div>
-                    {redeemPts > 0 && (
-                      <Button size="sm" variant="ghost" onClick={() => setRedeemPts(0)}>
-                        Clear
-                      </Button>
-                    )}
+              {user && loyaltyCfg.enabled && (
+                <div className="flex items-start gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Loyalty points: {points}</p>
+                    <p>Points redemption is temporarily unavailable until secure server-side conversion settings are configured. You can still place your order and earn points.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={maxRedeem}
-                      value={redeemPts || ""}
-                      onChange={(e) => {
-                        const v = Math.max(0, Math.min(maxRedeem, Number(e.target.value) || 0));
-                        setRedeemPts(v);
-                      }}
-                      placeholder={`Min ${loyaltyCfg.minRedeem}`}
-                      className="h-9"
-                    />
-                    <Button size="sm" variant="outline" onClick={() => setRedeemPts(maxRedeem)}>
-                      Max
-                    </Button>
-                  </div>
-                  {redeemPts > 0 && redeemPts < loyaltyCfg.minRedeem && (
-                    <p className="text-xs text-destructive">
-                      Minimum {loyaltyCfg.minRedeem} points
-                    </p>
-                  )}
-                  {redeemPts >= loyaltyCfg.minRedeem && (
-                    <p className="text-xs text-muted-foreground">
-                      Discount:{" "}
-                      <span className="font-semibold text-primary">{formatKS(discount)}</span>
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -370,16 +365,13 @@ function CartPage() {
                   <span>Subtotal</span>
                   <span>{formatKS(subtotal)}</span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-orange-600">
-                    <span>Points discount</span>
-                    <span>−{formatKS(discount)}</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between border-t pt-2 text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">{formatKS(total)}</span>
+                  <span className="text-primary">{formatKS(subtotal)}</span>
                 </div>
+                <p className="pt-1 text-xs leading-5 text-muted-foreground">
+                  Sale prices and discounts are recalculated securely when your order is placed.
+                </p>
                 {hasPreorder && depositTotal > 0 && (
                   <div className="flex justify-between text-amber-700">
                     <span>Pre-order deposit due</span>
@@ -401,7 +393,7 @@ function CartPage() {
                   <Label>Delivery address</Label>
                   <Textarea value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
-                {hasPreorder && (
+                {hasPreorder && depositTotal > 0 && (
                   <div className="space-y-1.5">
                     <Label>Deposit payment method *</Label>
                     <select

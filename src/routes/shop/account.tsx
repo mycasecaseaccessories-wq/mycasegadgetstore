@@ -49,16 +49,22 @@ function AccountPage() {
     if (ready && !user) nav({ to: "/shop/login" });
   }, [ready, user, nav]);
 
-  const { data: orders = [] } = useQuery({
+  const {
+    data: orders = [],
+    isPending: ordersPending,
+    isError: ordersError,
+    refetch: refetchOrders,
+  } = useQuery({
     queryKey: ["my-orders", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await (supabase.from("orders" as any) as any)
+      const { data, error } = await (supabase.from("orders" as any) as any)
         .select(
           "id, order_no, total, status, payment_status, order_date, points_earned, points_redeemed, items:order_items(id, product_name, quantity, line_total, fulfillment_type, estimated_arrival, deposit_required)",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -152,7 +158,22 @@ function AccountPage() {
             <Package className="h-5 w-5" />
             Order history
           </h2>
-          {orders.length === 0 ? (
+          {ordersPending ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                Loading order history…
+              </CardContent>
+            </Card>
+          ) : ordersError ? (
+            <Card>
+              <CardContent className="space-y-3 p-6 text-center">
+                <p className="text-sm text-red-600">Order history could not be loaded.</p>
+                <Button variant="outline" size="sm" onClick={() => void refetchOrders()}>
+                  Try again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : orders.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 No orders yet

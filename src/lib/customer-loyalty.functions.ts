@@ -13,7 +13,7 @@ type LoyaltyCfg = {
 async function loadLoyaltyConfig(): Promise<LoyaltyCfg> {
   const { data } = await supabaseAdmin
     .from("settings")
-    .select("loyalty_enabled, loyalty_earn_per_amount, loyalty_redeem_value, loyalty_min_redeem")
+    .select("*")
     .limit(1)
     .maybeSingle();
   const r: any = data ?? {};
@@ -31,9 +31,19 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
   .inputValidator((input: { phone?: string | null }) =>
     z.object({ phone: z.string().trim().min(1).max(64).nullable().optional() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
     const cfg = await loadLoyaltyConfig();
-    const phone = (data.phone ?? "").trim();
+    // Never accept a client-selected loyalty key. Resolve it from this
+    // authenticated user's own order history instead.
+    const { data: ownOrder } = await supabaseAdmin
+      .from("orders")
+      .select("customer_phone")
+      .eq("user_id", context.userId)
+      .not("customer_phone", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const phone = String(ownOrder?.customer_phone ?? "").trim();
     if (!phone) return { points: 0, history: [] as any[], config: cfg };
 
     const { data: bal } = await supabaseAdmin
@@ -57,128 +67,17 @@ export const getMyLoyalty = createServerFn({ method: "POST" })
     };
   });
 
-/**
- * Redeem points for an order. Server reads config from settings — clients
- * cannot influence redeemValue or minRedeem.
- */
-export const redeemMyPoints = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { orderId: string; phone: string; points: number }) =>
-    z
-      .object({
-        orderId: z.string().uuid(),
-        phone: z.string().trim().min(1).max(64),
-        points: z.number().int().positive().max(1_000_000),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const cfg = await loadLoyaltyConfig();
-    if (!cfg.enabled) throw new Error("Loyalty disabled");
-
-    const { data: order, error: ordErr } = await supabaseAdmin
-      .from("orders")
-      .select("id, user_id, total")
-      .eq("id", data.orderId)
-      .maybeSingle();
-    if (ordErr) throw new Error(ordErr.message);
-    if (!order || (order as any).user_id !== context.userId) {
-      throw new Error("Order not found");
-    }
-
-    const key = data.phone.trim();
-    const { data: bal } = await supabaseAdmin
-      .from("loyalty_balances")
-      .select("points")
-      .eq("customer_key", key)
-      .maybeSingle();
-    const current = Number((bal as any)?.points ?? 0);
-
-    if (data.points < cfg.minRedeem) throw new Error(`Minimum ${cfg.minRedeem} points required`);
-    if (data.points > current) throw new Error("Not enough points");
-
-    const value = data.points * cfg.redeemValue;
-    const next = current - data.points;
-    const newTotal = Math.max(0, Number((order as any).total ?? 0) - value);
-
-    await supabaseAdmin.from("loyalty_balances").upsert(
-      {
-        customer_key: key,
-        points: next,
-        customer_phone: key,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "customer_key" },
-    );
-
-    await supabaseAdmin.from("loyalty_transactions").insert({
-      customer_key: key,
-      order_id: data.orderId,
-      kind: "redeem",
-      delta: -data.points,
-      value,
-      note: "Redeemed at checkout",
-    });
-
-    await supabaseAdmin
-      .from("orders")
-      .update({ points_redeemed: data.points, discount: value, total: newTotal })
-      .eq("id", data.orderId);
-
-    return { value, newTotal, remainingPoints: next };
-  });
-
-/** Award points after an order is placed. Server reads earnPerAmount from settings. */
+/** Award points from the persisted order total using an atomic, idempotent DB RPC. */
 export const awardMyPoints = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { orderId: string; phone: string; amount: number }) =>
-    z
-      .object({
-        orderId: z.string().uuid(),
-        phone: z.string().trim().min(1).max(64),
-        amount: z.number().nonnegative(),
-      })
-      .parse(input),
+  .inputValidator((input: { orderId: string }) =>
+    z.object({ orderId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const cfg = await loadLoyaltyConfig();
-    if (!cfg.enabled || cfg.earnPerAmount <= 0) return { earned: 0 };
-
-    const { data: order } = await supabaseAdmin
-      .from("orders")
-      .select("id, user_id")
-      .eq("id", data.orderId)
-      .maybeSingle();
-    if (!order || (order as any).user_id !== context.userId) throw new Error("Order not found");
-
-    const pts = Math.floor(data.amount / cfg.earnPerAmount);
-    if (pts <= 0) return { earned: 0 };
-
-    const key = data.phone.trim();
-    const { data: bal } = await supabaseAdmin
-      .from("loyalty_balances")
-      .select("points")
-      .eq("customer_key", key)
-      .maybeSingle();
-    const next = Number((bal as any)?.points ?? 0) + pts;
-
-    await supabaseAdmin.from("loyalty_balances").upsert(
-      {
-        customer_key: key,
-        points: next,
-        customer_phone: key,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "customer_key" },
-    );
-    await supabaseAdmin.from("loyalty_transactions").insert({
-      customer_key: key,
-      order_id: data.orderId,
-      kind: "earn",
-      delta: pts,
-      value: 0,
-      note: "Earned from checkout",
+    const { data: earned, error } = await supabaseAdmin.rpc("award_order_loyalty_points", {
+      p_order_id: data.orderId,
+      p_user_id: context.userId,
     });
-    await supabaseAdmin.from("orders").update({ points_earned: pts }).eq("id", data.orderId);
-    return { earned: pts };
+    if (error) throw new Error(error.message);
+    return { earned: Number(earned ?? 0) };
   });

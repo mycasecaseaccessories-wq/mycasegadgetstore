@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKS } from "@/lib/format";
+import { getSalePrice, type SaleCampaign, type SaleProductLink } from "@/lib/sale-pricing";
 import { StorageImage } from "@/components/StorageImage";
 import { CartBadge } from "@/components/shop/CartBadge";
 import { ShopAccountButton } from "@/components/shop/ShopAccountButton";
@@ -57,7 +58,13 @@ type Product = {
   preorder_deposit: number | null;
   preorder_deposit_type: "FIXED" | "PERCENTAGE" | null;
   waiting_time: string | null;
+  has_variants?: boolean;
   created_at: string;
+  sale_campaign_id?: string;
+  sale_badge_text?: string;
+  original_price?: number;
+  sale_price?: number;
+  discount_amount?: number;
 };
 
 function Storefront() {
@@ -82,31 +89,38 @@ function Storefront() {
     },
   });
 
-  const { data: products = [], isLoading } = useQuery({
+  const {
+    data: products = [],
+    isPending,
+    isError: productsError,
+    refetch: refetchProducts,
+  } = useQuery({
     queryKey: ["public-products"],
     enabled: typeof window !== "undefined",
     queryFn: async () => {
-      try {
-        const { data } = await (supabase.from("products" as any) as any)
-          .select(
-            "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
-          )
-          .eq("status", "ACTIVE")
-          .order("created_at", { ascending: false });
-        return (data ?? []) as Product[];
-      } catch (error) {
-        console.error("Unable to load storefront products", error);
-        return [];
-      }
+      const { data, error } = await (supabase.from("products" as any) as any)
+        .select(
+          "id, name, price, image_url, brand, category, stock_in, sold_qty, reserved_qty, final_sell_mmk, created_at, selling_mode, availability, preorder_enabled, preorder_deposit, preorder_deposit_type, waiting_time",
+        )
+        .eq("status", "ACTIVE")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Product[];
     },
   });
 
-  const { data: activeVariants = [], isLoading: variantsLoading } = useQuery({
+  const {
+    data: activeVariants = [],
+    isPending: variantsPending,
+    isError: variantsError,
+    refetch: refetchVariants,
+  } = useQuery({
     queryKey: ["public-variant-stock"],
     enabled: typeof window !== "undefined",
     queryFn: async () => {
       const { data, error } = await (supabase.from("product_variants" as any) as any)
-        .select("product_id, stock_in, sold_qty, reserved_qty, status")
+        .select("product_id, stock_in, sold_qty, reserved_qty, status, selling_mode, preorder_enabled, waiting_time, preorder_deposit, preorder_deposit_type")
         .eq("status", "ACTIVE");
       if (error) throw error;
       return (data ?? []) as Array<{
@@ -115,59 +129,99 @@ function Storefront() {
         sold_qty: number | null;
         reserved_qty: number | null;
         status: string;
+        selling_mode: "IN_STOCK" | "PREORDER" | "BOTH" | null;
+        preorder_enabled: boolean | null;
+        waiting_time: string | null;
+        preorder_deposit: number | null;
+        preorder_deposit_type: "FIXED" | "PERCENTAGE" | null;
       }>;
     },
   });
 
-  const inStockProducts = useMemo(() => {
-    if (variantsLoading) return [];
+  const { data: saleData = { campaigns: [] as SaleCampaign[], productLinks: [] as SaleProductLink[] } } = useQuery({
+    queryKey: ["active-sale-campaigns"],
+    enabled: typeof window !== "undefined",
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: campaigns, error: campaignError } = await (supabase.from("sale_campaigns" as any) as any)
+        .select("id, badge_text, discount_type, discount_value, scope, priority, created_at")
+        .eq("status", "ACTIVE")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (campaignError) throw campaignError;
+      const selectedIds = (campaigns ?? [])
+        .filter((campaign: SaleCampaign) => campaign.scope === "SELECTED_PRODUCTS")
+        .map((campaign: SaleCampaign) => campaign.id);
+      if (selectedIds.length === 0) return { campaigns: (campaigns ?? []) as SaleCampaign[], productLinks: [] as SaleProductLink[] };
+      const { data: productLinks, error: linksError } = await (supabase.from("sale_campaign_products" as any) as any)
+        .select("campaign_id, product_id")
+        .in("campaign_id", selectedIds);
+      if (linksError) throw linksError;
+      return {
+        campaigns: (campaigns ?? []) as SaleCampaign[],
+        productLinks: (productLinks ?? []) as SaleProductLink[],
+      };
+    },
+  });
+
+  const sellableProducts = useMemo(() => {
+    if (variantsPending) return [];
     const variantsByProduct = new Map<string, typeof activeVariants>();
     for (const variant of activeVariants) {
       const current = variantsByProduct.get(variant.product_id) ?? [];
       current.push(variant);
       variantsByProduct.set(variant.product_id, current);
     }
-    return products.filter((product) => {
+    return products.map((product) => {
       const productVariants = variantsByProduct.get(product.id) ?? [];
-      if (productVariants.length > 0) {
-        return productVariants.some(
-          (variant) =>
-            Number(variant.stock_in ?? 0) -
-              Number(variant.sold_qty ?? 0) -
-              Number(variant.reserved_qty ?? 0) >
-            0,
-        );
-      }
-      return (
-        Number(product.stock_in ?? 0) -
-          Number(product.sold_qty ?? 0) -
-          Number(product.reserved_qty ?? 0) >
-        0
+      if (productVariants.length === 0) return product;
+      const availableStock = productVariants.reduce((sum, variant) => sum + Math.max(
+        0,
+        Number(variant.stock_in ?? 0) - Number(variant.sold_qty ?? 0) - Number(variant.reserved_qty ?? 0),
+      ), 0);
+      const preorderVariants = productVariants.filter((variant) =>
+        Boolean(variant.preorder_enabled) && ["PREORDER", "BOTH"].includes(variant.selling_mode ?? "IN_STOCK"),
       );
+      return {
+        ...product,
+        stock_in: availableStock,
+        sold_qty: 0,
+        reserved_qty: 0,
+        has_variants: true,
+        preorder_enabled: preorderVariants.length > 0,
+        selling_mode: preorderVariants.length > 0
+          ? availableStock > 0 ? "BOTH" as const : "PREORDER" as const
+          : "IN_STOCK" as const,
+        waiting_time: preorderVariants.find((variant) => variant.waiting_time)?.waiting_time ?? product.waiting_time,
+      };
+    }).map((product) => {
+      const basePrice = Number(product.final_sell_mmk ?? product.price ?? 0);
+      const sale = getSalePrice(product.id, basePrice, saleData.campaigns, saleData.productLinks);
+      return sale ? { ...product, ...sale } : product;
     });
-  }, [activeVariants, products, variantsLoading]);
+  }, [activeVariants, products, variantsPending, saleData]);
 
-  const categories = useMemo(() => uniqueValues(inStockProducts, "category"), [inStockProducts]);
-  const brands = useMemo(() => uniqueValues(inStockProducts, "brand"), [inStockProducts]);
+  const categories = useMemo(() => uniqueValues(sellableProducts, "category"), [sellableProducts]);
+  const brands = useMemo(() => uniqueValues(sellableProducts, "brand"), [sellableProducts]);
   const categoryCards = useMemo(
     () =>
       categories.slice(0, 8).map((name) => ({
         name,
-        product: inStockProducts.find((product) => product.category === name),
+        product: sellableProducts.find((product) => product.category === name),
       })),
-    [categories, inStockProducts],
+    [categories, sellableProducts],
   );
-  const newArrivals = useMemo(() => inStockProducts.slice(0, 8), [inStockProducts]);
+  const newArrivals = useMemo(() => sellableProducts.slice(0, 8), [sellableProducts]);
   const bestSellers = useMemo(
     () =>
-      [...inStockProducts]
+      [...sellableProducts]
         .sort((a, b) => stockValue(b) - stockValue(a) + (b.sold_qty ?? 0) - (a.sold_qty ?? 0))
         .slice(0, 8),
-    [inStockProducts],
+    [sellableProducts],
   );
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const result = inStockProducts.filter((product) => {
+    const result = sellableProducts.filter((product) => {
       const matchesQuery =
         !query ||
         [product.name, product.brand, product.category]
@@ -186,7 +240,7 @@ function Storefront() {
     if (sort === "newest")
       return [...result].sort((a, b) => b.created_at.localeCompare(a.created_at));
     return result;
-  }, [inStockProducts, search, activeCategory, activeBrand, sort]);
+  }, [sellableProducts, search, activeCategory, activeBrand, sort]);
   const hasFilters =
     Boolean(search) || activeCategory !== "all" || activeBrand !== "all" || sort !== "featured";
 
@@ -246,14 +300,11 @@ function Storefront() {
               <StorageImage
                 src={settings.logo_url}
                 alt="MY CASE"
-                className="h-9 w-9 rounded-md object-cover"
+                className="h-9 w-auto max-w-[180px] object-contain"
               />
             ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#b8e7d0] text-sm font-black text-[#18211f]">
-                MC
-              </span>
+              <span className="text-base font-black tracking-[0.22em]">MY CASE</span>
             )}
-            <span className="text-base font-black tracking-[0.22em]">MY CASE</span>
           </Link>
           <nav
             className="hidden items-center gap-5 pl-8 text-sm font-medium lg:flex"
@@ -407,6 +458,20 @@ function Storefront() {
                 </button>
               ))}
             </div>
+          ) : isPending || variantsPending ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Loading categories">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="aspect-[1.2] animate-pulse rounded-2xl bg-[#e4ece7] dark:bg-muted"
+                />
+              ))}
+            </div>
+          ) : productsError || variantsError ? (
+            <EmptyState
+              title="Categories could not be loaded"
+              description="Retry the product list below to load categories."
+            />
           ) : (
             <EmptyState
               title="Categories are coming soon"
@@ -449,7 +514,9 @@ function Storefront() {
                 Find your next essential.
               </h2>
             </div>
-            <p className="text-sm text-muted-foreground">{filtered.length} products</p>
+            <p className="text-sm text-muted-foreground">
+              {isPending || variantsPending ? "Loading products…" : `${filtered.length} products`}
+            </p>
           </div>
           <div className="flex items-center justify-between gap-3 border-b border-[#dfe6e1] pb-4">
             <div className="hidden items-center gap-2 lg:flex">
@@ -495,8 +562,25 @@ function Storefront() {
               </label>
             </div>
           </div>
-          {isLoading ? (
+          {isPending || variantsPending ? (
             <ProductSkeleton />
+          ) : productsError || variantsError ? (
+            <EmptyState
+              title="ပစ္စည်းစာရင်း ဖွင့်မရသေးပါ"
+              description="အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပြီး ထပ်မံကြိုးစားပေးပါ။"
+              action={
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => {
+                    void refetchProducts();
+                    void refetchVariants();
+                  }}
+                >
+                  ပြန်ကြိုးစားရန်
+                </Button>
+              }
+            />
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 pt-7 sm:grid-cols-3 lg:grid-cols-4">
               {filtered.map((product) => (
@@ -603,43 +687,53 @@ function ProductCard({ product }: { product: Product }) {
         >
           <Heart className={wished ? "h-4 w-4 fill-current" : "h-4 w-4"} />
         </button>
+        {product.sale_badge_text && (
+          <Badge className="absolute left-3 top-3 bg-red-600 text-white">{product.sale_badge_text}</Badge>
+        )}
         {isPreorder ? (
-          <Badge className="absolute left-3 top-3 bg-[#7c5a25] text-white">Pre-order</Badge>
+          <Badge className={product.sale_badge_text ? "absolute left-3 top-12 bg-[#7c5a25] text-white" : "absolute left-3 top-3 bg-[#7c5a25] text-white"}>Pre-order</Badge>
         ) : stock <= 0 ? (
           <Badge className="absolute left-3 top-3 bg-[#18211f] text-white">Out of stock</Badge>
         ) : product.selling_mode === "BOTH" ? (
           <Badge className="absolute left-3 top-3 bg-[#247a62] text-white">In stock + Pre-order</Badge>
         ) : null}
-        <Button
-          size="sm"
-          disabled={stock <= 0 && !canPreorder}
-          onClick={() => {
-            addToCart({
-              id: product.id,
-              product_id: product.id,
-              name: product.name,
-              price,
-              qty: 1,
-              image_url: product.image_url,
-              fulfillment_type: isPreorder ? "PREORDER" : "IN_STOCK",
-              estimated_arrival: product.waiting_time,
-              deposit_required: depositFor(product, price),
-            });
-            toast.success(isPreorder ? "Pre-order added to cart" : "Added to cart");
-          }}
-          className="absolute bottom-3 left-3 right-3 hidden rounded-full bg-white text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
-        >
-          {stock > 0 ? (
-            <>
-              <ShoppingBag className="mr-2 h-3.5 w-3.5" />
-              Add to cart
-            </>
-          ) : canPreorder ? (
-            "Pre-order"
-          ) : (
-            "Out of stock"
-          )}
-        </Button>
+        {product.has_variants ? (
+          <Link
+            to="/shop/p/$id"
+            params={{ id: product.id }}
+            className="absolute bottom-3 left-3 right-3 hidden items-center justify-center rounded-full bg-white px-3 py-2 text-sm font-medium text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
+          >
+            Choose options
+          </Link>
+        ) : (
+          <Button
+            size="sm"
+            disabled={stock <= 0 && !canPreorder}
+            onClick={() => {
+              addToCart({
+                id: product.id,
+                product_id: product.id,
+                name: product.name,
+                price,
+                original_price: product.original_price ?? price,
+                discount_amount: product.discount_amount ?? 0,
+                sale_campaign_id: product.sale_campaign_id ?? null,
+                sale_badge_text: product.sale_badge_text ?? null,
+                qty: 1,
+                image_url: product.image_url,
+                fulfillment_type: isPreorder ? "PREORDER" : "IN_STOCK",
+                estimated_arrival: product.waiting_time,
+                deposit_required: depositFor(product, price),
+              });
+              toast.success(isPreorder ? "Pre-order added to cart" : "Added to cart");
+            }}
+            className="absolute bottom-3 left-3 right-3 hidden rounded-full bg-white text-[#18211f] shadow-sm hover:bg-[#b8e7d0] sm:flex"
+          >
+            {stock > 0 ? (
+              <><ShoppingBag className="mr-2 h-3.5 w-3.5" />Add to cart</>
+            ) : canPreorder ? "Pre-order" : "Out of stock"}
+          </Button>
+        )}
       </div>
       <Link to="/shop/p/$id" params={{ id: product.id }} className="block pt-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7a72]">
@@ -648,8 +742,13 @@ function ProductCard({ product }: { product: Product }) {
         <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold leading-5">
           {product.name}
         </h3>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="font-bold">{formatKS(price)}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className={product.sale_price != null ? "font-bold text-red-600" : "font-bold"}>{formatKS(price)}</p>
+            {product.sale_price != null && product.original_price != null && (
+              <span className="text-xs text-muted-foreground line-through">{formatKS(product.original_price)}</span>
+            )}
+          </div>
           <span className="text-[10px] text-muted-foreground">
             {stock > 0 ? "In stock" : canPreorder ? "Pre-order" : "Unavailable"}
           </span>
@@ -866,7 +965,7 @@ function uniqueValues(products: Product[], key: "category" | "brand") {
   ).sort();
 }
 function priceOf(product: Product) {
-  return Number(product.final_sell_mmk ?? product.price ?? 0);
+  return Number(product.sale_price ?? product.final_sell_mmk ?? product.price ?? 0);
 }
 function stockValue(product: Product) {
   return Math.max(

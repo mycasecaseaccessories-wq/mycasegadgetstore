@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Sparkles,
   Receipt,
   TrendingUp,
   PieChart,
@@ -98,16 +97,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <StorageImage
-            src={settings?.logo_url}
-            alt=""
-            className="h-9 w-9 rounded-lg object-cover shadow-sm"
-            fallback={
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
-                <Sparkles className="h-4 w-4" />
-              </div>
-            }
-          />
+          {settings?.logo_url ? (
+            <StorageImage
+              src={settings.logo_url}
+              alt="MY CASE"
+              className="h-9 w-auto max-w-[150px] rounded-lg object-contain"
+            />
+          ) : null}
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold">{settings?.business_name || "My Case"}</span>
             <span className="text-xs text-muted-foreground">Admin Console</span>
