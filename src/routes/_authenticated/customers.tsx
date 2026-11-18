@@ -44,6 +44,43 @@ type Customer = {
 };
 const empty: Partial<Customer> = { name: "", phone: "", phone_2: "", address: "", city: "", region: "", note: "" };
 
+const normalizeDigits = (value: string) =>
+  value.replace(/[၀-၉]/g, (digit) => String("၀၁၂၃၄၅၆၇၈၉".indexOf(digit)));
+
+function parseCustomerPaste(raw: string): Partial<Customer> {
+  const lines = raw.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);
+  const parsed: Partial<Customer> = {};
+  const remaining: string[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^([^:：]+)\\s*[:：]\\s*(.+)$/);
+    if (match) {
+      const label = match[1].trim().toLowerCase();
+      const value = match[2].trim();
+      if (/^(name|customer|အမည်|နာမည်)$/.test(label)) parsed.name = value;
+      else if (/^(phone|mobile|ဖုန်း|ဖုန်းနံပါတ်)$/.test(label)) parsed.phone = value;
+      else if (/^(second phone|phone 2|ဖုန်း ၂)$/.test(label)) parsed.phone_2 = value;
+      else if (/^(address|လိပ်စာ)$/.test(label)) parsed.address = value;
+      else if (/^(city|township|မြို့|မြို့နယ်)$/.test(label)) parsed.city = value;
+      else if (/^(region|state|တိုင်း|ပြည်နယ်)$/.test(label)) parsed.region = value;
+      else if (/^(note|မှတ်ချက်)$/.test(label)) parsed.note = value;
+      else remaining.push(line);
+      continue;
+    }
+
+    const digits = normalizeDigits(line).replace(/[^0-9]/g, "");
+    const looksLikePhone = digits.length >= 9 && digits.length <= 13 &&
+      /^(?:09|959|95|9)/.test(digits);
+    if (!parsed.phone && looksLikePhone) parsed.phone = line;
+    else remaining.push(line);
+  }
+
+  if (!parsed.name && remaining.length) parsed.name = remaining.shift();
+  if (!parsed.address && remaining.length) parsed.address = remaining.join(", ");
+  return parsed;
+}
+
+
 function CustomersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -53,6 +90,7 @@ function CustomersPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Customer>>(empty);
   const [saving, setSaving] = useState(false);
+  const [bulkCustomerText, setBulkCustomerText] = useState("");
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
@@ -157,11 +195,11 @@ function CustomersPage() {
           open={open}
           onOpenChange={(v) => {
             setOpen(v);
-            if (!v) setForm({ ...empty });
+            if (!v) { setForm({ ...empty }); setBulkCustomerText(""); }
           }}
         >
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto" onClick={() => setForm({ ...empty })}>
+            <Button className="w-full sm:w-auto" onClick={() => { setForm({ ...empty }); setBulkCustomerText(""); }}>
               <Plus className="mr-2 h-4 w-4" />
               Add Customer
             </Button>
@@ -171,6 +209,38 @@ function CustomersPage() {
               <DialogTitle>{form.id ? "Edit" : "New"} Customer</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
+              <div className="space-y-2 rounded-lg border border-dashed p-3">
+                <div>
+                  <Label>Paste customer details (optional)</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Paste name, phone number and address on separate lines. You can still edit every field manually below.
+                  </p>
+                </div>
+                <Textarea
+                  value={bulkCustomerText}
+                  onChange={(e) => setBulkCustomerText(e.target.value)}
+                  placeholder={"ယဉ်နွယ်သင်း\n09253518992\n331, လေယာဉ်ကွင်းလမ်း၊ ဝဲကျွန်းရပ်၊ ထားဝယ်မြို့"}
+                  rows={3}
+                  aria-label="Paste customer details"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={!bulkCustomerText.trim()}
+                  onClick={() => {
+                    const parsed = parseCustomerPaste(bulkCustomerText);
+                    if (!Object.values(parsed).some(Boolean)) {
+                      toast.error("Could not recognize customer details. Enter them manually.");
+                      return;
+                    }
+                    setForm((current) => ({ ...current, ...parsed }));
+                    toast.success("Customer details filled in. Please review before saving.");
+                  }}
+                >
+                  Auto-fill fields
+                </Button>
+              </div>
               <div className="space-y-1.5">
                 <Label>Name</Label>
                 <Input
