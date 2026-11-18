@@ -47,6 +47,9 @@ const empty: Partial<Customer> = { name: "", phone: "", phone_2: "", address: ""
 function CustomersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Customer>>(empty);
   const [saving, setSaving] = useState(false);
@@ -78,13 +81,16 @@ function CustomersPage() {
     },
   });
 
-  const filtered = customers.filter((c) =>
-    [c.name, c.phone, c.phone_2, c.address, c.city, c.region]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const regions = [...new Set(customers.map((c) => c.region?.trim()).filter((v): v is string => Boolean(v)))].sort((a, b) => a.localeCompare(b));
+  const filtered = customers.filter((c) => {
+    const matchesSearch = [c.name, c.phone, c.phone_2, c.address, c.city, c.region]
+      .filter(Boolean).join(" ").toLowerCase().includes(search.trim().toLowerCase());
+    const matchesRegion = regionFilter === "all" || c.region?.trim() === regionFilter;
+    return matchesSearch && matchesRegion;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const save = async () => {
     const name = form.name?.trim() ?? "";
@@ -144,7 +150,7 @@ function CustomersPage() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
-            {search ? " found" : " registered"}
+            {search || regionFilter !== "all" ? " found" : " registered"}
           </p>
         </div>
         <Dialog
@@ -217,10 +223,23 @@ function CustomersPage() {
         <Input
           placeholder="Search name, phone number or address…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           className="h-11 w-full pl-9"
           aria-label="Search customers"
         />
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="shrink-0">Region</span>
+          <select value={regionFilter} onChange={(e) => { setRegionFilter(e.target.value); setPage(1); }}
+            className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground sm:max-w-xs"
+            aria-label="Filter customers by region">
+            <option value="all">All regions</option>
+            {regions.map((region) => <option key={region} value={region}>{region}</option>)}
+          </select>
+        </label>
+        <p className="text-xs text-muted-foreground">Showing {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}</p>
       </div>
 
       {filtered.length === 0 ? (
@@ -236,7 +255,7 @@ function CustomersPage() {
       ) : (
         <>
           <div className="grid min-w-0 grid-cols-1 gap-3 md:hidden">
-            {filtered.map((customer) => {
+            {paginated.map((customer) => {
               const stat = getStats(customer);
               const address = addressText(customer);
               return (
@@ -341,7 +360,7 @@ function CustomersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((customer) => {
+                  {paginated.map((customer) => {
                     const stat = getStats(customer);
                     const address = addressText(customer);
                     return (
@@ -403,6 +422,15 @@ function CustomersPage() {
               </table>
             </CardContent>
           </Card>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 border-t pt-3">
+              <p className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+                <Button size="sm" variant="outline" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
