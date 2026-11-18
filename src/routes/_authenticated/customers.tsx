@@ -48,12 +48,12 @@ const normalizeDigits = (value: string) =>
   value.replace(/[၀-၉]/g, (digit) => String("၀၁၂၃၄၅၆၇၈၉".indexOf(digit)));
 
 function parseCustomerPaste(raw: string): Partial<Customer> {
-  const lines = raw.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const parsed: Partial<Customer> = {};
   const remaining: string[] = [];
 
   for (const line of lines) {
-    const match = line.match(/^([^:：]+)\\s*[:：]\\s*(.+)$/);
+    const match = line.match(/^([^:：]+)\s*[:：]\s*(.+)$/);
     if (match) {
       const label = match[1].trim().toLowerCase();
       const value = match[2].trim();
