@@ -102,11 +102,18 @@ function ImportsPage() {
   const { data: existingCustomers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["import-customers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customers")
-        .select("id, name, phone, phone_2, address, city, region, note")
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
+      const pageSize = 1000;
+      const allCustomers: ImportCustomer[] = [];
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await supabase.from("customers")
+          .select("id, name, phone, phone_2, address, city, region, note")
+          .order("name")
+          .range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        allCustomers.push(...(data ?? []));
+        if (!data || data.length < pageSize) break;
+      }
+      return allCustomers;
     },
     enabled: kind !== "purchases",
   });
