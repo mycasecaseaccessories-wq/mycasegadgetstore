@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Eye,
+  Phone,
+  MapPin,
+  Users,
+  ShoppingBag,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,7 +79,7 @@ function CustomersPage() {
   });
 
   const filtered = customers.filter((c) =>
-    [c.name, c.phone, c.address]
+    [c.name, c.phone, c.phone_2, c.address, c.city, c.region]
       .filter(Boolean)
       .join(" ")
       .toLowerCase()
@@ -116,27 +127,35 @@ function CustomersPage() {
     qc.invalidateQueries({ queryKey: ["customers"] });
   };
 
+  const getStats = (customer: Customer) =>
+    (customer.phone ? (orderStats as Record<string, { count: number; total: number }>)[customer.phone] : null) ??
+    (customer.phone_2 ? (orderStats as Record<string, { count: number; total: number }>)[customer.phone_2] : null);
+
+  const addressText = (customer: Customer) =>
+    [customer.address, customer.city, customer.region].filter(Boolean).join(", ");
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-semibold tracking-tight">Customers</h1>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
+            {search ? " found" : " registered"}
+          </p>
         </div>
         <Dialog
           open={open}
           onOpenChange={(v) => {
             setOpen(v);
-            if (!v) setForm(empty);
+            if (!v) setForm({ ...empty });
           }}
         >
           <DialogTrigger asChild>
-            <Button onClick={() => setForm(empty)}>
+            <Button className="w-full sm:w-auto" onClick={() => setForm({ ...empty })}>
               <Plus className="mr-2 h-4 w-4" />
               Add Customer
             </Button>
@@ -157,17 +176,11 @@ function CustomersPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Phone</Label>
-                <Input
-                  value={form.phone ?? ""}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
+                <Input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label>Address</Label>
-                <Textarea
-                  value={form.address ?? ""}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                />
+                <Textarea value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -185,16 +198,11 @@ function CustomersPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Note</Label>
-                <Textarea
-                  value={form.note ?? ""}
-                  onChange={(e) => setForm({ ...form, note: e.target.value })}
-                />
+                <Textarea value={form.note ?? ""} onChange={(e) => setForm({ ...form, note: e.target.value })} />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={save} disabled={saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {saving ? "Saving…" : "Save"}
@@ -204,66 +212,199 @@ function CustomersPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th>Phone</th>
-                <th>Address</th>
-                <th>Orders</th>
-                <th>Total Spent</th>
-                <th className="px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                    No customers
-                  </td>
-                </tr>
-              )}
-              {filtered.map((c) => {
-                const stat = c.phone ? (orderStats as any)[c.phone] : null;
-                return (
-                  <tr key={c.id} className="border-t">
-                    <td className="px-4 py-3 font-medium">
-                      {c.name}
-                      {c.note && <p className="text-xs text-muted-foreground">{c.note}</p>}
-                    </td>
-                    <td>{c.phone ?? "—"}{c.phone_2 && <p className="text-xs text-muted-foreground">{c.phone_2}</p>}</td>
-                    <td className="max-w-xs text-muted-foreground">{[c.address, c.city, c.region].filter(Boolean).join(", ") || "—"}</td>
-                    <td>{stat?.count ?? 0}</td>
-                    <td className="font-medium">{formatKS(stat?.total ?? 0)}</td>
-                    <td className="px-4 text-right">
-                      <Button size="icon" variant="ghost" asChild>
-                        <Link to="/customers/$id" params={{ id: c.id }}>
-                          <Eye className="h-4 w-4" />
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search name, phone number or address…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-11 w-full pl-9"
+          aria-label="Search customers"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center">
+            <Users className="h-9 w-9 text-muted-foreground/60" />
+            <p className="font-medium">No customers found</p>
+            <p className="text-sm text-muted-foreground">
+              {search ? "Try another name, phone number or address." : "Add your first customer to get started."}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid min-w-0 grid-cols-1 gap-3 md:hidden">
+            {filtered.map((customer) => {
+              const stat = getStats(customer);
+              const address = addressText(customer);
+              return (
+                <Card key={customer.id} className="min-w-0 overflow-hidden shadow-sm">
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-base font-semibold leading-6 [overflow-wrap:anywhere]">
+                          {customer.name}
+                        </p>
+                        {customer.note && (
+                          <p className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                            {customer.note}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                        Customer
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex min-w-0 items-start gap-2 text-sm">
+                        <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <p className="break-all font-medium tabular-nums">{customer.phone || "No phone number"}</p>
+                          {customer.phone_2 && (
+                            <p className="mt-1 break-all text-xs text-muted-foreground tabular-nums">
+                              {customer.phone_2}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex min-w-0 items-start gap-2 text-sm">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <p className="min-w-0 flex-1 whitespace-normal break-words leading-6 text-muted-foreground [overflow-wrap:anywhere]">
+                          {address || "No address provided"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <ShoppingBag className="h-3.5 w-3.5" />
+                          Orders
+                        </div>
+                        <p className="mt-1 text-base font-semibold tabular-nums">{stat?.count ?? 0}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Total Spent</p>
+                        <p className="mt-1 break-words text-base font-semibold tabular-nums [overflow-wrap:anywhere]">
+                          {formatKS(stat?.total ?? 0)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 border-t pt-3">
+                      <Button size="sm" variant="outline" className="min-w-0 flex-1" asChild>
+                        <Link to="/customers/$id" params={{ id: customer.id }}>
+                          <Eye className="mr-1.5 h-4 w-4" /> View
                         </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-w-0 flex-1"
+                        onClick={() => {
+                          setForm(customer);
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1.5 h-4 w-4" /> Edit
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => {
-                          setForm(c);
-                          setOpen(true);
-                        }}
+                        className="shrink-0 text-destructive hover:text-destructive"
+                        aria-label={`Delete ${customer.name}`}
+                        onClick={() => remove(customer.id)}
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => remove(c.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </td>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <Card className="hidden overflow-hidden md:block">
+            <CardContent className="overflow-x-auto p-0">
+              <table className="w-full table-fixed text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="w-[19%] px-4 py-3">Name</th>
+                    <th className="w-[17%] px-3 py-3">Phone</th>
+                    <th className="w-[31%] px-3 py-3">Address</th>
+                    <th className="w-[9%] px-3 py-3">Orders</th>
+                    <th className="w-[14%] px-3 py-3">Total Spent</th>
+                    <th className="w-[10%] px-3 py-3 text-right">Actions</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {filtered.map((customer) => {
+                    const stat = getStats(customer);
+                    const address = addressText(customer);
+                    return (
+                      <tr key={customer.id} className="border-t align-top hover:bg-muted/20">
+                        <td className="px-4 py-3 font-medium">
+                          <p className="break-words [overflow-wrap:anywhere]">{customer.name}</p>
+                          {customer.note && (
+                            <p className="mt-1 break-words text-xs font-normal text-muted-foreground [overflow-wrap:anywhere]">
+                              {customer.note}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <p className="break-all tabular-nums">{customer.phone || "—"}</p>
+                          {customer.phone_2 && (
+                            <p className="mt-1 break-all text-xs text-muted-foreground tabular-nums">{customer.phone_2}</p>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <p className="whitespace-normal break-words leading-6 text-muted-foreground [overflow-wrap:anywhere]">
+                            {address || "—"}
+                          </p>
+                        </td>
+                        <td className="px-3 py-3 tabular-nums">{stat?.count ?? 0}</td>
+                        <td className="px-3 py-3 font-medium tabular-nums">{formatKS(stat?.total ?? 0)}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" aria-label={`View ${customer.name}`} asChild>
+                              <Link to="/customers/$id" params={{ id: customer.id }}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Edit ${customer.name}`}
+                              onClick={() => {
+                                setForm(customer);
+                                setOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Delete ${customer.name}`}
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => remove(customer.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
